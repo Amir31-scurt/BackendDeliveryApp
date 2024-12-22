@@ -1,0 +1,35 @@
+import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
+
+const UserSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  phoneNumber: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: {
+    type: String,
+    required: true,
+    enum: ["CUSTOMER", "ADMIN", "LIVREUR"],
+  },
+  otp: { type: String },
+  otpExpires: { type: Date },
+  isVerified: { type: Boolean, default: false },
+  profilePicture: { type: String },
+  vehicleId: { type: String },
+  availability: { type: Boolean, default: false },
+  zone: { type: String },
+});
+
+UserSchema.pre("save", async function (next) {
+  if (this.isModified("password")) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
+});
+
+UserSchema.methods.comparePassword = function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+const User = mongoose.model("User", UserSchema);
+
+export default User;
