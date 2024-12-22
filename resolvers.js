@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "./models/User.js";
-// import Restaurant from "./models/Restaurant.js";
-// import MenuItem from "./models/MenuItem.js";
+import Restaurant from "./models/Restaurant.js";
+import MenuItem from "./models/MenuItem.js";
 // import Order from "./models/Order.js";
 import authMiddleware from "./middleware/auth.js";
 
@@ -30,10 +30,11 @@ const resolvers = {
       await authMiddleware(req);
       return User.findById(id);
     },
-    // restaurants: async () => Restaurant.find({ isActive: true }),
-    // restaurant: async (_, { id }) => Restaurant.findById(id),
-    // menuItems: async (_, { restaurantId }) => MenuItem.find({ restaurant: restaurantId, isAvailable: true }),
-    // menuItem: async (_, { id }) => MenuItem.findById(id),
+    restaurants: async () => Restaurant.find({ isActive: true }),
+    restaurant: async (_, { id }) => Restaurant.findById(id),
+    menuItems: async (_, { restaurantId }) =>
+      MenuItem.find({ restaurant: restaurantId, isAvailable: true }),
+    menuItem: async (_, { id }) => MenuItem.findById(id),
     // orders: async (_, __, { req }) => {
     //   const auth = await authMiddleware(req);
     //   return Order.find({ user: auth.userId }).populate('user restaurant items.menuItem');
@@ -136,38 +137,38 @@ const resolvers = {
 
       return { token, user };
     },
-    // createRestaurant: async (_, { input }, { req }) => {
-    //   const auth = await authMiddleware(req);
-    //   if (auth.userRole !== 'ADMIN') {
-    //     throw new Error('Not authorized');
-    //   }
-    //   const restaurant = new Restaurant(input);
-    //   await restaurant.save();
-    //   return restaurant;
-    // },
-    // updateRestaurant: async (_, { id, input }, { req }) => {
-    //   const auth = await authMiddleware(req);
-    //   if (auth.userRole !== 'ADMIN') {
-    //     throw new Error('Not authorized');
-    //   }
-    //   return await Restaurant.findByIdAndUpdate(id, input, { new: true });
-    // },
-    // createMenuItem: async (_, { input }, { req }) => {
-    //   const auth = await authMiddleware(req);
-    //   if (auth.userRole !== 'ADMIN') {
-    //     throw new Error('Not authorized');
-    //   }
-    //   const menuItem = new MenuItem(input);
-    //   await menuItem.save();
-    //   return menuItem;
-    // },
-    // updateMenuItem: async (_, { id, input }, { req }) => {
-    //   const auth = await authMiddleware(req);
-    //   if (auth.userRole !== 'ADMIN') {
-    //     throw new Error('Not authorized');
-    //   }
-    //   return await MenuItem.findByIdAndUpdate(id, input, { new: true });
-    // },
+    createRestaurant: async (_, { input }, { req }) => {
+      const auth = await authMiddleware(req);
+      if (auth.userRole !== "ADMIN") {
+        throw new Error("Not authorized");
+      }
+      const restaurant = new Restaurant(input);
+      await restaurant.save();
+      return restaurant;
+    },
+    updateRestaurant: async (_, { id, input }, { req }) => {
+      const auth = await authMiddleware(req);
+      if (auth.userRole !== "ADMIN") {
+        throw new Error("Not authorized");
+      }
+      return await Restaurant.findByIdAndUpdate(id, input, { new: true });
+    },
+    createMenuItem: async (_, { input }, { req }) => {
+      const auth = await authMiddleware(req);
+      if (auth.userRole !== "ADMIN") {
+        throw new Error("Not authorized");
+      }
+      const menuItem = new MenuItem(input);
+      await menuItem.save();
+      return menuItem;
+    },
+    updateMenuItem: async (_, { id, input }, { req }) => {
+      const auth = await authMiddleware(req);
+      if (auth.userRole !== "ADMIN") {
+        throw new Error("Not authorized");
+      }
+      return await MenuItem.findByIdAndUpdate(id, input, { new: true });
+    },
     // createOrder: async (_, { restaurantId, items }, { req }) => {
     //   const auth = await authMiddleware(req);
     //   const orderItems = await Promise.all(items.map(async (item) => {
@@ -202,33 +203,34 @@ const resolvers = {
     //   const order = await Order.findByIdAndUpdate(orderId, { status }, { new: true }).populate('user restaurant items.menuItem');
     //   return order;
     // },
-    // toggleRestaurantActive: async (_, { id }, { req }) => {
-    //   const auth = await authMiddleware(req);
-    //   if (auth.userRole !== 'ADMIN') {
-    //     throw new Error('Not authorized');
-    //   }
-    //   const restaurant = await Restaurant.findById(id);
-    //   restaurant.isActive = !restaurant.isActive;
-    //   await restaurant.save();
-    //   return restaurant;
-    // },
-    // toggleMenuItemAvailable: async (_, { id }, { req }) => {
-    //   const auth = await authMiddleware(req);
-    //   if (auth.userRole !== 'ADMIN') {
-    //     throw new Error('Not authorized');
-    //   }
-    //   const menuItem = await MenuItem.findById(id);
-    //   menuItem.isAvailable = !menuItem.isAvailable;
-    //   await menuItem.save();
-    //   return menuItem;
-    // },
+    toggleRestaurantActive: async (_, { id }, { req }) => {
+      const auth = await authMiddleware(req);
+      if (auth.userRole !== "ADMIN") {
+        throw new Error("Not authorized");
+      }
+      const restaurant = await Restaurant.findById(id);
+      restaurant.isActive = !restaurant.isActive;
+      await restaurant.save();
+      return restaurant;
+    },
+    toggleMenuItemAvailable: async (_, { id }, { req }) => {
+      const auth = await authMiddleware(req);
+      if (auth.userRole !== "ADMIN") {
+        throw new Error("Not authorized");
+      }
+      const menuItem = await MenuItem.findById(id);
+      menuItem.isAvailable = !menuItem.isAvailable;
+      await menuItem.save();
+      return menuItem;
+    },
   },
-  // Restaurant: {
-  //   menu: async (parent) => await MenuItem.find({ restaurant: parent.id, isAvailable: true }),
-  // },
-  // MenuItem: {
-  //   restaurant: async (parent) => await Restaurant.findById(parent.restaurant),
-  // },
+  Restaurant: {
+    menu: async (parent) =>
+      await MenuItem.find({ restaurant: parent.id, isAvailable: true }),
+  },
+  MenuItem: {
+    restaurant: async (parent) => await Restaurant.findById(parent.restaurant),
+  },
 };
 
 export default resolvers;
