@@ -18,6 +18,7 @@ const RestaurantSchema = new mongoose.Schema({
   email: { type: String, required: true },
   rating: { type: Number, default: 0 },
   imageUrl: { type: String },
+  menu: [{ type: mongoose.Schema.Types.ObjectId, ref: "MenuItem" }],
   isActive: { type: Boolean, default: true },
 });
 

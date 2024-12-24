@@ -31,4 +31,33 @@ const authMiddleware = async (req) => {
   }
 };
 
-export default authMiddleware;
+const adminLogin = async (req, res) => {
+  const { phoneNumber, password } = req.body; // Use phoneNumber instead of username
+  try {
+    const user = await User.findOne({ phoneNumber, role: "admin" }); // Check phoneNumber and role
+    if (!user) {
+      return res.render("admin/login", {
+        title: "Login",
+        error: "Invalid credentials",
+      });
+    }
+    const isValid = await bcrypt.compare(password, user.password); // Validate password
+    if (!isValid) {
+      return res.render("admin/login", {
+        title: "Login",
+        error: "Invalid credentials",
+      });
+    }
+    req.session.user = {
+      id: user.id,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+    };
+    res.redirect("/admin");
+  } catch (error) {
+    console.error("Login error:", error);
+    res.render("admin/login", { title: "Login", error: "An error occurred" });
+  }
+};
+
+export default { authMiddleware, adminLogin };

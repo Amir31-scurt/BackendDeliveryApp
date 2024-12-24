@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
-import User from "./models/User.js";
-import Restaurant from "./models/Restaurant.js";
 import MenuItem from "./models/MenuItem.js";
+import Restaurant from "./models/Restaurant.js";
+import User from "./models/User.js";
 // import Order from "./models/Order.js";
 import authMiddleware from "./middleware/auth.js";
 

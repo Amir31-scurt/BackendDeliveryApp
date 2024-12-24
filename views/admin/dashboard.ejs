@@ -1,0 +1,52 @@
+<h2 class="text-2xl font-bold mb-6">Dashboard</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  <div class="bg-white p-6 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mb-2">Total Orders</h3>
+    <p class="text-3xl font-bold text-blue-600"><%= totalOrders %></p>
+  </div>
+  <div class="bg-white p-6 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mb-2">Active Restaurants</h3>
+    <p class="text-3xl font-bold text-green-600"><%= activeRestaurants %></p>
+  </div>
+  <div class="bg-white p-6 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mb-2">Active Deliverers</h3>
+    <p class="text-3xl font-bold text-yellow-600"><%= activeDeliverers %></p>
+  </div>
+  <div class="bg-white p-6 rounded-lg shadow">
+    <h3 class="text-lg font-semibold mb-2">Total Revenue</h3>
+    <p class="text-3xl font-bold text-purple-600">
+      $<%= totalRevenue.toFixed(2) %>
+    </p>
+  </div>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow">
+  <h3 class="text-xl font-semibold mb-4">Monthly Orders</h3>
+  <canvas id="monthlyOrdersChart"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('monthlyOrdersChart').getContext('2d');
+  new Chart(ctx, {
+      type: 'bar',
+      data: {
+          labels: <%- JSON.stringify(monthlyOrders.map(item => item.month)) %>,
+          datasets: [{
+              label: 'Orders',
+              data: <%- JSON.stringify(monthlyOrders.map(item => item.orders)) %>,
+              backgroundColor: 'rgba(54, 162, 235, 0.5)',
+              borderColor: 'rgb(54, 162, 235)',
+              borderWidth: 1
+          }]
+      },
+      options: {
+          scales: {
+              y: {
+                  beginAtZero: true
+              }
+          }
+      }
+  });
+</script>

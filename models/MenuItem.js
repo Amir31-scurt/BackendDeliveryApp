@@ -15,16 +15,16 @@ const MenuItemSchema = new mongoose.Schema({
     required: true,
   },
   imageUrl: { type: String },
-  ingredients: [{ type: String }],
-  nutritionalInfo: {
-    calories: Number,
-    protein: Number,
-    carbs: Number,
-    fat: Number,
-  },
-  isVegetarian: { type: Boolean, default: false },
-  isVegan: { type: Boolean, default: false },
-  isGlutenFree: { type: Boolean, default: false },
+  // ingredients: [{ type: String }],
+  // nutritionalInfo: {
+  //   calories: Number,
+  //   protein: Number,
+  //   carbs: Number,
+  //   fat: Number,
+  // },
+  // isVegetarian: { type: Boolean, default: false },
+  // isVegan: { type: Boolean, default: false },
+  // isGlutenFree: { type: Boolean, default: false },
   isAvailable: { type: Boolean, default: true },
 });
 

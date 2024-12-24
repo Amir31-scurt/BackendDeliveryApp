@@ -5,18 +5,12 @@ const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   phoneNumber: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: {
-    type: String,
-    required: true,
-    enum: ["CUSTOMER", "ADMIN", "LIVREUR"],
-  },
+  role: { type: String, enum: ["customer", "admin"], default: "customer" },
   otp: { type: String },
   otpExpires: { type: Date },
   isVerified: { type: Boolean, default: false },
   profilePicture: { type: String },
-  vehicleId: { type: String },
-  availability: { type: Boolean, default: false },
-  zone: { type: String },
+  address: { type: String },
 });
 
 UserSchema.pre("save", async function (next) {
