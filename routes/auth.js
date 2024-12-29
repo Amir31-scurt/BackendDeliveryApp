@@ -1,3 +1,4 @@
+import bcrypt from "bcrypt";
 import { addMinutes } from "date-fns";
 import express from "express";
 import { supabase } from "../supabaseClient.js";
