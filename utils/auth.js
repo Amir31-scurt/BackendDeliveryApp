@@ -1,4 +1,4 @@
-import { supabase } from "../models";
+import { supabase } from "../supabaseClient.js";
 
 export const signUp = async (phoneNumber, password, name) => {
   const { data, error } = await supabase.auth.signUp({
@@ -67,6 +67,25 @@ export const updateUser = async (updates) => {
     .from("users")
     .update(updates)
     .eq("id", user.id)
+    .single();
+
+  if (error) throw error;
+
+  return data;
+};
+
+export const createDeliverer = async (delivererData) => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("No user logged in");
+
+  const { data, error } = await supabase
+    .from("deliverers")
+    .insert({
+      ...delivererData,
+      user_id: user.id,
+    })
     .single();
 
   if (error) throw error;

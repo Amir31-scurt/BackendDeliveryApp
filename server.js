@@ -7,6 +7,8 @@ import path from "path";
 import resolvers from "./resolvers.js";
 import adminRoutes from "./routes/admin.js";
 import { supabase } from "./supabaseClient.js";
+import authRoutes from "./routes/auth.js";
+import delivererRoutes from "./routes/deliverers.js";
 
 dotenv.config();
 
@@ -25,6 +27,9 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.static(path.join(__dirname, "public")));
 // Admin routes
 app.use("/admin", adminRoutes);
+// Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/deliverers", delivererRoutes);
 
 app.use(expressEjsLayouts);
 app.set("layout", "admin/layout");
