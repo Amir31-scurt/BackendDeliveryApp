@@ -92,6 +92,45 @@ router.get("/restaurants", isAdmin, async (req, res) => {
   }
 });
 
+router.post("/restaurants/add", async (req, res) => {
+  try {
+    console.log("Request Body:", req.body); // Log the incoming data
+    const {
+      name,
+      description,
+      address,
+      type,
+      phoneNumber,
+      email,
+      imageUrl,
+      isActive,
+      openingHours,
+    } = req.body;
+
+    // Create a new restaurant object
+    const newRestaurant = new Restaurant({
+      name,
+      description,
+      address,
+      type,
+      phoneNumber,
+      email,
+      imageUrl,
+      isActive: isActive === "true", // Convert string to boolean
+      openingHours,
+    });
+
+    // Save the new restaurant to the database
+    await newRestaurant.save();
+
+    // Redirect back to the restaurants page
+    res.redirect("/admin/restaurants");
+  } catch (error) {
+    console.error("Error adding restaurant:", error);
+    res.status(500).send("An error occurred while adding the restaurant.");
+  }
+});
+
 // Add more routes for other admin functionalities (e.g., orders, deliverers)
 
 export default router;

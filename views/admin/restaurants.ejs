@@ -1,78 +1,257 @@
-<h2 class="text-2xl font-bold mb-6">Restaurants</h2>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel - Restaurants</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+    rel="stylesheet"
+  />
+</head>
+<body>
+  <h2 class="text-2xl font-bold mb-6">Restaurants</h2>
 
-<div class="bg-white p-6 rounded-lg shadow">
-  <table class="min-w-full">
-    <thead>
-      <tr>
-        <th
-          class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
+  <div class="bg-white p-6 rounded-lg shadow mb-8">
+    <h2 class="text-2xl font-bold mb-6">Add New Restaurant</h2>
+    <form action="/admin/restaurants/add" method="POST" class="space-y-4">
+      <!-- Restaurant Name -->
+      <div>
+        <label for="name" class="block text-sm font-medium text-gray-700"
+          >Name</label
         >
-          Name
-        </th>
-        <th
-          class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
+        <input
+          type="text"
+          id="name"
+          name="name"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          placeholder="Enter restaurant name"
+          required
+        />
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label for="description" class="block text-sm font-medium text-gray-700"
+          >Description</label
         >
-          Address
-        </th>
-        <th
-          class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
+        <textarea
+          id="description"
+          name="description"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          placeholder="Enter restaurant description"
+          rows="3"
+          required
+        ></textarea>
+      </div>
+
+      <!-- Address -->
+      <div>
+        <label for="address" class="block text-sm font-medium text-gray-700"
+          >Address</label
         >
-          Cuisine
-        </th>
-        <th
-          class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
+        <input
+          type="text"
+          id="address"
+          name="address"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          placeholder="Enter restaurant address"
+          required
+        />
+      </div>
+
+      <!-- Cuisine -->
+      <div>
+        <label for="cuisine" class="block text-sm font-medium text-gray-700"
+          >type</label
         >
-          Status
-        </th>
-        <th
-          class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
+        <input
+          type="text"
+          id="type"
+          name="type"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          placeholder="Enter type"
+          required
+        />
+      </div>
+
+      <!-- Phone Number -->
+      <div>
+        <label for="phoneNumber" class="block text-sm font-medium text-gray-700"
+          >Phone Number</label
         >
-          Actions
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      <% restaurants.forEach(restaurant => { %>
-      <tr>
-        <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-          <div class="text-sm leading-5 font-medium text-gray-900">
-            <%= restaurant.name %>
+        <input
+          type="text"
+          id="phoneNumber"
+          name="phoneNumber"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          placeholder="Enter phone number"
+          required
+        />
+      </div>
+
+      <!-- Email -->
+      <div>
+        <label for="email" class="block text-sm font-medium text-gray-700"
+          >Email</label
+        >
+        <input
+          type="email"
+          id="email"
+          name="email"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          placeholder="Enter email address"
+          required
+        />
+      </div>
+
+      <!-- Image URL -->
+      <div>
+        <label for="imageUrl" class="block text-sm font-medium text-gray-700"
+          >Image URL</label
+        >
+        <input
+          type="text"
+          id="imageUrl"
+          name="imageUrl"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          placeholder="Enter image URL"
+        />
+      </div>
+
+      <!-- Status -->
+      <div>
+        <label for="isActive" class="block text-sm font-medium text-gray-700"
+          >Status</label
+        >
+        <select
+          id="isActive"
+          name="isActive"
+          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          required
+        >
+          <option value="true">Active</option>
+          <option value="false">Inactive</option>
+        </select>
+      </div>
+
+      <!-- Opening Hours -->
+      <div>
+        <label
+          for="openingHours"
+          class="block text-sm font-medium text-gray-700"
+          >Opening Hours</label
+        >
+        <div class="grid grid-cols-2 gap-4">
+          <% ['monday', 'tuesday', 'wednesday', 'thursday', 'friday',
+          'saturday', 'sunday'].forEach(day => { %>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 capitalize"
+              ><%= day %></label
+            >
+            <div class="flex space-x-2">
+              <input
+                type="time"
+                name="openingHours[<%= day %>][open]"
+                class="mt-1 block w-1/2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                required
+              />
+              <input
+                type="time"
+                name="openingHours[<%= day %>][close]"
+                class="mt-1 block w-1/2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                required
+              />
+            </div>
           </div>
-        </td>
-        <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-          <div class="text-sm leading-5 text-gray-500">
-            <%= restaurant.address %>
-          </div>
-        </td>
-        <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-          <div class="text-sm leading-5 text-gray-500">
-            <%= restaurant.cuisine %>
-          </div>
-        </td>
-        <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-          <span
-            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= restaurant.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>"
-          >
-            <%= restaurant.isActive ? 'Active' : 'Inactive' %>
-          </span>
-        </td>
-        <td
-          class="px-6 py-4 whitespace-no-wrap border-b border-gray-300 text-sm leading-5 font-medium"
+          <% }); %>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div>
+        <button
+          type="submit"
+          class="w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
-          <a
-            href="/admin/restaurants/<%= restaurant._id %>/edit"
-            class="text-indigo-600 hover:text-indigo-900 mr-3"
-            >Edit</a
+          Add Restaurant
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="bg-white p-6 rounded-lg shadow">
+    <table class="min-w-full">
+      <thead>
+        <tr>
+          <th
+            class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
           >
-          <a
-            href="/admin/restaurants/<%= restaurant._id %>/toggle"
-            class="text-<%= restaurant.isActive ? 'red' : 'green' %>-600 hover:text-<%= restaurant.isActive ? 'red' : 'green' %>-900"
+            Name
+          </th>
+          <th
+            class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
           >
-            <%= restaurant.isActive ? 'Deactivate' : 'Activate' %>
-          </a>
-        </td>
-      </tr>
-      <% }); %>
-    </tbody>
-  </table>
-</div>
+            Address
+          </th>
+          <th
+            class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
+          >
+            type
+          </th>
+          <th
+            class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
+          >
+            Status
+          </th>
+          <th
+            class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider"
+          >
+            Actions
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <% restaurants.forEach(restaurant => { %>
+        <tr>
+          <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
+            <div class="text-sm leading-5 font-medium text-gray-900">
+              <%= restaurant.name %>
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
+            <div class="text-sm leading-5 text-gray-500">
+              <%= restaurant.address %>
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
+            <div class="text-sm leading-5 text-gray-500">
+              <%= restaurant.type %>
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
+            <span
+              class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= restaurant.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>"
+            >
+              <%= restaurant.isActive ? 'Active' : 'Inactive' %>
+            </span>
+          </td>
+          <td
+            class="px-6 py-4 whitespace-no-wrap border-b border-gray-300 text-sm leading-5 font-medium"
+          >
+            <a
+              href="/admin/restaurants/<%= restaurant._id %>/edit"
+              class="text-indigo-600 hover:text-indigo-900 mr-3"
+              >Edit</a
+            >
+            <a
+              href="/admin/restaurants/<%= restaurant._id %>/toggle"
+              class="text-<%= restaurant.isActive ? 'red' : 'green' %>-600 hover:text-<%= restaurant.isActive ? 'red' : 'green' %>-900"
+            >
+              <%= restaurant.isActive ? 'Deactivate' : 'Activate' %>
+            </a>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</body>
