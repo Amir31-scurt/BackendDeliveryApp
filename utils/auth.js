@@ -1,3 +1,4 @@
+import bcrypt from "bcrypt";
 import { supabase } from "../supabaseClient.js";
 
 export const signUp = async (phoneNumber, password, name) => {
@@ -25,14 +26,25 @@ export const signUp = async (phoneNumber, password, name) => {
 };
 
 export const signIn = async (phoneNumber, password) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    phone: phoneNumber,
-    password: password,
-  });
+  // Retrieve the user from the `users` table
+  const { data: user, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("phone_number", phoneNumber)
+    .single();
 
-  if (error) throw error;
+  if (error || !user) {
+    throw new Error("Numéro de téléphone ou mot de passe invalide.");
+  }
 
-  return data;
+  // Compare the hashed password
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    throw new Error("Numéro de téléphone ou mot de passe invalide.");
+  }
+
+  // If valid, return the user data (you can also generate a token here)
+  return { user };
 };
 
 export const signOut = async () => {

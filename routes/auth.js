@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import { addMinutes } from "date-fns";
 import express from "express";
+import jwt from "jsonwebtoken";
 import { supabase } from "../supabaseClient.js";
 import { signIn } from "../utils/auth.js";
 
@@ -77,16 +78,21 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const { user, session } = await signIn(phoneNumber, password);
+    console.log(req.body);
+    const { user } = await signIn(phoneNumber, password);
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "60d",
+    });
 
     res.status(200).json({
       message: "Connexion réussie.",
       user: {
         id: user.id,
+        name: user.name,
         phoneNumber: user.phone,
-        role: user.user_metadata.role,
+        role: user.role,
       },
-      token: session.access_token,
+      token: token,
     });
   } catch (error) {
     console.error("Erreur de connexion:", error);
