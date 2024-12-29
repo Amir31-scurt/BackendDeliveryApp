@@ -15,7 +15,25 @@ router.post("/signup", async (req, res) => {
     const { phoneNumber, name, password, role } = req.body;
 
     if (!phoneNumber || !name || !password || !role) {
-      return res.status(400).json({ error: "All fields are required." });
+      return res
+        .status(400)
+        .json({ error: "Tous les champs sont obligatoires." });
+    }
+
+    // Check if the phone number already exists in the users table
+    const { data: existingUser, error: existingUserError } = await supabase
+      .from("users")
+      .select("phone_number")
+      .eq("phone_number", phoneNumber)
+      .single();
+
+    if (existingUser) {
+      return res.status(400).json({ error: "Ce numéro est déjà utilisé." });
+    }
+
+    if (existingUserError && existingUserError.code !== "PGRST116") {
+      console.error("Erreur de vérification du numéro:", existingUserError);
+      return res.status(500).json({ error: "Erreur interne du serveur." });
     }
 
     // Generate OTP
@@ -39,23 +57,29 @@ router.post("/signup", async (req, res) => {
 
     // Return OTP for testing (don't send in production)
     res.status(200).json({
-      message: "OTP generated successfully.",
+      message: "OTP généré avec succès.",
       otp, // For testing purposes only; remove in production
     });
   } catch (error) {
-    console.error("Signup Error:", error);
-    res.status(500).json({ error: "Internal server error." });
+    console.error("Erreur lors de l'inscription:", error);
+    res.status(500).json({ error: "Erreur interne du serveur." });
   }
 });
 
 router.post("/login", async (req, res) => {
   try {
     const { phoneNumber, password } = req.body;
-    console.log(req.body);
+
+    if (!phoneNumber || !password) {
+      return res.status(400).json({
+        error: "Le numéro de téléphone et le mot de passe sont requis.",
+      });
+    }
+
     const { user, session } = await signIn(phoneNumber, password);
 
     res.status(200).json({
-      message: "Login successful",
+      message: "Connexion réussie.",
       user: {
         id: user.id,
         phoneNumber: user.phone,
@@ -64,7 +88,8 @@ router.post("/login", async (req, res) => {
       token: session.access_token,
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error("Erreur de connexion:", error);
+    res.status(400).json({ error: "Échec de la connexion." });
   }
 });
 
@@ -112,7 +137,7 @@ router.post("/verify-otp", async (req, res) => {
     if (!phoneNumber || !otp) {
       return res
         .status(400)
-        .json({ error: "Phone number and OTP are required." });
+        .json({ error: "Le numéro de téléphone et l'OTP sont requis." });
     }
 
     // Retrieve user details and OTP
@@ -126,13 +151,16 @@ router.post("/verify-otp", async (req, res) => {
 
     // Validate OTP
     if (otp !== storedOtp.toString()) {
-      return res.status(400).json({ error: "Invalid OTP." });
+      return res.status(400).json({ error: "OTP invalide." });
     }
 
     // Check expiration
     if (new Date() > expiresAt) {
-      return res.status(400).json({ error: "OTP has expired." });
+      return res.status(400).json({ error: "L'OTP a expiré." });
     }
+
+    // Hash the password before saving it to the database
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Mark user as verified
     userData.isVerified = true;
@@ -141,25 +169,26 @@ router.post("/verify-otp", async (req, res) => {
     const { data, error } = await supabase.from("users").insert({
       phone_number: phoneNumber,
       name,
-      password,
+      password: hashedPassword,
       role: "customer",
       is_verified: true,
     });
 
     if (error) {
-      return res.status(500).json({ error: "Failed to save user." });
+      console.error("Erreur lors de l'enregistrement de l'utilisateur:", error);
+      return res.status(500).json({ error: "Erreur interne du serveur." });
     }
 
     // Clean up temporary store
     delete userStore[phoneNumber];
 
     res.status(200).json({
-      message: "OTP verified and signup completed successfully.",
+      message: "OTP vérifié et inscription réussie.",
       user: data,
     });
   } catch (error) {
-    console.error("Verify OTP Error:", error);
-    res.status(500).json({ error: "Internal server error." });
+    console.error("Erreur de vérification de l'OTP:", error);
+    res.status(500).json({ error: "Erreur interne du serveur." });
   }
 });
 
