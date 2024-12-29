@@ -12,9 +12,9 @@ const otpStore = {};
 
 router.post("/signup", async (req, res) => {
   try {
-    const { phoneNumber, name, password } = req.body;
+    const { phoneNumber, name, password, role } = req.body;
 
-    if (!phoneNumber || !name || !password) {
+    if (!phoneNumber || !name || !password || !role) {
       return res.status(400).json({ error: "All fields are required." });
     }
 
@@ -28,11 +28,14 @@ router.post("/signup", async (req, res) => {
       password, // You should hash this in production
       otp,
       expiresAt,
+      role: "customer",
       isVerified: false,
     };
 
     // For production, store this in your database
-    // await supabase.from('otps').insert({ phone_number: phoneNumber, otp, expires_at: expiresAt });
+    await supabase
+      .from("otps")
+      .insert({ phone_number: phoneNumber, otp, expires_at: expiresAt });
 
     // Return OTP for testing (don't send in production)
     res.status(200).json({
@@ -68,36 +71,36 @@ router.post("/login", async (req, res) => {
 /**
  * Generate OTP
  */
-router.post("/generate-otp", async (req, res) => {
-  try {
-    const { phoneNumber } = req.body;
+// router.post("/generate-otp", async (req, res) => {
+//   try {
+//     const { phoneNumber } = req.body;
 
-    if (!phoneNumber) {
-      return res.status(400).json({ error: "Phone number is required." });
-    }
+//     if (!phoneNumber) {
+//       return res.status(400).json({ error: "Phone number is required." });
+//     }
 
-    // Generate OTP and expiration
-    const otp = crypto.randomInt(100000, 999999); // 6-digit OTP
-    const expiresAt = addMinutes(new Date(), 5); // OTP valid for 5 minutes
+//     // Generate OTP and expiration
+//     const otp = crypto.randomInt(100000, 999999); // 6-digit OTP
+//     const expiresAt = addMinutes(new Date(), 5); // OTP valid for 5 minutes
 
-    // Store OTP in in-memory store
-    otpStore[phoneNumber] = { otp, expiresAt };
+//     // Store OTP in in-memory store
+//     otpStore[phoneNumber] = { otp, expiresAt };
 
-    // For production, save to database:
-    await supabase
-      .from("otps")
-      .insert({ phone_number: phoneNumber, otp, expires_at: expiresAt });
+//     // For production, save to database:
+//     await supabase
+//       .from("otps")
+//       .insert({ phone_number: phoneNumber, otp, expires_at: expiresAt });
 
-    // Return OTP for testing purposes (DON'T return it in production)
-    res.status(200).json({
-      message: "OTP generated successfully.",
-      otp, // For testing, remove in production
-    });
-  } catch (error) {
-    console.error("Error generating OTP:", error);
-    res.status(500).json({ error: "Internal server error." });
-  }
-});
+//     // Return OTP for testing purposes (DON'T return it in production)
+//     res.status(200).json({
+//       message: "OTP generated successfully.",
+//       otp, // For testing, remove in production
+//     });
+//   } catch (error) {
+//     console.error("Error generating OTP:", error);
+//     res.status(500).json({ error: "Internal server error." });
+//   }
+// });
 
 /**
  * Verify OTP
@@ -138,7 +141,8 @@ router.post("/verify-otp", async (req, res) => {
     const { data, error } = await supabase.from("users").insert({
       phone_number: phoneNumber,
       name,
-      password, // You should hash this before saving
+      password,
+      role: "customer",
       is_verified: true,
     });
 
