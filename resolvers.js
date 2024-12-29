@@ -33,52 +33,52 @@ const resolvers = {
     },
   },
   Mutation: {
-    createRestaurant: async (_, { input }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("restaurants")
-        .insert([input])
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    updateRestaurant: async (_, { id, input }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("restaurants")
-        .update(input)
-        .eq("id", id)
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    deleteRestaurant: async (_, { id }, { supabase }) => {
-      const { error } = await supabase
-        .from("restaurants")
-        .delete()
-        .eq("id", id);
-      if (error) throw new Error(error.message);
-      return true;
-    },
-    createOrder: async (_, { input }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("orders")
-        .insert([input])
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    updateOrderStatus: async (_, { id, status }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("orders")
-        .update({ status })
-        .eq("id", id)
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      return data;
-    },
+    // createRestaurant: async (_, { input }, { supabase }) => {
+    //   const { data, error } = await supabase
+    //     .from("restaurants")
+    //     .insert([input])
+    //     .select()
+    //     .single();
+    //   if (error) throw new Error(error.message);
+    //   return data;
+    // },
+    // updateRestaurant: async (_, { id, input }, { supabase }) => {
+    //   const { data, error } = await supabase
+    //     .from("restaurants")
+    //     .update(input)
+    //     .eq("id", id)
+    //     .select()
+    //     .single();
+    //   if (error) throw new Error(error.message);
+    //   return data;
+    // },
+    // deleteRestaurant: async (_, { id }, { supabase }) => {
+    //   const { error } = await supabase
+    //     .from("restaurants")
+    //     .delete()
+    //     .eq("id", id);
+    //   if (error) throw new Error(error.message);
+    //   return true;
+    // },
+    // createOrder: async (_, { input }, { supabase }) => {
+    //   const { data, error } = await supabase
+    //     .from("orders")
+    //     .insert([input])
+    //     .select()
+    //     .single();
+    //   if (error) throw new Error(error.message);
+    //   return data;
+    // },
+    // updateOrderStatus: async (_, { id, status }, { supabase }) => {
+    //   const { data, error } = await supabase
+    //     .from("orders")
+    //     .update({ status })
+    //     .eq("id", id)
+    //     .select()
+    //     .single();
+    //   if (error) throw new Error(error.message);
+    //   return data;
+    // },
     register: async (_, { input }, { supabase }) => {
       const { username, email, password } = input;
       const hashedPassword = await bcrypt.hash(password, 10);

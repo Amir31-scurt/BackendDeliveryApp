@@ -6,17 +6,13 @@ import { readFileSync } from "fs";
 import path from "path";
 import resolvers from "./resolvers.js";
 import adminRoutes from "./routes/admin.js";
+import { supabase } from "./supabaseClient.js";
 
 dotenv.config();
 
 const __dirname = path.resolve();
 
 const app = express();
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
 
 // Setup EJS as the template engine
 app.set("view engine", "ejs");
