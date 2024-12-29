@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import default from './middleware/auth';
 
 const resolvers = {
   Query: {
@@ -109,4 +110,4 @@ const resolvers = {
   },
 };
 
-module.exports = resolvers;
+export default resolvers;
