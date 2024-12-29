@@ -2,7 +2,7 @@ import { supabase } from "../supabaseClient.js";
 
 export const signUp = async (phoneNumber, password, name) => {
   const { data, error } = await supabase.auth.signUp({
-    phone: phoneNumber,
+    phone: phoneNumber, // Use phone instead of email
     password: password,
   });
 
