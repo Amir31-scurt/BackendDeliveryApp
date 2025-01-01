@@ -1,7 +1,13 @@
 import bcrypt from "bcrypt";
 import { supabase } from "../supabaseClient.js";
 
-export const signUp = async (phoneNumber, password, name) => {
+export const signUp = async (
+  phoneNumber,
+  password,
+  name,
+  role = "customer",
+  vehicleId
+) => {
   const { data, error } = await supabase.auth.signUp({
     phone: phoneNumber, // Use phone instead of email
     password: password,
@@ -20,6 +26,24 @@ export const signUp = async (phoneNumber, password, name) => {
     });
 
     if (profileError) throw profileError;
+
+    // If role is deliverer, insert additional details into deliverers table
+    if (role === "deliverer") {
+      const { error: delivererError } = await supabase
+        .from("deliverers")
+        .insert({
+          user_id: data.user.id,
+          vehicle_id: vehicleId,
+          is_available: true,
+          current_location: null,
+          zone: null,
+          profile_picture: null,
+          is_verified: true,
+        });
+
+      if (delivererError)
+        throw new Error("Failed to create deliverer profile.");
+    }
   }
 
   return data;
@@ -92,15 +116,23 @@ export const createDeliverer = async (delivererData) => {
   } = await supabase.auth.getUser();
   if (!user) throw new Error("No user logged in");
 
+  // Insert deliverer-specific details into the deliverers table
   const { data, error } = await supabase
     .from("deliverers")
     .insert({
-      ...delivererData,
-      user_id: user.id,
+      user_id: user.id, // Link to the user
+      vehicle_id: delivererData.vehicleId || null,
+      is_available: delivererData.isAvailable || true,
+      current_location: delivererData.currentLocation || null,
+      zone: delivererData.zone || null,
+      profile_picture: delivererData.profilePicture || null,
     })
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error creating deliverer profile:", error.message);
+    throw new Error("Failed to create deliverer profile.");
+  }
 
   return data;
 };

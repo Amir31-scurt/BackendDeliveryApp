@@ -38,6 +38,51 @@ router.post("/signup", async (req, res) => {
       return res.status(500).json({ error: "Erreur interne du serveur." });
     }
 
+    // If the role is "deliverer", skip OTP and save directly to the database
+    if (role === "deliverer") {
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Save user to the database
+      const { data, error } = await supabase.from("users").insert({
+        phone_number: phoneNumber,
+        name,
+        password: hashedPassword,
+        role: "deliverer",
+        is_verified: true, // Deliverers are verified by admin
+      });
+
+      if (error) {
+        console.error("Erreur lors de l'enregistrement du livreur:", error);
+        return res.status(500).json({ error: "Erreur interne du serveur." });
+      }
+
+      // Insert deliverer-specific information into the `deliverers` table
+      const { error: delivererError } = await supabase
+        .from("deliverers")
+        .insert({
+          user_id: data[0].id,
+          vehicle_id: null, // Default fields for deliverers
+          is_available: true,
+          current_location: null,
+          zone: null,
+          profile_picture: null,
+        });
+
+      if (delivererError) {
+        console.error(
+          "Erreur lors de l'enregistrement des informations du livreur:",
+          delivererError
+        );
+        return res.status(500).json({ error: "Erreur interne du serveur." });
+      }
+
+      return res.status(201).json({
+        message: "Livreur ajouté avec succès.",
+        user: data,
+      });
+    }
+
     // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
     const expiresAt = addMinutes(new Date(), 5); // OTP expires in 5 minutes

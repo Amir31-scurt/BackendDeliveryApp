@@ -5,13 +5,30 @@ const UserSchema = new mongoose.Schema({
   name: { type: String, required: true },
   phoneNumber: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ["customer", "admin"], default: "customer" },
+  role: {
+    type: String,
+    enum: ["customer", "admin", "deliverer"],
+    default: "customer",
+  },
   otp: { type: String },
   otpExpires: { type: Date },
   isVerified: { type: Boolean, default: false },
   profilePicture: { type: String },
   address: { type: String },
 });
+
+const DelivererSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  vehicleId: { type: String, required: true },
+  isAvailable: { type: Boolean, default: true },
+  currentLocation: {
+    type: { type: String, enum: ["Point"], default: "Point" },
+    coordinates: { type: [Number], default: [0, 0] },
+  },
+  zone: { type: String },
+});
+
+DelivererSchema.index({ currentLocation: "2dsphere" });
 
 UserSchema.pre("save", async function (next) {
   if (this.isModified("password")) {
@@ -25,5 +42,6 @@ UserSchema.methods.comparePassword = function (candidatePassword) {
 };
 
 const User = mongoose.model("User", UserSchema);
+const Deliverer = mongoose.model("Deliverer", DelivererSchema);
 
-export default User;
+export default { User, Deliverer };
