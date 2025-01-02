@@ -44,13 +44,17 @@ router.post("/signup", async (req, res) => {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Save user to the database
-      const { data, error } = await supabase.from("users").insert({
-        phone_number: phoneNumber,
-        name,
-        password: hashedPassword,
-        role: "deliverer",
-        is_verified: true, // Deliverers are verified by admin
-      });
+      const { data: userData, error } = await supabase
+        .from("users")
+        .insert({
+          phone_number: phoneNumber,
+          name,
+          password: hashedPassword,
+          role: "deliverer",
+          is_verified: true, // Deliverers are verified by admin
+        })
+        .select() // Ensures the inserted data is returned
+        .single(); // Return a single row
 
       if (error) {
         console.error("Erreur lors de l'enregistrement du livreur:", error);
@@ -61,7 +65,7 @@ router.post("/signup", async (req, res) => {
       const { error: delivererError } = await supabase
         .from("deliverers")
         .insert({
-          user_id: data[0].id,
+          user_id: userData.id,
           vehicle_id: null, // Default fields for deliverers
           is_available: true,
           current_location: null,
@@ -74,12 +78,14 @@ router.post("/signup", async (req, res) => {
           "Erreur lors de l'enregistrement des informations du livreur:",
           delivererError
         );
-        return res.status(500).json({ error: "Erreur interne du serveur." });
+        return res
+          .status(500)
+          .json({ error: "Erreur interne du serveur." + error, user: data });
       }
 
       return res.status(201).json({
         message: "Livreur ajouté avec succès.",
-        user: data,
+        user: userData,
       });
     }
 
