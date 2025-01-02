@@ -1,42 +1,104 @@
+import bcrypt from "bcrypt";
 import express from "express";
-import authMiddleware from "../middleware/auth.js";
+import jwt from "jsonwebtoken";
 import Order from "../models/Order.js";
 import Restaurant from "../models/Restaurant.js";
-import Deliverer from "../models/User.js";
+import { default as Deliverer } from "../models/User.js";
+import { supabase } from "../supabaseClient.js";
 
 const router = express.Router();
 
-const isAdmin = (req, res, next) => {
-  // Check if session and user exist
-  console.log("Session:", req.session);
-  console.log("Session User:", req.session?.user);
-  return next(); // User is admin; proceed to the next middleware or route
-  // if (req.session && req.session.user) {
-  //   if (req.session.user.role === "admin") {
-  //   } else {
-  //     console.warn("Unauthorized access attempt by non-admin user");
-  //     return res.status(403).send("Access denied. Admins only.");
-  //   }
-  // } else {
-  //   console.warn("Unauthorized access attempt without valid session");
-  //   return res.redirect("/admin/login"); // Redirect to login if no session or user
-  // }
+const isAdmin = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ error: "Unauthorized access." });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const { data: adminUser, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", decoded.id)
+      .single();
+
+    if (error || !adminUser || adminUser.role !== "admin") {
+      return res.status(403).json({ error: "Access denied. Admins only." });
+    }
+
+    req.user = adminUser; // Attach admin user to request
+    next();
+  } catch (error) {
+    console.error("Authentication error:", error);
+    res.status(403).json({ error: "Invalid or expired token." });
+  }
 };
 
-// Login route
+// Admin login route
+router.post("/login", async (req, res) => {
+  const { phoneNumber, password } = req.body;
+
+  if (!phoneNumber || !password) {
+    return res
+      .status(400)
+      .json({ error: "Phone number and password are required." });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("phone_number", phoneNumber)
+      .eq("role", "admin");
+
+    if (error) {
+      console.error(error);
+      return res.status(404).json({ error: "Admin not found." });
+    }
+
+    // Handle no matching user
+    if (!data) {
+      return res.status(404).json({ error: "Admin not found." });
+    }
+
+    const user = data;
+
+    // Log retrieved user data
+    console.log("Retrieved User:", user[0]);
+
+    const isValidPassword = await bcrypt.compare(password, user[0].password);
+    if (!isValidPassword) {
+      return res.status(400).json({ error: "Invalid credentials." });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+
+    res.status(200).json({
+      message: "Login successful.",
+      token,
+      user: user[0],
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "An error occurred during login." });
+  }
+});
+
 router.get("/login", (req, res) => {
   res.render("admin/login");
 });
 
-router.post("/login", authMiddleware.adminLogin);
-
-// Logout route
-router.get("/logout", (req, res) => {
+// Admin logout route
+router.post("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       console.error("Session destruction error:", err);
+      return res.status(500).json({ error: "Failed to logout." });
     }
-    res.redirect("/admin/login");
+    res.status(200).json({ message: "Logout successful." });
   });
 });
 

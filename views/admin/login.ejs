@@ -15,41 +15,35 @@
         const phoneNumber = document.getElementById("phoneNumber").value;
         const password = document.getElementById("password").value;
 
-        const query = `
-          mutation {
-            login(phoneNumber: "${phoneNumber}", password: "${password}") {
-              user {
-                id
-                role
-                phoneNumber
-              }
-            }
-          }
-        `;
-
         try {
-          const response = await fetch("/graphql", {
+          const response = await fetch("/admin/login", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ query }),
+            body: JSON.stringify({ phoneNumber, password }),
           });
 
           const result = await response.json();
 
-          if (result.data && result.data.login) {
-            const { user } = result.data.login;
-            console.log(result);
+          if (response.ok && result.token) {
+            // Store token in localStorage
+            localStorage.setItem("authToken", result.token);
+
+            const { user } = result;
+            console.log("Logged-in user:", user);
 
             // Redirect admin users to the dashboard
             if (user.role === "admin") {
-              window.location.href = "/admin";
+              window.location.href = "/admin/dashboard";
             } else {
               alert("Unauthorized access. Only admins can log in.");
             }
           } else {
-            alert("Invalid phone number or password. Please try again.");
+            alert(
+              result.error ||
+                "Invalid phone number or password. Please try again."
+            );
           }
         } catch (error) {
           console.error("Login error:", error);
@@ -59,8 +53,8 @@
     </script>
   </head>
   <body class="bg-gray-100">
-    <div class="max-w-md mx-auto bg-white p-8 rounded shadow">
-      <h2 class="text-2xl font-bold mb-6">Admin Login</h2>
+    <div class="max-w-md mx-auto bg-white p-8 rounded shadow mt-20">
+      <h2 class="text-2xl font-bold mb-6 text-center">Admin Login</h2>
       <form onsubmit="handleLogin(event)">
         <div class="mb-4">
           <label

@@ -8,8 +8,8 @@ import path from "path";
 import resolvers from "./resolvers.js";
 import adminRoutes from "./routes/admin.js";
 import authRoutes from "./routes/auth.js";
-import delivererRoutes from "./routes/deliverers.js";
 import { supabase } from "./supabaseClient.js";
+// import { supabase } from "./supabaseClient.js";
 
 dotenv.config();
 
@@ -37,15 +37,6 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));
-// Admin routes
-app.use("/admin", adminRoutes);
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/deliverers", delivererRoutes);
-
-app.use(expressEjsLayouts);
-app.set("layout", "admin/layout");
-app.set("layout", "admin/restaurants");
 
 // Setup GraphQL server
 const typeDefs = readFileSync(path.join(__dirname, "schema.graphql"), "utf8");
@@ -72,3 +63,11 @@ app.listen(PORT, () => {
 app.get("/", (req, res) => {
   res.send("Food Delivery API is running");
 });
+// Admin routes
+app.use("/admin", adminRoutes);
+// Routes
+app.use("/api/auth", authRoutes);
+
+app.use(expressEjsLayouts);
+app.set("layout", "admin/layout");
+app.set("layout", "admin/restaurants");
