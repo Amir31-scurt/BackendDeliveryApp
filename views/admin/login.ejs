@@ -26,12 +26,13 @@
 
           const result = await response.json();
 
-          if (response.ok && result.token) {
+          if (response.ok) {
             // Store token in localStorage
-            localStorage.setItem("authToken", result.token);
+            console.log("result", result.token);
 
             const { user } = result;
             console.log("Logged-in user:", user);
+            localStorage.setItem("authToken", result.token);
 
             // Redirect admin users to the dashboard
             if (user.role === "admin") {

@@ -1,12 +1,22 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { validateEmail } from "./utils/validators.js";
 
 const resolvers = {
   Query: {
     restaurants: async (_, __, { supabase }) => {
       const { data, error } = await supabase.from("restaurants").select("*");
       if (error) throw new Error(error.message);
-      return data;
+
+      // Handle null phone numbers
+      const sanitizedData = data.map((restaurant) => ({
+        ...restaurant,
+        phoneNumber: restaurant.phone_number || "Not provided", // Fallback value
+        createdAt: restaurant.created_at || "Not provided", // Fallback value
+        updatedAt: restaurant.updated_at || "Not provided", // Fallback value
+        isActive: restaurant.is_active || "Not provided", // Fallback value
+        imageUrl: restaurant.image_url || "Not provided", // Fallback value
+      }));
+
+      return sanitizedData;
     },
     restaurant: async (_, { id }, { supabase }) => {
       const { data, error } = await supabase
@@ -17,94 +27,65 @@ const resolvers = {
       if (error) throw new Error(error.message);
       return data;
     },
-    orders: async (_, __, { supabase }) => {
-      const { data, error } = await supabase.from("orders").select("*");
-      if (error) throw new Error(error.message);
-      return data;
-    },
-    order: async (_, { id }, { supabase }) => {
+    searchRestaurants: async (_, { query }, { supabase }) => {
       const { data, error } = await supabase
-        .from("orders")
+        .from("restaurants")
         .select("*")
-        .eq("id", id)
-        .single();
+        .or(`name.ilike.%${query}%,address.ilike.%${query}%`);
       if (error) throw new Error(error.message);
       return data;
     },
   },
   Mutation: {
-    // createRestaurant: async (_, { input }, { supabase }) => {
-    //   const { data, error } = await supabase
-    //     .from("restaurants")
-    //     .insert([input])
-    //     .select()
-    //     .single();
-    //   if (error) throw new Error(error.message);
-    //   return data;
-    // },
-    // updateRestaurant: async (_, { id, input }, { supabase }) => {
-    //   const { data, error } = await supabase
-    //     .from("restaurants")
-    //     .update(input)
-    //     .eq("id", id)
-    //     .select()
-    //     .single();
-    //   if (error) throw new Error(error.message);
-    //   return data;
-    // },
-    // deleteRestaurant: async (_, { id }, { supabase }) => {
-    //   const { error } = await supabase
-    //     .from("restaurants")
-    //     .delete()
-    //     .eq("id", id);
-    //   if (error) throw new Error(error.message);
-    //   return true;
-    // },
-    // createOrder: async (_, { input }, { supabase }) => {
-    //   const { data, error } = await supabase
-    //     .from("orders")
-    //     .insert([input])
-    //     .select()
-    //     .single();
-    //   if (error) throw new Error(error.message);
-    //   return data;
-    // },
-    // updateOrderStatus: async (_, { id, status }, { supabase }) => {
-    //   const { data, error } = await supabase
-    //     .from("orders")
-    //     .update({ status })
-    //     .eq("id", id)
-    //     .select()
-    //     .single();
-    //   if (error) throw new Error(error.message);
-    //   return data;
-    // },
-    register: async (_, { input }, { supabase }) => {
-      const { username, email, password } = input;
-      const hashedPassword = await bcrypt.hash(password, 10);
+    createRestaurant: async (_, { input }, { supabase }) => {
+      if (!validateEmail(input.email)) {
+        throw new Error(`${input.email} n'est pas un adresse mail valide!`);
+      }
+
+      // Map GraphQL fields to Supabase fields
+      const dbInput = {
+        ...input,
+        phone_number: input.phoneNumber,
+        opening_hours: input.openingHours, // Map openingHours to opening_hours
+        is_active: input.isActive, // Map isActive to is_active
+        image_url: input.imageUrl, // Map isActive to is_active
+      };
+
+      delete dbInput.openingHours; // Remove GraphQL-only field
+      delete dbInput.isActive; // Remove GraphQL-only field
+      delete dbInput.phoneNumber; // Remove GraphQL-only field
+      delete dbInput.imageUrl; // Remove GraphQL-only field
+
       const { data, error } = await supabase
-        .from("users")
-        .insert([{ username, email, password: hashedPassword }])
+        .from("restaurants")
+        .insert([dbInput])
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+
+    updateRestaurant: async (_, { id, input }, { supabase }) => {
+      if (input.email && !validateEmail(input.email)) {
+        throw new Error(`${input.email} n'est pas un adresse mail valide!`);
+      }
+      const { data, error } = await supabase
+        .from("restaurants")
+        .update(input)
+        .eq("id", id)
         .select()
         .single();
       if (error) throw new Error(error.message);
-      return jwt.sign({ userId: data.id }, process.env.JWT_SECRET, {
-        expiresIn: "1d",
-      });
+      return data;
     },
-    login: async (_, { input }, { supabase }) => {
-      const { username, password } = input;
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("username", username)
-        .single();
-      if (error) throw new Error("User not found");
-      const valid = await bcrypt.compare(password, data.password);
-      if (!valid) throw new Error("Invalid password");
-      return jwt.sign({ userId: data.id }, process.env.JWT_SECRET, {
-        expiresIn: "1d",
-      });
+    deleteRestaurant: async (_, { id }, { supabase }) => {
+      const { error } = await supabase
+        .from("restaurants")
+        .delete()
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+      return true;
     },
   },
 };

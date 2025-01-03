@@ -12,7 +12,7 @@
 
   <div class="bg-white p-6 rounded-lg shadow mb-8">
     <h2 class="text-2xl font-bold mb-6">Add New Restaurant</h2>
-    <form action="/admin/restaurants/add" method="POST" class="space-y-4">
+    <form id="restaurantForm" class="space-y-4">
       <!-- Restaurant Name -->
       <div>
         <label for="name" class="block text-sm font-medium text-gray-700"
@@ -63,14 +63,16 @@
         <label for="cuisine" class="block text-sm font-medium text-gray-700"
           >type</label
         >
-        <input
-          type="text"
+        <select
           id="type"
           name="type"
           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          placeholder="Enter type"
           required
-        />
+        >
+          <option value="restaurant">Restaurant</option>
+          <option value="boulangerie">Boulangerie</option>
+          <option value="express">Express</option>
+        </select>
       </div>
 
       <!-- Phone Number -->
@@ -169,7 +171,8 @@
       <!-- Submit Button -->
       <div>
         <button
-          type="submit"
+          type="button"
+          onclick="submitRestaurant()"
           class="w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
         >
           Add Restaurant
@@ -210,48 +213,131 @@
         </tr>
       </thead>
       <tbody>
-        <% restaurants.forEach(restaurant => { %>
+        <% if (restaurants && restaurants.length > 0) { %> <%
+        restaurants.forEach((restaurant) => { %>
         <tr>
           <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-            <div class="text-sm leading-5 font-medium text-gray-900">
-              <%= restaurant.name %>
-            </div>
+            <%= restaurant.name %>
           </td>
           <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-            <div class="text-sm leading-5 text-gray-500">
-              <%= restaurant.address %>
-            </div>
+            <%= restaurant.address %>
           </td>
           <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-            <div class="text-sm leading-5 text-gray-500">
-              <%= restaurant.type %>
-            </div>
+            <%= restaurant.type %>
           </td>
           <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-            <span
-              class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <%= restaurant.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' %>"
-            >
-              <%= restaurant.isActive ? 'Active' : 'Inactive' %>
-            </span>
+            <%= restaurant.isActive ? "Active" : "Inactive" %>
           </td>
-          <td
-            class="px-6 py-4 whitespace-no-wrap border-b border-gray-300 text-sm leading-5 font-medium"
-          >
-            <a
-              href="/admin/restaurants/<%= restaurant._id %>/edit"
-              class="text-indigo-600 hover:text-indigo-900 mr-3"
-              >Edit</a
-            >
-            <a
-              href="/admin/restaurants/<%= restaurant._id %>/toggle"
-              class="text-<%= restaurant.isActive ? 'red' : 'green' %>-600 hover:text-<%= restaurant.isActive ? 'red' : 'green' %>-900"
-            >
-              <%= restaurant.isActive ? 'Deactivate' : 'Activate' %>
-            </a>
+          <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
+            <a href="#" class="text-indigo-600 hover:text-indigo-900">Edit</a>
           </td>
         </tr>
-        <% }); %>
+        <% }); %> <% } else { %>
+        <tr>
+          <td colspan="5" class="text-center py-4 text-gray-500">
+            No restaurants found.
+          </td>
+        </tr>
+        <% } %>
       </tbody>
     </table>
   </div>
+  <script>
+    async function submitRestaurant() {
+      const form = document.getElementById("restaurantForm");
+      const formData = new FormData(form);
+
+      const input = {
+        name: formData.get("name"),
+        description: formData.get("description"),
+        address: formData.get("address"),
+        type: formData.get("type").toUpperCase(),
+        phoneNumber: formData.get("phoneNumber"),
+        email: formData.get("email"),
+        imageUrl: formData.get("imageUrl") || null,
+        isActive: formData.get("isActive") === "true",
+        openingHours: {
+          monday: {
+            open: formData.get("openingHours[monday][open]"),
+            close: formData.get("openingHours[monday][close]"),
+          },
+          tuesday: {
+            open: formData.get("openingHours[tuesday][open]"),
+            close: formData.get("openingHours[tuesday][close]"),
+          },
+          wednesday: {
+            open: formData.get("openingHours[wednesday][open]"),
+            close: formData.get("openingHours[wednesday][close]"),
+          },
+          thursday: {
+            open: formData.get("openingHours[thursday][open]"),
+            close: formData.get("openingHours[thursday][close]"),
+          },
+          friday: {
+            open: formData.get("openingHours[friday][open]"),
+            close: formData.get("openingHours[friday][close]"),
+          },
+          saturday: {
+            open: formData.get("openingHours[saturday][open]"),
+            close: formData.get("openingHours[saturday][close]"),
+          },
+          sunday: {
+            open: formData.get("openingHours[sunday][open]"),
+            close: formData.get("openingHours[sunday][close]"),
+          },
+        },
+      };
+
+      const query = `
+      mutation {
+        createRestaurant(input: {
+          name: "${input.name}",
+          description: "${input.description}",
+          address: "${input.address}",
+          type: ${input.type},
+          phoneNumber: "${input.phoneNumber}",
+          email: "${input.email}",
+          imageUrl: "${input.imageUrl}",
+          isActive: "${input.isActive}",
+          openingHours: {
+            monday: { open: "${input.openingHours.monday.open}", close: "${input.openingHours.monday.close}" }
+            tuesday: { open: "${input.openingHours.tuesday.open}", close: "${input.openingHours.tuesday.close}" }
+            wednesday: { open: "${input.openingHours.wednesday.open}", close: "${input.openingHours.wednesday.close}" }
+            thursday: { open: "${input.openingHours.thursday.open}", close: "${input.openingHours.thursday.close}" }
+            friday: { open: "${input.openingHours.friday.open}", close: "${input.openingHours.friday.close}" }
+            saturday: { open: "${input.openingHours.saturday.open}", close: "${input.openingHours.saturday.close}" }
+            sunday: { open: "${input.openingHours.sunday.open}", close: "${input.openingHours.sunday.close}" }
+          }
+        }) {
+          id
+          name
+        }
+      }
+    `;
+
+      try {
+        const response = await fetch("/graphql", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query }),
+        });
+
+        console.log(JSON.stringify({ query }));
+
+        const result = await response.json();
+        if (result.errors) {
+          alert("Error creating restaurant: " + result.errors[0].message);
+          return;
+        }
+
+        alert("Restaurant added successfully!");
+        window.location.reload(); // Reload to refresh the restaurant list
+      } catch (error) {
+        console.error("Error:", error);
+        alert("An error occurred. Please try again.");
+      }
+    }
+  </script>
 </body>

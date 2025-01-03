@@ -1,36 +1,31 @@
+import { ApolloServer, gql } from "apollo-server-express";
 import bcrypt from "bcrypt";
 import express from "express";
 import jwt from "jsonwebtoken";
-import Order from "../models/Order.js";
-import Restaurant from "../models/Restaurant.js";
-import { default as Deliverer } from "../models/User.js";
 import { supabase } from "../supabaseClient.js";
+import { graphqlRequest } from "../utils/graphqlClient.js";
 
 const router = express.Router();
 
-const isAdmin = async (req, res, next) => {
+export const isAdmin = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1]; // Extract token from `Authorization` header
+  console.log(req.headers);
+
+  if (!token) {
+    return res.status(401).json({ error: "Access denied. No token provided." });
+  }
+
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) {
-      return res.status(401).json({ error: "Unauthorized access." });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const { data: adminUser, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", decoded.id)
-      .single();
-
-    if (error || !adminUser || adminUser.role !== "admin") {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
+    if (decoded.role !== "admin") {
       return res.status(403).json({ error: "Access denied. Admins only." });
     }
 
-    req.user = adminUser; // Attach admin user to request
+    req.user = decoded; // Attach user information to the request object
     next();
   } catch (error) {
-    console.error("Authentication error:", error);
-    res.status(403).json({ error: "Invalid or expired token." });
+    console.error("Token verification failed:", error);
+    return res.status(401).json({ error: "Invalid token." });
   }
 };
 
@@ -103,60 +98,91 @@ router.post("/logout", (req, res) => {
 });
 
 // Dashboard route
-router.get("/", isAdmin, async (req, res) => {
+router.get("/dashboard", async (req, res) => {
   try {
-    const totalOrders = await Order.countDocuments();
-    const activeRestaurants = await Restaurant.countDocuments({
-      isActive: true,
-    });
-    const activeDeliverers = await Deliverer.countDocuments({
-      isAvailable: true,
-    });
-    const totalRevenue = await Order.aggregate([
-      { $group: { _id: null, total: { $sum: "$totalAmount" } } },
-    ]);
+    // Fetch total restaurants
+    const { data: totalRestaurants, error: restaurantError } = await supabase
+      .from("restaurants")
+      .select("*", { count: "exact" });
 
-    const monthlyOrders = await Order.aggregate([
-      {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
-          count: { $sum: 1 },
-        },
-      },
-      { $sort: { _id: 1 } },
-      { $limit: 6 },
-      { $project: { month: "$_id", orders: "$count", _id: 0 } },
-    ]);
+    if (restaurantError) {
+      console.error("Error fetching restaurant data:", restaurantError);
+    }
 
+    // Fetch total deliverers
+    const { data: totalDeliverers, error: delivererError } = await supabase
+      .from("deliverers")
+      .select("*", { count: "exact" });
+
+    if (delivererError) {
+      console.error("Error fetching deliverer data:", delivererError);
+    }
+
+    // Fetch total orders (example logic, adjust to your database schema)
+    const { data: totalOrders, error: orderError } = await supabase
+      .from("orders")
+      .select("*", { count: "exact" });
+
+    if (orderError) {
+      console.error("Error fetching orders data:", orderError);
+    }
+
+    // Pass all data to the EJS template
     res.render("admin/dashboard", {
-      layout: "admin/layout",
-      title: "Dashboard",
-      totalOrders,
-      activeRestaurants,
-      activeDeliverers,
-      totalRevenue: totalRevenue[0]?.total || 0,
-      monthlyOrders,
+      totalOrders: totalOrders ? totalOrders.length : 0,
+      totalRestaurants: totalRestaurants ? totalRestaurants.length : 0,
+      totalDeliverers: totalDeliverers ? totalDeliverers.length : 0,
     });
   } catch (error) {
     console.error("Dashboard error:", error);
-    res.status(500).send("An error occurred");
+    res.status(500).send("An error occurred.");
   }
 });
 
-// Restaurants route
-router.get("/restaurants", isAdmin, async (req, res) => {
+// Render the admin restaurants page
+router.get("/restaurants", async (req, res) => {
   try {
-    const restaurants = await Restaurant.find();
-    res.render("admin/restaurants", { restaurants });
+    console.log("Fetching restaurants...");
+    const query = `
+      query {
+        restaurants {
+          id
+          name
+          description
+          address
+          type
+          phoneNumber
+          email
+          imageUrl
+          isActive
+          createdAt
+          updatedAt
+        }
+      }
+    `;
+    const restaurants = await graphqlRequest(query);
+
+    console.log("Fetched restaurants:", restaurants);
+
+    if (!restaurants || !restaurants.restaurants) {
+      console.error("No restaurants found or restaurants undefined.");
+      throw new Error("Failed to fetch restaurants.");
+    }
+
+    res.render("admin/restaurants", {
+      layout: "admin/layout",
+      title: "Restaurants",
+      restaurants: restaurants.restaurants,
+    });
   } catch (error) {
-    console.error("Restaurants error:", error);
-    res.status(500).send("An error occurred");
+    console.error("Error fetching restaurants:", error.message);
+    res.status(500).send("An error occurred while fetching restaurants.");
   }
 });
 
-router.post("/restaurants/add", async (req, res) => {
+// Handle adding a new restaurant
+router.post("/restaurants/add", isAdmin, async (req, res) => {
   try {
-    console.log("Request Body:", req.body); // Log the incoming data
     const {
       name,
       description,
@@ -165,33 +191,176 @@ router.post("/restaurants/add", async (req, res) => {
       phoneNumber,
       email,
       imageUrl,
-      isActive,
       openingHours,
     } = req.body;
 
-    // Create a new restaurant object
-    const newRestaurant = new Restaurant({
-      name,
-      description,
-      address,
-      type,
-      phoneNumber,
-      email,
-      imageUrl,
-      isActive: isActive === "true", // Convert string to boolean
-      openingHours,
-    });
+    // Format openingHours to GraphQL-compliant string
+    const formattedOpeningHours = JSON.stringify(openingHours).replace(
+      /"([^"]+)":/g,
+      "$1:"
+    );
 
-    // Save the new restaurant to the database
-    await newRestaurant.save();
+    const mutation = `
+      mutation {
+        createRestaurant(input: {
+          name: "${name}",
+          description: "${description}",
+          address: "${address}",
+          type: ${type.toUpperCase()},
+          phoneNumber: "${phoneNumber}",
+          email: "${email}",
+          imageUrl: "${imageUrl}",
+          openingHours: ${formattedOpeningHours}
+        }) {
+          id
+          name
+          description
+          address
 
-    // Redirect back to the restaurants page
+        }
+      }
+    `;
+
+    // Execute GraphQL request
+    const { data, errors } = await graphqlRequest(mutation);
+
+    if (errors) {
+      console.error("GraphQL Errors:", errors);
+      throw new Error(errors[0].message);
+    }
+
+    console.log(data);
+
     res.redirect("/admin/restaurants");
   } catch (error) {
     console.error("Error adding restaurant:", error);
-    res.status(500).send("An error occurred while adding the restaurant.");
+    res.status(500).send("Failed to add restaurant.");
   }
 });
+
+// Handle toggling the restaurant's active status
+router.post("/restaurants/:id/toggle", isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    const mutation = `
+      mutation {
+        updateRestaurant(id: "${id}", input: { isActive: ${isActive} }) {
+          id
+        }
+      }
+    `;
+
+    await graphqlRequest(mutation);
+
+    res.redirect("/admin/restaurants");
+  } catch (error) {
+    console.error("Error toggling restaurant status:", error);
+    res.status(500).send("Failed to update restaurant status.");
+  }
+});
+
+// Handle deleting a restaurant
+router.post("/restaurants/:id/delete", isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const mutation = `
+      mutation {
+        deleteRestaurant(id: "${id}")
+      }
+    `;
+
+    await graphqlRequest(mutation);
+
+    res.redirect("/admin/restaurants");
+  } catch (error) {
+    console.error("Error deleting restaurant:", error);
+    res.status(500).send("Failed to delete restaurant.");
+  }
+});
+
+// GraphQL Schema for Restaurants
+const typeDefs = gql`
+  type Restaurant {
+    id: ID!
+    name: String!
+    description: String
+    address: String
+    type: String
+    phoneNumber: String
+    email: String
+    imageUrl: String
+    isActive: Boolean
+    openingHours: String
+  }
+
+  type Query {
+    restaurants: [Restaurant]
+    restaurant(id: ID!): Restaurant
+  }
+
+  type Mutation {
+    addRestaurant(
+      name: String!
+      description: String
+      address: String
+      type: String
+      phoneNumber: String
+      email: String
+      imageUrl: String
+      isActive: Boolean
+      openingHours: String
+    ): Restaurant
+  }
+`;
+
+// GraphQL Resolvers for Restaurants
+const resolvers = {
+  Query: {
+    restaurants: async () => {
+      const { data, error } = await supabase.from("restaurants").select("*");
+      if (error) throw new Error("Error fetching restaurants.");
+      return data;
+    },
+    restaurant: async (_, { id }) => {
+      const { data, error } = await supabase
+        .from("restaurants")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error) throw new Error("Error fetching restaurant.");
+      return data;
+    },
+  },
+  Mutation: {
+    addRestaurant: async (_, args) => {
+      const { data, error } = await supabase
+        .from("restaurants")
+        .insert(args)
+        .select()
+        .single();
+      if (error) throw new Error("Error adding restaurant.");
+      return data;
+    },
+  },
+};
+
+// Setup ApolloServer for GraphQL
+const graphqlServer = new ApolloServer({
+  typeDefs,
+  resolvers,
+  context: ({ req }) => {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) throw new Error("Unauthorized");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    return { userId: decoded.id };
+  },
+});
+
+await graphqlServer.start();
+graphqlServer.applyMiddleware({ app: router, path: "/graphql" });
 
 // Add more routes for other admin functionalities (e.g., orders, deliverers)
 

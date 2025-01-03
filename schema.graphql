@@ -1,145 +1,87 @@
-type User {
-  id: ID!
-  username: String!
-  email: String!
-  role: String!
-  address: String
-  phoneNumber: String
-}
-
 type Restaurant {
   id: ID!
   name: String!
+  description: String!
   address: String!
-  cuisine: String!
-  isActive: Boolean!
-  menu: [MenuItem!]!
-}
-
-type MenuItem {
-  id: ID!
-  name: String!
-  description: String
-  price: Float!
-  restaurant: Restaurant!
-}
-
-type Order {
-  id: ID!
-  user: User!
-  restaurant: Restaurant!
-  items: [OrderItem!]!
-  totalAmount: Float!
-  status: String!
-  deliveryAddress: String!
-  createdAt: String!
-}
-
-type OrderItem {
-  menuItem: MenuItem!
-  quantity: Int!
-}
-
-type Deliverer {
-  id: ID!
-  name: String!
+  type: RestaurantType!
+  openingHours: OpeningHours!
   phoneNumber: String!
-  vehicleId: String!
-  isAvailable: Boolean!
-  currentLocation: Location!
-}
-
-type Location {
-  type: String!
-  coordinates: [Float!]!
-}
-
-type AuthPayload {
-  token: String!
-  user: User!
-}
-
-type DashboardData {
-  kpis: KPIs!
-  monthlyOrders: [MonthlyOrder!]!
-}
-
-type KPIs {
-  totalOrders: Int!
-  activeRestaurants: Int!
-  activeDeliverers: Int!
-  totalRevenue: Float!
-}
-
-type MonthlyOrder {
-  month: String!
-  orders: Int!
-}
-
-input LoginInput {
-  username: String!
-  password: String!
-}
-
-input RegisterInput {
-  username: String!
   email: String!
-  password: String!
-  address: String
-  phoneNumber: String
+  rating: Float
+  imageUrl: String
+  isActive: Boolean
+  createdAt: String!
+  updatedAt: String!
 }
 
-input RestaurantInput {
-  name: String!
-  address: String!
-  cuisine: String!
+enum RestaurantType {
+  RESTAURANT
+  BOULANGERIE
+  EXPRESS
 }
 
-input MenuItemInput {
-  name: String!
-  description: String
-  price: Float!
-  restaurantId: ID!
+type OpeningHours {
+  monday: DailyHours!
+  tuesday: DailyHours!
+  wednesday: DailyHours!
+  thursday: DailyHours!
+  friday: DailyHours!
+  saturday: DailyHours!
+  sunday: DailyHours!
 }
 
-input OrderInput {
-  restaurantId: ID!
-  items: [OrderItemInput!]!
-  deliveryAddress: String!
-}
-
-input OrderItemInput {
-  menuItemId: ID!
-  quantity: Int!
-}
-
-input DelivererInput {
-  name: String!
-  phoneNumber: String!
-  vehicleId: String!
+type DailyHours {
+  open: String!
+  close: String!
 }
 
 type Query {
-  me: User
-  restaurant(id: ID!): Restaurant
   restaurants: [Restaurant!]!
-  menuItems(restaurantId: ID!): [MenuItem!]!
-  order(id: ID!): Order
-  orders: [Order!]!
-  deliverer(id: ID!): Deliverer
-  deliverers: [Deliverer!]!
-  dashboardData: DashboardData!
+  restaurant(id: ID!): Restaurant
+  searchRestaurants(query: String!): [Restaurant!]!
 }
 
 type Mutation {
-  login(input: LoginInput!): AuthPayload!
-  register(input: RegisterInput!): AuthPayload!
-  addRestaurant(input: RestaurantInput!): Restaurant!
-  updateRestaurantStatus(id: ID!, isActive: Boolean!): Restaurant!
-  addMenuItem(input: MenuItemInput!): MenuItem!
-  createOrder(input: OrderInput!): Order!
-  updateOrderStatus(id: ID!, status: String!): Order!
-  addDeliverer(input: DelivererInput!): Deliverer!
-  updateDelivererStatus(id: ID!, isAvailable: Boolean!): Deliverer!
-  updateDelivererLocation(id: ID!, lat: Float!, lng: Float!): Deliverer!
+  createRestaurant(input: CreateRestaurantInput!): Restaurant!
+  updateRestaurant(id: ID!, input: UpdateRestaurantInput!): Restaurant!
+  deleteRestaurant(id: ID!): Boolean!
+}
+
+input CreateRestaurantInput {
+  name: String!
+  description: String!
+  address: String!
+  type: RestaurantType!
+  openingHours: OpeningHoursInput!
+  phoneNumber: String!
+  email: String!
+  imageUrl: String
+  isActive: Boolean
+}
+
+input UpdateRestaurantInput {
+  name: String
+  description: String
+  address: String
+  type: RestaurantType
+  openingHours: OpeningHoursInput
+  phoneNumber: String
+  email: String
+  imageUrl: String
+  isActive: Boolean
+}
+
+input OpeningHoursInput {
+  monday: DailyHoursInput!
+  tuesday: DailyHoursInput!
+  wednesday: DailyHoursInput!
+  thursday: DailyHoursInput!
+  friday: DailyHoursInput!
+  saturday: DailyHoursInput!
+  sunday: DailyHoursInput!
+}
+
+input DailyHoursInput {
+  open: String!
+  close: String!
 }
