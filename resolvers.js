@@ -12,7 +12,7 @@ const resolvers = {
         phoneNumber: restaurant.phone_number || "Not provided", // Fallback value
         createdAt: restaurant.created_at || "Not provided", // Fallback value
         updatedAt: restaurant.updated_at || "Not provided", // Fallback value
-        isActive: restaurant.is_active || "Not provided", // Fallback value
+        isActive: restaurant.is_active || true, // Fallback value
         imageUrl: restaurant.image_url || "Not provided", // Fallback value
       }));
 
