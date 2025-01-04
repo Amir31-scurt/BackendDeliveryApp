@@ -109,6 +109,17 @@ router.get("/dashboard", async (req, res) => {
       console.error("Error fetching restaurant data:", restaurantError);
     }
 
+    // Fetch total restaurants
+    const { data: totalActiveRestaurants, error: activeRestaurantError } =
+      await supabase
+        .from("restaurants")
+        .select("*", { count: "exact" })
+        .eq("is_active", true);
+
+    if (activeRestaurantError) {
+      console.error("Error fetching restaurant data:", activeRestaurantError);
+    }
+
     // Fetch total deliverers
     const { data: totalDeliverers, error: delivererError } = await supabase
       .from("deliverers")
@@ -131,6 +142,9 @@ router.get("/dashboard", async (req, res) => {
     res.render("admin/dashboard", {
       totalOrders: totalOrders ? totalOrders.length : 0,
       totalRestaurants: totalRestaurants ? totalRestaurants.length : 0,
+      totalActiveRestaurants: totalActiveRestaurants
+        ? totalActiveRestaurants.length
+        : 0,
       totalDeliverers: totalDeliverers ? totalDeliverers.length : 0,
     });
   } catch (error) {
@@ -162,8 +176,6 @@ router.get("/restaurants", async (req, res) => {
     `;
     const restaurants = await graphqlRequest(query);
 
-    console.log("Fetched restaurants:", restaurants);
-
     if (!restaurants || !restaurants.restaurants) {
       console.error("No restaurants found or restaurants undefined.");
       throw new Error("Failed to fetch restaurants.");
@@ -177,6 +189,108 @@ router.get("/restaurants", async (req, res) => {
   } catch (error) {
     console.error("Error fetching restaurants:", error.message);
     res.status(500).send("An error occurred while fetching restaurants.");
+  }
+});
+
+// Restaurant Details Route
+router.get("/restaurants/:id/details", async (req, res) => {
+  const { id } = req.params;
+  console.log(id);
+
+  try {
+    // Fetch restaurant details
+    const restaurantQuery = `
+      query {
+        restaurant(id: "${id}") {
+          id
+          name
+          description
+          address
+          type
+          openingHours {
+            monday { open close }
+            tuesday { open close }
+            wednesday { open close }
+            thursday { open close }
+            friday { open close }
+            saturday { open close }
+            sunday { open close }
+          }
+          phoneNumber
+          email
+          imageUrl
+          isActive
+          createdAt
+          updatedAt
+        }
+      }
+    `;
+
+    const restaurantResult = await graphqlRequest(restaurantQuery);
+    console.log(restaurantResult.restaurant);
+    const restaurant = restaurantResult.restaurant;
+
+    if (!restaurant) {
+      return res.status(404).send("Restaurant not found.");
+    }
+
+    // Fetch menu items
+    const menuItemsQuery = `
+      query {
+        menuItems(restaurantId: "${id}") {
+          id
+          name
+          description
+          price
+          imageUrl
+          createdAt
+        }
+      }
+    `;
+    const menuItemsResult = await graphqlRequest(menuItemsQuery);
+    const menuItems = menuItemsResult.menuItems || [];
+
+    res.render("admin/restaurantDetails", {
+      layout: "admin/layout",
+      title: `Details of ${restaurant.name}`,
+      restaurant,
+      menuItems,
+    });
+  } catch (error) {
+    console.error("Error fetching restaurant details:", error.message);
+    res.status(500).send("An error occurred while fetching details.");
+  }
+});
+
+router.post("/upload", async (req, res) => {
+  try {
+    const { image, restaurantId } = req.body; // Ensure image is sent as a base64 or binary file
+    const fileName = `${restaurantId}-${Date.now()}.jpg`;
+
+    const { data, error } = await supabase.storage
+      .from("restaurant-images")
+      .upload(fileName, image, {
+        contentType: "image/jpeg",
+      });
+
+    if (error) throw new Error(error.message);
+
+    const { publicUrl } = supabase.storage
+      .from("restaurant-images")
+      .getPublicUrl(fileName);
+
+    // Save the public URL in your restaurants table
+    const { error: dbError } = await supabase
+      .from("restaurants")
+      .update({ image_url: publicUrl })
+      .eq("id", restaurantId);
+
+    if (dbError) throw new Error(dbError.message);
+
+    res.status(200).json({ message: "Image uploaded successfully", publicUrl });
+  } catch (err) {
+    console.error("Upload error:", err);
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -281,6 +395,46 @@ router.post("/restaurants/:id/delete", isAdmin, async (req, res) => {
   }
 });
 
+// Add Menu Item Route
+router.post("/restaurants/:id/menu/add", async (req, res) => {
+  const { id } = req.params;
+  const { name, description, price, category, imageUrl } = req.body;
+
+  console.log(req.body);
+
+  try {
+    const addMenuItemMutation = `
+      mutation {
+        addMenuItem(input: {
+          name: "${name}",
+          description: "${description}",
+          price: ${parseFloat(price)},
+          category: ${category},
+          imageUrl: ${imageUrl},
+          restaurantId: "${id}"
+        }) {
+          id
+          name
+          description
+          category
+          imageUrl
+          price
+        }
+      }
+    `;
+
+    const result = await graphqlRequest(addMenuItemMutation);
+
+    if (result.errors) {
+      throw new Error(result.errors[0].message);
+    }
+
+    res.redirect(`/admin/restaurants/${id}/details`);
+  } catch (error) {
+    console.error("Error adding menu item:", error.message);
+    res.status(500).send("Failed to add menu item.");
+  }
+});
 // GraphQL Schema for Restaurants
 const typeDefs = gql`
   type Restaurant {

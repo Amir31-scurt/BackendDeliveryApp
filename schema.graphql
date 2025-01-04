@@ -13,6 +13,17 @@ type Restaurant {
   createdAt: String!
   updatedAt: String!
 }
+type MenuItem {
+  id: ID!
+  name: String!
+  description: String
+  price: Float!
+  restaurantId: ID!
+  imageUrl: String
+  category: String! # Add category field
+  createdAt: String
+  updatedAt: String
+}
 
 enum RestaurantType {
   RESTAURANT
@@ -39,12 +50,14 @@ type Query {
   restaurants: [Restaurant!]!
   restaurant(id: ID!): Restaurant
   searchRestaurants(query: String!): [Restaurant!]!
+  menuItems(restaurantId: ID!): [MenuItem!]!
 }
 
 type Mutation {
   createRestaurant(input: CreateRestaurantInput!): Restaurant!
   updateRestaurant(id: ID!, input: UpdateRestaurantInput!): Restaurant!
   deleteRestaurant(id: ID!): Boolean!
+  addMenuItem(input: AddMenuItemInput!): MenuItem!
 }
 
 input CreateRestaurantInput {
@@ -84,4 +97,13 @@ input OpeningHoursInput {
 input DailyHoursInput {
   open: String!
   close: String!
+}
+
+input AddMenuItemInput {
+  name: String!
+  description: String
+  price: Float!
+  restaurantId: ID!
+  category: String!
+  imageUrl: String
 }

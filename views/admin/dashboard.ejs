@@ -32,11 +32,19 @@
         <div
           class="bg-green-50 p-6 rounded-lg shadow-lg flex flex-col items-center"
         >
-          <h3 class="text-lg font-semibold text-green-700 mb-2">
-            Active Restaurants
-          </h3>
+          <h3 class="text-lg font-semibold text-green-700 mb-2">Restaurants</h3>
           <p class="text-4xl font-extrabold text-green-700">
             <%= totalRestaurants || 0 %>
+          </p>
+        </div>
+        <div
+          class="bg-red-50 p-6 rounded-lg shadow-lg flex flex-col items-center"
+        >
+          <h3 class="text-lg font-semibold text-red-700 mb-2">
+            Active Restaurants
+          </h3>
+          <p class="text-4xl font-extrabold text-red-700">
+            <%= totalActiveRestaurants || 0 %>
           </p>
         </div>
 
