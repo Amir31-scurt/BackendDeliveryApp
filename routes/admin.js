@@ -195,7 +195,6 @@ router.get("/restaurants", async (req, res) => {
 // Restaurant Details Route
 router.get("/restaurants/:id/details", async (req, res) => {
   const { id } = req.params;
-  console.log(id);
 
   try {
     // Fetch restaurant details
@@ -227,7 +226,6 @@ router.get("/restaurants/:id/details", async (req, res) => {
     `;
 
     const restaurantResult = await graphqlRequest(restaurantQuery);
-    console.log(restaurantResult.restaurant);
     const restaurant = restaurantResult.restaurant;
 
     if (!restaurant) {
