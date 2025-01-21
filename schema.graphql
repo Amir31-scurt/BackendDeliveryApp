@@ -46,11 +46,38 @@ type DailyHours {
   close: String!
 }
 
+type Order {
+  id: ID!
+  restaurantId: ID!
+  userId: ID!
+  items: [OrderItem]!
+  totalAmount: Float!
+  deliveryAddress: String
+  instructions: String
+  status: String
+  createdAt: String!
+}
+
+type OrderItem {
+  menuItemId: ID!
+  quantity: Int!
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  DELIVERING
+  COMPLETED
+  CANCELLED
+}
+
 type Query {
   restaurants: [Restaurant!]!
   restaurant(id: ID!): Restaurant
   searchRestaurants(query: String!): [Restaurant!]!
   menuItems(restaurantId: ID!): [MenuItem!]!
+  orders: [Order!]!
+  order(id: ID!): Order
 }
 
 type Mutation {
@@ -58,6 +85,9 @@ type Mutation {
   updateRestaurant(id: ID!, input: UpdateRestaurantInput!): Restaurant!
   deleteRestaurant(id: ID!): Boolean!
   addMenuItem(input: AddMenuItemInput!): MenuItem!
+  updateMenuItem(id: ID!, input: UpdateMenuItemInput!): MenuItem!
+  createOrder(input: OrderInput!): Order!
+  updateOrderStatus(id: ID!, status: OrderStatus!): Order!
 }
 
 input CreateRestaurantInput {
@@ -106,4 +136,27 @@ input AddMenuItemInput {
   restaurantId: ID!
   category: String!
   imageUrl: String
+}
+
+input UpdateMenuItemInput {
+  name: String
+  description: String
+  price: Float
+  category: String
+  isAvailable: Boolean
+}
+
+input OrderInput {
+  restaurantId: ID!
+  userId: ID!
+  items: [OrderItemInput!]!
+  totalAmount: Float!
+  deliveryAddress: String
+  instructions: String
+  status: String
+}
+
+input OrderItemInput {
+  menuItemId: ID!
+  quantity: Int!
 }

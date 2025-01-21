@@ -70,6 +70,20 @@ const resolvers = {
         imageUrl: menuItem.image_url || null,
       }));
     },
+    orders: async (_, __, { supabase }) => {
+      const { data, error } = await supabase.from("orders").select("*");
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    order: async (_, { id }, { supabase }) => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error) throw new Error(error.message);
+      return data;
+    },
   },
   Mutation: {
     createRestaurant: async (_, { input }, { supabase }) => {
@@ -145,6 +159,70 @@ const resolvers = {
         createdAt: data.created_at,
         updatedAt: data.updated_at,
       };
+    },
+    updateMenuItem: async (_, { id, input }, { supabase }) => {
+      const { data, error } = await supabase
+        .from("menu_items")
+        .update(input)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      return data;
+    },
+    createOrder: async (_, { input }, { supabase }) => {
+      try {
+        // Fetch menu item prices
+        const { data: menuItems, error: fetchError } = await supabase
+          .from("menu_items")
+          .select("id, price")
+          .in(
+            "id",
+            input.items.map((item) => item.menuItemId)
+          );
+
+        if (fetchError)
+          throw new Error(`Failed to fetch menu items: ${fetchError.message}`);
+
+        // Map items to prices and calculate the total amount
+        const priceMap = Object.fromEntries(
+          menuItems.map((item) => [item.id, item.price])
+        );
+
+        const totalAmount = input.items.reduce((total, item) => {
+          const itemPrice = priceMap[item.menuItemId];
+          if (!itemPrice)
+            throw new Error(`Menu item not found: ${item.menuItemId}`);
+          return total + itemPrice * item.quantity;
+        }, 0);
+
+        // Call the RPC function with the calculated totalAmount
+        const { data, error } = await supabase.rpc("create_order", {
+          p_user_id: input.userId,
+          p_restaurant_id: input.restaurantId,
+          p_items: input.items,
+          p_delivery_address: input.deliveryAddress,
+          p_instructions: input.instructions || null,
+          p_total_amount: totalAmount,
+        });
+
+        if (error) throw new Error(`Error creating order: ${error.message}`);
+
+        return data;
+      } catch (err) {
+        console.error("Error in createOrder function:", err.message);
+        throw new Error(err.message);
+      }
+    },
+    updateOrderStatus: async (_, { id, status }, { supabase }) => {
+      const { data, error } = await supabase
+        .from("orders")
+        .update({ status })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      return data;
     },
   },
 };
