@@ -70,19 +70,72 @@ const resolvers = {
         imageUrl: menuItem.image_url || null,
       }));
     },
-    orders: async (_, __, { supabase }) => {
-      const { data, error } = await supabase.from("orders").select("*");
-      if (error) throw new Error(error.message);
-      return data;
+    orders: async (_, { userId, restaurantId, status }, { supabase }) => {
+      try {
+        // Build the query with optional filters
+        let query = supabase
+          .from("orders")
+          .select("*, order_items(menu_item_id, quantity, price)");
+
+        if (userId) query = query.eq("user_id", userId);
+        if (restaurantId) query = query.eq("restaurant_id", restaurantId);
+        if (status) query = query.eq("status", status);
+
+        // Fetch the orders
+        const { data: orders, error } = await query;
+
+        if (error) throw new Error(`Failed to fetch orders: ${error.message}`);
+        if (!orders || orders.length === 0) throw new Error("No orders found");
+
+        return orders.map((order) => ({
+          id: order.id,
+          restaurantId: order.restaurant_id,
+          userId: order.user_id,
+          items: order.order_items.map((item) => ({
+            menuItemId: item.menu_item_id,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          totalAmount: order.total_amount,
+          deliveryAddress: order.delivery_address,
+          instructions: order.instructions,
+          status: order.status,
+        }));
+      } catch (err) {
+        console.error("Error fetching orders:", err.message);
+        throw new Error(err.message);
+      }
     },
     order: async (_, { id }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", id)
-        .single();
-      if (error) throw new Error(error.message);
-      return data;
+      try {
+        // Fetch the order by ID
+        const { data: order, error } = await supabase
+          .from("orders")
+          .select("*, order_items(menu_item_id, quantity, price)")
+          .eq("id", id)
+          .single();
+
+        if (error) throw new Error(`Failed to fetch order: ${error.message}`);
+        if (!order) throw new Error("Order not found");
+
+        return {
+          id: order.id,
+          restaurantId: order.restaurant_id,
+          userId: order.user_id,
+          items: order.order_items.map((item) => ({
+            menuItemId: item.menu_item_id,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          totalAmount: order.total_amount,
+          deliveryAddress: order.delivery_address,
+          instructions: order.instructions,
+          status: order.status,
+        };
+      } catch (err) {
+        console.error("Error fetching order:", err.message);
+        throw new Error(err.message);
+      }
     },
   },
   Mutation: {
