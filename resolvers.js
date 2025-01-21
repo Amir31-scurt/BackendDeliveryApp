@@ -172,7 +172,6 @@ const resolvers = {
     },
     createOrder: async (_, { input }, { supabase }) => {
       try {
-        // Fetch menu item prices
         const { data: menuItems, error: fetchError } = await supabase
           .from("menu_items")
           .select("id, price")
@@ -184,11 +183,9 @@ const resolvers = {
         if (fetchError)
           throw new Error(`Failed to fetch menu items: ${fetchError.message}`);
 
-        // Map items to prices and calculate the total amount
         const priceMap = Object.fromEntries(
           menuItems.map((item) => [item.id, item.price])
         );
-
         const totalAmount = input.items.reduce((total, item) => {
           const itemPrice = priceMap[item.menuItemId];
           if (!itemPrice)
@@ -196,19 +193,48 @@ const resolvers = {
           return total + itemPrice * item.quantity;
         }, 0);
 
-        // Call the RPC function with the calculated totalAmount
-        const { data, error } = await supabase.rpc("create_order", {
-          p_user_id: input.userId,
-          p_restaurant_id: input.restaurantId,
-          p_items: input.items,
-          p_delivery_address: input.deliveryAddress,
-          p_instructions: input.instructions || null,
-          p_total_amount: totalAmount,
-        });
+        const { data: newOrder, error: orderError } = await supabase
+          .from("orders")
+          .insert([
+            {
+              user_id: input.userId,
+              restaurant_id: input.restaurantId,
+              delivery_address: input.deliveryAddress,
+              instructions: input.instructions || null,
+              total_amount: totalAmount,
+              status: "Pending",
+            },
+          ])
+          .select()
+          .single();
 
-        if (error) throw new Error(`Error creating order: ${error.message}`);
+        if (orderError)
+          throw new Error(`Failed to create order: ${orderError.message}`);
 
-        return data;
+        const orderItems = input.items.map((item) => ({
+          order_id: newOrder.id,
+          menu_item_id: item.menuItemId,
+          quantity: item.quantity,
+          price: priceMap[item.menuItemId],
+        }));
+
+        const { error: itemsError } = await supabase
+          .from("order_items")
+          .insert(orderItems);
+        if (itemsError)
+          throw new Error(
+            `Failed to create order items: ${itemsError.message}`
+          );
+
+        return {
+          id: newOrder.id,
+          restaurantId: newOrder.restaurant_id,
+          userId: newOrder.user_id,
+          items: input.items,
+          totalAmount: newOrder.total_amount,
+          deliveryAddress: newOrder.delivery_address,
+          instructions: newOrder.instructions,
+        };
       } catch (err) {
         console.error("Error in createOrder function:", err.message);
         throw new Error(err.message);
