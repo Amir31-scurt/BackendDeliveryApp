@@ -77,6 +77,7 @@ type Query {
   restaurant(id: ID!): Restaurant
   searchRestaurants(query: String!): [Restaurant!]!
   menuItems(restaurantId: ID!): [MenuItem!]!
+  allMenuItems: [MenuItem!]!
   orders(userId: ID, restaurantId: ID, status: String): [Order!]!
   order(id: ID!): Order
 }

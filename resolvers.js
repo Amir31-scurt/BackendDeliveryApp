@@ -70,6 +70,18 @@ const resolvers = {
         imageUrl: menuItem.image_url || null,
       }));
     },
+    allMenuItems: async (_, __, { supabase }) => {
+      const { data, error } = await supabase.from("menu_items").select("*");
+      if (error) throw new Error(error.message);
+
+      return data.map((menuItem) => ({
+        ...menuItem,
+        restaurantId: menuItem.restaurant_id,
+        createdAt: menuItem.created_at || "Not provided",
+        updatedAt: menuItem.updated_at || "Not provided",
+        imageUrl: menuItem.image_url || null,
+      }));
+    },
     orders: async (_, { userId, restaurantId, status }, { supabase }) => {
       try {
         // Build the query with optional filters
