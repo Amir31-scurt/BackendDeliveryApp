@@ -150,41 +150,6 @@ router.post("/login", async (req, res) => {
     res.status(400).json({ error: "Échec de la connexion." });
   }
 });
-
-/**
- * Generate OTP
- */
-// router.post("/generate-otp", async (req, res) => {
-//   try {
-//     const { phoneNumber } = req.body;
-
-//     if (!phoneNumber) {
-//       return res.status(400).json({ error: "Phone number is required." });
-//     }
-
-//     // Generate OTP and expiration
-//     const otp = crypto.randomInt(100000, 999999); // 6-digit OTP
-//     const expiresAt = addMinutes(new Date(), 5); // OTP valid for 5 minutes
-
-//     // Store OTP in in-memory store
-//     otpStore[phoneNumber] = { otp, expiresAt };
-
-//     // For production, save to database:
-//     await supabase
-//       .from("otps")
-//       .insert({ phone_number: phoneNumber, otp, expires_at: expiresAt });
-
-//     // Return OTP for testing purposes (DON'T return it in production)
-//     res.status(200).json({
-//       message: "OTP generated successfully.",
-//       otp, // For testing, remove in production
-//     });
-//   } catch (error) {
-//     console.error("Error generating OTP:", error);
-//     res.status(500).json({ error: "Internal server error." });
-//   }
-// });
-
 /**
  * Verify OTP
  */

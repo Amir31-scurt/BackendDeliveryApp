@@ -1,7 +1,40 @@
+import bcrypt from "bcrypt";
 import { validateEmail } from "./utils/validators.js";
 
 const resolvers = {
   Query: {
+    users: async (_, __, { supabase }) => {
+      const { data, error } = await supabase.from("users").select("*");
+      if (error) throw new Error(error.message);
+
+      // Handle null phone numbers
+      const sanitizedData = data.map((user) => ({
+        ...user,
+        name: user.name || "Not provided", // Fallback value
+        phoneNumber: user.phone_number || "Not provided", // Fallback value
+        createdAt: user.created_at || "Not provided", // Fallback value
+        isVerified: user.is_verified,
+        role: user.role || "Not provided", // Fallback value
+      }));
+
+      return sanitizedData;
+    },
+    user: async (_, { id }, { supabase }) => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error) throw new Error(error.message);
+      return {
+        ...data,
+        name: data.name,
+        phoneNumber: data.phone_number,
+        role: data.role,
+        isVerified: data.is_verified,
+        createdAt: data.created_at,
+      };
+    },
     restaurants: async (_, __, { supabase }) => {
       const { data, error } = await supabase.from("restaurants").select("*");
       if (error) throw new Error(error.message);
@@ -151,6 +184,51 @@ const resolvers = {
     },
   },
   Mutation: {
+    createUser: async (_, { input }, { supabase }) => {
+      const password = "123456789";
+      const hashedPassword = await bcrypt.hash(password, 10);
+      // Map GraphQL fields to Supabase fields
+      const dbInput = {
+        ...input,
+        name: input.name,
+        password: hashedPassword,
+        phone_number: input.phoneNumber, // Use 'phone_number' (case-sensitive)
+        is_verified: true,
+        role: input.role,
+      };
+      // Remove the phoneNumber field to avoid duplication
+      delete dbInput.phoneNumber;
+      console.log("Input:", input);
+      console.log("DB Input:", dbInput);
+
+      // Check if the phone number already exists in the users table
+      const { data: existingUser, error: existingUserError } = await supabase
+        .from("users")
+        .select("phone_number")
+        .eq("phone_number", input.phoneNumber)
+        .single();
+
+      if (existingUser) {
+        throw new Error("Ce numéro est déjà utilisé.");
+      }
+
+      if (existingUserError && existingUserError.code !== "PGRST116") {
+        console.error("Erreur de vérification du numéro:", existingUserError);
+        throw new Error("Erreur interne du serveur.");
+      }
+
+      const { data, error } = await supabase
+        .from("users")
+        .insert([dbInput])
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      return {
+        ...data,
+        phoneNumber: data.phone_number, // Map phone_number back to phoneNumber
+      };
+    },
     createRestaurant: async (_, { input }, { supabase }) => {
       if (!validateEmail(input.email)) {
         throw new Error(`${input.email} n'est pas un adresse mail valide!`);

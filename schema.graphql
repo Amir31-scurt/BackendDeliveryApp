@@ -1,3 +1,11 @@
+type User {
+  id: ID!
+  name: String!
+  phoneNumber: String!
+  password: String!
+  createdAt: String!
+  role: UserType!
+}
 type Restaurant {
   id: ID!
   name: String!
@@ -23,6 +31,13 @@ type MenuItem {
   category: String! # Add category field
   createdAt: String
   updatedAt: String
+}
+
+enum UserType {
+  deliverer
+  customer
+  admin
+  guest
 }
 
 enum RestaurantType {
@@ -73,6 +88,8 @@ enum OrderStatus {
 }
 
 type Query {
+  users: [User!]!
+  user(id: ID!): User
   restaurants: [Restaurant!]!
   restaurant(id: ID!): Restaurant
   searchRestaurants(query: String!): [Restaurant!]!
@@ -83,6 +100,8 @@ type Query {
 }
 
 type Mutation {
+  createUser(input: CreateUserInput!): User!
+  updateUser(id: ID!, input: UpdateUserInput!): User!
   createRestaurant(input: CreateRestaurantInput!): Restaurant!
   updateRestaurant(id: ID!, input: UpdateRestaurantInput!): Restaurant!
   deleteRestaurant(id: ID!): Boolean!
@@ -90,6 +109,19 @@ type Mutation {
   updateMenuItem(id: ID!, input: UpdateMenuItemInput!): MenuItem!
   createOrder(input: OrderInput!): Order!
   updateOrderStatus(id: ID!, status: OrderStatus!): Order!
+}
+
+input CreateUserInput {
+  name: String!
+  phoneNumber: String!
+  role: UserType!
+}
+
+input UpdateUserInput {
+  name: String
+  phoneNumber: String
+  password: String
+  role: UserType
 }
 
 input CreateRestaurantInput {
