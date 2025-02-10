@@ -87,6 +87,18 @@ enum OrderStatus {
   CANCELLED
 }
 
+type Deliverer {
+  userId: ID!
+  user: User
+  vehicleId: ID
+  isAvailable: Boolean!
+  currentLocation: String
+  zone: String
+  profilePicture: String
+  isActive: Boolean!
+  isVerified: Boolean!
+}
+
 type Query {
   users: [User!]!
   user(id: ID!): User
@@ -97,6 +109,10 @@ type Query {
   allMenuItems: [MenuItem!]!
   orders(userId: ID, restaurantId: ID, status: String): [Order!]!
   order(id: ID!): Order
+  deliverer(id: ID!): Deliverer
+  delivererByUserId(userId: ID!): Deliverer
+  allDeliverers: [Deliverer!]!
+  availableDeliverers: [Deliverer!]!
 }
 
 type Mutation {
@@ -109,6 +125,9 @@ type Mutation {
   updateMenuItem(id: ID!, input: UpdateMenuItemInput!): MenuItem!
   createOrder(input: OrderInput!): Order!
   updateOrderStatus(id: ID!, status: OrderStatus!): Order!
+  createDeliverer(input: CreateDelivererInput!): Deliverer!
+  updateDelivererStatus(id: ID!, isAvailable: Boolean!): Deliverer!
+  updateDelivererLocation(id: ID!, location: String!): Deliverer!
 }
 
 input CreateUserInput {
@@ -193,4 +212,12 @@ input OrderInput {
 input OrderItemInput {
   menuItemId: ID!
   quantity: Int!
+}
+
+input CreateDelivererInput {
+  vehicleId: ID
+  isAvailable: Boolean
+  currentLocation: String
+  zone: String
+  profilePicture: String
 }
