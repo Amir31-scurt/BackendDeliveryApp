@@ -8,10 +8,10 @@ import multer from "multer";
 import path from "path";
 import resolvers from "./resolvers.js";
 import { delivererResolvers } from "./resolvers/delivererResolvers.js";
-import { restaurantResolvers } from "./resolvers/restaurantResolvers.js";
 import adminRoutes from "./routes/admin.js";
 import authRoutes from "./routes/auth.js";
 import { supabase } from "./supabaseClient.js";
+// import { supabase } from "./supabaseClient.js";
 
 dotenv.config();
 
@@ -116,11 +116,8 @@ app.post("/storage/upload", async (req, res) => {
 const typeDefs = readFileSync(path.join(__dirname, "schema.graphql"), "utf8");
 const server = new ApolloServer({
   typeDefs,
-  resolvers: {
-    ...resolvers,
-    ...delivererResolvers,
-    ...restaurantResolvers,
-  },
+  resolvers,
+  delivererResolvers,
   context: { supabase },
 });
 
