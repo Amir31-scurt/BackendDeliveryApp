@@ -8,6 +8,7 @@ import multer from "multer";
 import path from "path";
 import resolvers from "./resolvers.js";
 import { delivererResolvers } from "./resolvers/delivererResolvers.js";
+import { restaurantResolvers } from "./resolvers/restaurantResolvers.js";
 import adminRoutes from "./routes/admin.js";
 import authRoutes from "./routes/auth.js";
 import { supabase } from "./supabaseClient.js";
@@ -118,6 +119,7 @@ const server = new ApolloServer({
   resolvers: {
     ...resolvers,
     ...delivererResolvers,
+    ...restaurantResolvers,
   },
   context: { supabase },
 });
