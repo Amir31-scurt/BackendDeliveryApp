@@ -46,6 +46,36 @@ const resolvers = {
         createdAt: restaurant.created_at || "Not provided", // Fallback value
         updatedAt: restaurant.updated_at || "Not provided", // Fallback value
         isActive: restaurant.is_active,
+        openingHours: {
+          monday: restaurant.opening_hours?.monday || {
+            open: "09:00",
+            close: "22:00",
+          },
+          tuesday: restaurant.opening_hours?.tuesday || {
+            open: "09:00",
+            close: "22:00",
+          },
+          wednesday: restaurant.opening_hours?.wednesday || {
+            open: "09:00",
+            close: "22:00",
+          },
+          thursday: restaurant.opening_hours?.thursday || {
+            open: "09:00",
+            close: "22:00",
+          },
+          friday: restaurant.opening_hours?.friday || {
+            open: "09:00",
+            close: "22:00",
+          },
+          saturday: restaurant.opening_hours?.saturday || {
+            open: "09:00",
+            close: "22:00",
+          },
+          sunday: restaurant.opening_hours?.sunday || {
+            open: "09:00",
+            close: "22:00",
+          },
+        },
         imageUrl: restaurant.image_url || "Not provided", // Fallback value
       }));
 
@@ -145,6 +175,8 @@ const resolvers = {
           deliveryAddress: order.delivery_address,
           instructions: order.instructions,
           status: order.status,
+          createdAt: order.created_at,
+          updatedAt: order.updated_at,
         }));
       } catch (err) {
         console.error("Error fetching orders:", err.message);
@@ -386,7 +418,7 @@ const resolvers = {
     updateOrderStatus: async (_, { id, status }, { supabase }) => {
       const { data, error } = await supabase
         .from("orders")
-        .update({ status })
+        .update({ status: status })
         .eq("id", id)
         .select()
         .single();

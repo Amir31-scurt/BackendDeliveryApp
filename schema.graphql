@@ -69,8 +69,9 @@ type Order {
   totalAmount: Float!
   deliveryAddress: String
   instructions: String
-  status: String
+  status: OrderStatus!
   createdAt: String!
+  updatedAt: String!
 }
 
 type OrderItem {
@@ -80,7 +81,7 @@ type OrderItem {
 }
 
 enum OrderStatus {
-  PENDING
+  Pending
   PREPARING
   DELIVERING
   COMPLETED
@@ -206,7 +207,7 @@ input OrderInput {
   totalAmount: Float!
   deliveryAddress: String
   instructions: String
-  status: String
+  status: OrderStatus
 }
 
 input OrderItemInput {
