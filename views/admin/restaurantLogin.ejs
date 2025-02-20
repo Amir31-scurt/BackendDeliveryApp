@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Restaurant Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <script>
+        async function handleRestaurantLogin(event) {
+            event.preventDefault();
+
+            const email = document.getElementById("email").value;
+
+            try {
+                const response = await fetch("/admin/login/restaurant", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ email }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem("authToken", result.token);
+                    window.location.href = `/admin/restaurants/${result.restaurant.id}/orders`;
+                } else {
+                    alert(result.error || "Invalid email. Please try again.");
+                }
+            } catch (error) {
+                console.error("Login error:", error);
+                alert("An error occurred while logging in. Please try again.");
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-gray-100">
+    <div class="max-w-md mx-auto bg-white p-8 rounded shadow mt-20">
+        <h2 class="text-2xl font-bold mb-6 text-center">Restaurant Login</h2>
+        <form onsubmit="handleRestaurantLogin(event)">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="email">
+                    Email
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" id="email"
+                    name="email" type="email" placeholder="Enter your email" required />
+            </div>
+            <div class="flex items-center justify-between">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">
+                    Login
+                </button>
+            </div>
+        </form>
+    </div>
+</body>
+
+</html>

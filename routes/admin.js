@@ -86,8 +86,66 @@ router.get("/login", (req, res) => {
   res.render("admin/login");
 });
 
+// Restaurant login route
+router.post("/login/restaurant", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: "Email is required." });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("restaurants")
+      .select("*")
+      .eq("email", email)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ error: "Restaurant not found." });
+    }
+
+    const token = jwt.sign({ id: data.id, role: "restaurant" }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+
+    return res.status(200).json({
+      message: "Login successful.",
+      token,
+      restaurant: data,
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "An error occurred during login." });
+  }
+});
+
+router.get("/login/restaurant", (req, res) => {
+  res.render("admin/restaurantLogin");
+});
+
 // Admin logout route
 router.post("/logout", (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Session destruction error:", err);
+      return res.status(500).json({ error: "Failed to logout." });
+    }
+    res.clearCookie("token");
+    res.clearCookie("restaurant");
+    res.clearCookie("user");
+    res.clearCookie("deliverer");
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("restaurant");
+    localStorage.removeItem("user");
+    localStorage.removeItem("deliverer");
+    res.status(200).json({ message: "Logout successful." });
+  });
+});
+
+router.get("/logout", (req, res) => {
+  res.clearCookie("token");
+  localStorage.removeItem("authToken");
   req.session.destroy((err) => {
     if (err) {
       console.error("Session destruction error:", err);
@@ -96,6 +154,7 @@ router.post("/logout", (req, res) => {
     res.status(200).json({ message: "Logout successful." });
   });
 });
+
 
 // Dashboard route
 router.get("/dashboard", async (req, res) => {
@@ -109,7 +168,7 @@ router.get("/dashboard", async (req, res) => {
       console.error("Error fetching restaurant data:", restaurantError);
     }
 
-    // Fetch total restaurants
+    // Fetch total active restaurants
     const { data: totalActiveRestaurants, error: activeRestaurantError } =
       await supabase
         .from("restaurants")
@@ -129,13 +188,21 @@ router.get("/dashboard", async (req, res) => {
       console.error("Error fetching deliverer data:", delivererError);
     }
 
-    // Fetch total orders (example logic, adjust to your database schema)
+    // Fetch total orders
     const { data: totalOrders, error: orderError } = await supabase
       .from("orders")
       .select("*", { count: "exact" });
 
     if (orderError) {
       console.error("Error fetching orders data:", orderError);
+    }
+
+    // Fetch monthly orders data
+    const { data: monthlyOrders, error: monthlyOrdersError } = await supabase
+      .rpc('get_monthly_orders');
+
+    if (monthlyOrdersError) {
+      console.error("Error fetching monthly orders data:", monthlyOrdersError);
     }
 
     // Pass all data to the EJS template
@@ -146,6 +213,7 @@ router.get("/dashboard", async (req, res) => {
         ? totalActiveRestaurants.length
         : 0,
       totalDeliverers: totalDeliverers ? totalDeliverers.length : 0,
+      monthlyOrders: monthlyOrders || [],
     });
   } catch (error) {
     console.error("Dashboard error:", error);
@@ -433,6 +501,77 @@ router.post("/restaurants/:id/menu/add", async (req, res) => {
     res.status(500).send("Failed to add menu item.");
   }
 });
+
+// Render the restaurant dashboard
+router.get("/restaurants/:id/orders", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const query = `
+      query {
+        restaurant(id: "${id}") {
+          name
+          address
+          phoneNumber
+          imageUrl
+          email
+          type
+        }
+        orders(restaurantId: "${id}") {
+          id
+          totalAmount
+          deliveryAddress
+          userId
+          user {
+            name
+          }
+          instructions
+          createdAt
+          status
+        }
+      }
+    `;
+    const result = await graphqlRequest(query);
+    const restaurant = result.restaurant || {};
+    const orders = result.orders || [];
+
+    res.render("restaurant/dashboard", {
+      layout: "restaurant/layout",
+      title: "Orders Dashboard",
+      restaurant,
+      orders,
+    });
+  } catch (error) {
+    console.error("Error fetching restaurant or orders:", error.message);
+    res.status(500).send("An error occurred while fetching data.");
+  }
+});
+
+router.post("/orders/:id/status", async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  try {
+    const mutation = `
+      mutation UpdateOrderStatus($id: ID!, $status: OrderStatus!) {
+        updateOrderStatus(id: $id, status: $status) {
+          id
+          status
+        }
+      }
+    `;
+
+    const variables = { id, status };
+
+    await graphqlRequest(mutation, variables);
+
+    res.status(200).json({ message: "Order status updated successfully." });
+  } catch (error) {
+    console.error("Error updating order status:", error);
+    res.status(500).json({ error: "Failed to update order status." });
+  }
+});
+
 // GraphQL Schema for Restaurants
 const typeDefs = gql`
   type Restaurant {
@@ -515,5 +654,15 @@ await graphqlServer.start();
 graphqlServer.applyMiddleware({ app: router, path: "/graphql" });
 
 // Add more routes for other admin functionalities (e.g., orders, deliverers)
+
+// Render the admin login page
+router.get("/admin/login", (req, res) => {
+  res.render("admin/adminLogin");
+});
+
+// Render the restaurant login page
+router.get("/restaurant/login", (req, res) => {
+  res.render("admin/restaurantLogin");
+});
 
 export default router;

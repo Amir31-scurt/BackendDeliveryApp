@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <script>
+        async function handleAdminLogin(event) {
+            event.preventDefault();
+
+            const phoneNumber = document.getElementById("phoneNumber").value;
+            const password = document.getElementById("password").value;
+
+            try {
+                const response = await fetch("/admin/login", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ phoneNumber, password }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem("authToken", result.token);
+                    window.location.href = "/admin/dashboard";
+                } else {
+                    alert(result.error || "Invalid credentials. Please try again.");
+                }
+            } catch (error) {
+                console.error("Login error:", error);
+                alert("An error occurred while logging in. Please try again.");
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-gray-100">
+    <div class="max-w-md mx-auto bg-white p-8 rounded shadow mt-20">
+        <h2 class="text-2xl font-bold mb-6 text-center">Admin Login</h2>
+        <form onsubmit="handleAdminLogin(event)">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="phoneNumber">
+                    Phone Number
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" id="phoneNumber"
+                    name="phoneNumber" type="text" placeholder="Enter your phone number" required />
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
+                    Password
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" id="password"
+                    name="password" type="password" placeholder="Enter your password" required />
+            </div>
+            <div class="flex items-center justify-between">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">
+                    Login
+                </button>
+            </div>
+        </form>
+    </div>
+</body>
+
+</html>

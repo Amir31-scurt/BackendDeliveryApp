@@ -65,6 +65,7 @@ type Order {
   id: ID!
   restaurantId: ID!
   userId: ID!
+  user: User
   items: [OrderItem]!
   totalAmount: Float!
   deliveryAddress: String
@@ -114,6 +115,7 @@ type Query {
   delivererByUserId(userId: ID!): Deliverer
   allDeliverers: [Deliverer!]!
   availableDeliverers: [Deliverer!]!
+  restaurantByEmail(email: String!): Restaurant
 }
 
 type Mutation {

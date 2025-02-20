@@ -147,16 +147,14 @@ const resolvers = {
     },
     orders: async (_, { userId, restaurantId, status }, { supabase }) => {
       try {
-        // Build the query with optional filters
         let query = supabase
           .from("orders")
-          .select("*, order_items(menu_item_id, quantity, price)");
+          .select("*, order_items(menu_item_id, quantity, price), user:users(id, name)");
 
         if (userId) query = query.eq("user_id", userId);
         if (restaurantId) query = query.eq("restaurant_id", restaurantId);
         if (status) query = query.eq("status", status);
 
-        // Fetch the orders
         const { data: orders, error } = await query;
 
         if (error) throw new Error(`Failed to fetch orders: ${error.message}`);
@@ -171,6 +169,7 @@ const resolvers = {
             quantity: item.quantity,
             price: item.price,
           })),
+          user: order.user,
           totalAmount: order.total_amount,
           deliveryAddress: order.delivery_address,
           instructions: order.instructions,
@@ -213,6 +212,15 @@ const resolvers = {
         console.error("Error fetching order:", err.message);
         throw new Error(err.message);
       }
+    },
+    restaurantByEmail: async (_, { email }, { supabase }) => {
+      const { data, error } = await supabase
+        .from("restaurants")
+        .select("*")
+        .eq("email", email)
+        .single();
+      if (error) throw new Error("Restaurant not found.");
+      return data;
     },
   },
   Mutation: {

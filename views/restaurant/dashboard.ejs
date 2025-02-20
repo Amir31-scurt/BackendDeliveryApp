@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Restaurant Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/antd/4.16.13/antd.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/antd/4.16.13/antd.min.js"></script>
+    <script>
+        async function updateOrderStatus(id, status) {
+            try {
+                const response = await fetch(`/admin/orders/${id}/status`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ status }),
+                });
+
+                if (response.ok) {
+                    alert("Order status updated successfully!");
+                    window.location.reload();
+                } else {
+                    alert("Failed to update order status.");
+                }
+            } catch (error) {
+                console.error("Error updating order status:", error);
+                alert("An error occurred. Please try again.");
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-gray-100">
+    <!-- Sidebar -->
+    <div class="w-20 fixed left-0 bg-black text-white h-screen flex flex-col items-center py-4">
+
+        <ul class="space-y-6">
+            <li><a href="#" class="flex items-center"><i class="anticon anticon-dashboard"></i></a></li>
+            <li><a href="#" class="flex items-center"><i class="anticon anticon-appstore"></i></a></li>
+            <li><a href="#" class="flex items-center"><i class="anticon anticon-file-text"></i></a></li>
+            <li><a href="#" class="flex items-center"><i class="anticon anticon-setting"></i></a></li>
+        </ul>
+    </div>
+
+    <div class="flex">
+        <!-- Navbar -->
+        <div class="bg-white fixed top-0 left-20 right-0 z-50 shadow p-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <i class="anticon anticon-menu"></i>
+                <h1 class="text-xl font-bold ml-4">Dashboard</h1>
+            </div>
+            <div class="flex items-center">
+                <i class="anticon anticon-moon mr-4"></i>
+                <div class="flex gap-5 items-center">
+                    <span class="mr-4 text-xl font-bold">
+                        <%= restaurant.name %>
+                    </span>
+                    <div>
+                        <img src="<%= restaurant.imageUrl %>" alt="Logo" class="w-10 h-10 rounded-full">
+                    </div>
+                    <div class="relative">
+                        <button
+                            class="flex items-center justify-center p-2 rounded-full bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                            onclick="toggleDropdown(this)">
+                            <span class="sr-only">Open dropdown</span>
+                        </button>
+                        <div class="absolute right-0 w-48 mt-1 py-2 bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 hidden"
+                            role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabindex="-1">
+                            <div class="px-4 py-2">
+                                <a href="/admin/logout" class="text-sm">Déconnexion</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Main Content -->
+        <div class="flex-1 p-8 ml-20 mt-16">
+            <div class="grid grid-cols-4 gap-4 mb-6">
+                <div class="bg-gray-800 text-white p-4 rounded shadow">
+                    <p class="text-3xl p-0 m-0 mb-4">
+                        <%= orders.length %>
+                    </p>
+                    <h3 class="text-lg text-white font-semibold">Total Commandes</h3>
+                </div>
+                <div class="bg-white p-4 rounded shadow">
+                    <p class="text-3xl p-0 m-0 mb-4">
+                        <%= orders.filter(order=> new Date(order.createdAt).toLocaleDateString() === new
+                            Date().toLocaleDateString()).length %>
+                    </p>
+                    <h3 class="text-lg font-semibold">Total Commandes aujourd'hui</h3>
+                </div>
+                <div class="bg-white p-4 rounded shadow">
+                    <p class="text-3xl p-0 m-0 mb-4">
+                        <%= orders.filter(order=> new Date(order.createdAt).toLocaleDateString() === new
+                            Date().toLocaleDateString()).length %>
+                    </p>
+                    <h3 class="text-lg font-semibold">Total Clients aujourd'hui</h3>
+                </div>
+                <div class="bg-white p-4 rounded shadow">
+                    <p class="text-3xl p-0 m-0 mb-4">
+                        <%= orders.filter(order=> new Date(order.createdAt).toLocaleDateString() === new
+                            Date().toLocaleDateString()).reduce((total, order) => total + order.totalAmount, 0) %>
+                    </p>
+                    <h3 class="text-lg font-semibold">Ratio de revenu aujourd'hui</h3>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-white p-4 rounded shadow">
+                    <h3 class="text-lg font-semibold">Revenue</h3>
+                    <canvas id="revenueChart"></canvas>
+                    <script>
+                        const revenueChart = new Chart(document.getElementById('revenueChart'), {
+                            type: 'line',
+                            data: {
+                                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                                datasets: [{
+                                    label: 'Revenue',
+                                    data: [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000],
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    borderColor: 'rgba(255, 99, 132, 1)',
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    </script>
+                    <!-- Add chart here -->
+                </div>
+                <div class="bg-white p-4 rounded shadow">
+                    <h3 class="text-lg font-semibold">Résumé des commandes</h3>
+                    <canvas id="ordersChart"></canvas>
+                    <script>
+                        const ordersChart = new Chart(document.getElementById('ordersChart'), {
+                            type: 'bar',
+                            data: {
+                                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                                datasets: [{
+                                    label: 'Nombre de commandes',
+                                    data: [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200],
+                                    backgroundColor: [
+                                        'rgba(255, 99, 132, 0.2)',
+                                        'rgba(54, 162, 235, 0.2)',
+                                        'rgba(255, 206, 86, 0.2)',
+                                        'rgba(75, 192, 192, 0.2)',
+                                        'rgba(153, 102, 255, 0.2)',
+                                        'rgba(255, 159, 64, 0.2)'
+                                    ],
+                                    borderColor: [
+                                        'rgba(255, 99, 132, 1)',
+                                        'rgba(54, 162, 235, 1)',
+                                        'rgba(255, 206, 86, 1)',
+                                        'rgba(75, 192, 192, 1)',
+                                        'rgba(153, 102, 255, 1)',
+                                        'rgba(255, 159, 64, 1)'
+                                    ],
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    </script>
+                    <!-- Add chart here -->
+                </div>
+            </div>
+
+            <h3 class="text-xl font-semibold mb-4">Liste des commandes</h3>
+            <table class="min-w-full bg-white rounded shadow">
+                <thead>
+                    <tr>
+                        <th class="py-2">N°</th>
+                        <th class="py-2">Date</th>
+                        <th class="py-2">Nom du client</th>
+                        <th class="py-2">Addresse</th>
+                        <th class="py-2">Montant</th>
+                        <th class="py-2">Statut</th>
+                        <th class="py-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (orders && orders.length> 0) { %>
+                        <% orders.forEach((order, index)=> { %>
+                            <tr class="text-center">
+                                <td class="p-4">
+                                    <%= index + 1 %>
+                                </td>
+                                <td class="py-2">
+                                    <%= new Date(order.createdAt).toLocaleString() %>
+                                </td>
+                                <td class="py-2">
+                                    <%= order.user.name %>
+                                </td>
+                                <td class="py-2">
+                                    <%= order.deliveryAddress %>
+                                </td>
+                                <td class="py-2">
+                                    <%= order.totalAmount %> Fcfa
+                                </td>
+                                <td class="py-2">
+                                    <% if (order.status==='Pending' ) { %>
+                                        <span class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded">En
+                                            attente</span>
+                                        <% } else if (order.status==='PREPARING' ) { %>
+                                            <span class="bg-blue-200 text-blue-700 font-semibold py-2 px-4 rounded">En
+                                                cours de préparation</span>
+                                            <% } else if (order.status==='DELIVERING' ) { %>
+                                                <span
+                                                    class="bg-yellow-200 text-yellow-700 font-semibold py-2 px-4 rounded">En
+                                                    cours de livraison</span>
+                                                <% } else if (order.status==='COMPLETED' ) { %>
+                                                    <span
+                                                        class="bg-green-200 text-green-700 font-semibold py-2 px-4 rounded">Livrée</span>
+                                                    <% } else if (order.status==='CANCELLED' ) { %>
+                                                        <span
+                                                            class="bg-red-200 text-red-700 font-semibold py-2 px-4 rounded">Annulée</span>
+                                                        <% } %>
+                                </td>
+                                <td class="py-2 relative">
+                                    <div class="dropdown inline-block relative">
+                                        <button
+                                            class="bg-gray-300 text-gray-700 font-semibold py-2 mx-4 px-4 rounded inline-flex items-center">
+                                            <span class="mr-1">Actions</span>
+                                            <i class="anticon anticon-down"></i>
+                                        </button>
+                                        <ul class="dropdown-menu absolute hidden text-gray-700 pt-1 z-50">
+                                            <li><a class="rounded-t bg-gray-200 hover:bg-gray-700 py-2 px-4 block whitespace-no-wrap"
+                                                    href="#"
+                                                    onclick="updateOrderStatus('<%= order.id %>', 'PREPARING')"><i
+                                                        class="anticon anticon-sync"></i> En cours de préparation</a>
+                                            </li>
+                                            <li><a class="bg-gray-200 hover:bg-gray-700 py-2 px-4 block whitespace-no-wrap"
+                                                    href="#"
+                                                    onclick="updateOrderStatus('<%= order.id %>', 'DELIVERING')"><i
+                                                        class="anticon anticon-car"></i> En cours de livraison</a></li>
+                                            <li><a class="bg-gray-200 hover:bg-gray-700 py-2 px-4 block whitespace-no-wrap"
+                                                    href="#"
+                                                    onclick="updateOrderStatus('<%= order.id %>', 'COMPLETED')"><i
+                                                        class="anticon anticon-check"></i> Livrée</a></li>
+                                            <li><a class="rounded-b bg-gray-200 hover:bg-gray-700 py-2 px-4 block whitespace-no-wrap text-red-500"
+                                                    href="#"
+                                                    onclick="updateOrderStatus('<%= order.id %>', 'CANCELLED')"><i
+                                                        class="anticon anticon-close"></i> Annulée</a></li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% }); %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="7" class="py-4 text-center text-gray-500">Aucune commande trouvée.
+                                        </td>
+                                    </tr>
+                                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.dropdown').forEach(dropdown => {
+            dropdown.addEventListener('click', function () {
+                this.querySelector('.dropdown-menu').classList.toggle('hidden');
+            });
+        });
+        function toggleDropdown(button) {
+            const dropdown = button.nextElementSibling;
+            dropdown.classList.toggle('hidden');
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function (event) {
+            const dropdowns = document.querySelectorAll('.dropdown-menu');
+            dropdowns.forEach(dropdown => {
+                if (!dropdown.contains(event.target) && !dropdown.previousElementSibling.contains(event.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
