@@ -520,7 +520,11 @@ router.get("/restaurants/:id/orders", async (req, res) => {
         orders(restaurantId: "${id}") {
           id
           totalAmount
-          deliveryAddress
+          deliveryAddress {
+            address
+            latitude
+            longitude
+          }
           userId
           user {
             name

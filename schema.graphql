@@ -56,6 +56,12 @@ type OpeningHours {
   sunday: DailyHours!
 }
 
+type Address {
+  address: String!
+  latitude: Float!
+  longitude: Float!
+}
+
 type DailyHours {
   open: String!
   close: String!
@@ -68,7 +74,7 @@ type Order {
   user: User
   items: [OrderItem]!
   totalAmount: Float!
-  deliveryAddress: String
+  deliveryAddress: Address
   instructions: String
   status: OrderStatus!
   createdAt: String!
@@ -208,9 +214,15 @@ input OrderInput {
   userId: ID!
   items: [OrderItemInput!]!
   totalAmount: Float!
-  deliveryAddress: String
+  deliveryAddress: AddressInput!
   instructions: String
   status: OrderStatus
+}
+
+input AddressInput {
+  address: String!
+  latitude: Float!
+  longitude: Float!
 }
 
 input OrderItemInput {

@@ -396,7 +396,7 @@ const resolvers = {
               delivery_address: input.deliveryAddress,
               instructions: input.instructions || null,
               total_amount: totalAmount,
-              status: "Pending",
+              status: input.status || "Pending",
             },
           ])
           .select()
@@ -416,9 +416,7 @@ const resolvers = {
           .from("order_items")
           .insert(orderItems);
         if (itemsError)
-          throw new Error(
-            `Failed to create order items: ${itemsError.message}`
-          );
+          throw new Error(`Failed to create order items: ${itemsError.message}`);
 
         return {
           id: newOrder.id,
@@ -428,6 +426,7 @@ const resolvers = {
           totalAmount: newOrder.total_amount,
           deliveryAddress: newOrder.delivery_address,
           instructions: newOrder.instructions,
+          status: newOrder.status,
         };
       } catch (err) {
         console.error("Error in createOrder function:", err.message);
