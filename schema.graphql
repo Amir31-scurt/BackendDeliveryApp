@@ -77,6 +77,7 @@ type Order {
 
 type OrderItem {
   menuItemId: ID!
+  menuItem: MenuItem
   quantity: Int!
   price: Float!
 }

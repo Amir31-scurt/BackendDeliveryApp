@@ -149,7 +149,7 @@ const resolvers = {
       try {
         let query = supabase
           .from("orders")
-          .select("*, order_items(menu_item_id, quantity, price), user:users(id, name)");
+          .select("*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), user:users(id, name, phone_number)");
 
         if (userId) query = query.eq("user_id", userId);
         if (restaurantId) query = query.eq("restaurant_id", restaurantId);
@@ -166,6 +166,10 @@ const resolvers = {
           userId: order.user_id,
           items: order.order_items.map((item) => ({
             menuItemId: item.menu_item_id,
+            menuItem: {
+              ...item.menu_item,
+              imageUrl: item.menu_item.image_url || null,
+            },
             quantity: item.quantity,
             price: item.price,
           })),
