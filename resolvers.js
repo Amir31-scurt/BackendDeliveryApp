@@ -191,7 +191,7 @@ const resolvers = {
         // Fetch the order by ID
         const { data: order, error } = await supabase
           .from("orders")
-          .select("*, order_items(menu_item_id, quantity, price)")
+          .select("*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url))")
           .eq("id", id)
           .single();
 
@@ -202,8 +202,13 @@ const resolvers = {
           id: order.id,
           restaurantId: order.restaurant_id,
           userId: order.user_id,
+          user: order.user,
           items: order.order_items.map((item) => ({
             menuItemId: item.menu_item_id,
+            menuItem: item.menu_item ? {
+              ...item.menu_item,
+              imageUrl: item.menu_item.image_url || null,
+            } : null, // Handle case where menu_item might be null
             quantity: item.quantity,
             price: item.price,
           })),
@@ -211,6 +216,8 @@ const resolvers = {
           deliveryAddress: order.delivery_address,
           instructions: order.instructions,
           status: order.status,
+          createdAt: order.created_at || null, // Ensure createdAt is mapped correctly
+          updatedAt: order.updated_at || null,
         };
       } catch (err) {
         console.error("Error fetching order:", err.message);
