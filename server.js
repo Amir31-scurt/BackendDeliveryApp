@@ -105,6 +105,9 @@ const server = new ApolloServer({
   resolvers,
   delivererResolvers,
   context: { pool }, // Pass PostgreSQL pool to context
+  persistedQueries: {
+    cache: 'bounded' // Limits memory usage
+  }
 });
 
 // Apply middleware to the app
@@ -113,8 +116,8 @@ server.applyMiddleware({ app });
 
 // Start the server
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => { // Listen on all network interfaces
+  console.log(`Production server running on port ${PORT}`);
   console.log(
     `GraphQL endpoint: http://localhost:${PORT}${server.graphqlPath}`
   );
