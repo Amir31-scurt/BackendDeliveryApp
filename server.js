@@ -22,7 +22,7 @@ const upload = multer({
   storage: multer.memoryStorage(), // Store files in memory for further processing
 });
 
-export const pool = new Pool({
+export const pool = new pg.Pool({
   host: '/var/run/postgresql', // cPanel socket path
   user: 'c2554004c_amir31',    // MUST match your working psql username
   password: 'Admin@admin.com',   // Your verified password
