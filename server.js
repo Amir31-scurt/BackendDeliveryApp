@@ -7,7 +7,6 @@ import { readFileSync } from "fs";
 import multer from "multer";
 import path from "path";
 import pg from 'pg';
-const { Pool } = pg; // Destructure after import
 import resolvers from "./resolvers.js";
 import { delivererResolvers } from "./resolvers/delivererResolvers.js";
 import adminRoutes from "./routes/admin.js";
@@ -23,16 +22,20 @@ const upload = multer({
   storage: multer.memoryStorage(), // Store files in memory for further processing
 });
 
-export const pool = new pg.Pool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT || 5432,
-  ssl: false,
-  connectionTimeoutMillis: 10000, // Increase timeout
-  idleTimeoutMillis: 30000
+const pool = new Pool({
+  host: '/var/run/postgresql', // cPanel socket path
+  user: 'c2554004c_amir31',    // MUST match your working psql username
+  password: 'Admin@admin.com',   // Your verified password
+  database: 'c2554004c_gourmet_d_amour',
+  port: 5432,
+  ssl: false
 });
+
+// Add error handling
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+});
+
 
 (async () => {
   try {
@@ -109,7 +112,7 @@ await server.start();
 server.applyMiddleware({ app });
 
 // Start the server
-const PORT = process.env.DB_PORT || 4000;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(
