@@ -2,8 +2,9 @@ import { ApolloServer, gql } from "apollo-server-express";
 import bcrypt from "bcrypt";
 import express from "express";
 import jwt from "jsonwebtoken";
-import { supabase } from "../supabaseClient.js";
 import { graphqlRequest } from "../utils/graphqlClient.js";
+import { pool } from "../server.js";
+
 
 const router = express.Router();
 
@@ -40,28 +41,18 @@ router.post("/login", async (req, res) => {
   }
 
   try {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("phone_number", phoneNumber)
-      .eq("role", "admin");
+    const query = 'SELECT * FROM users WHERE phone_number = $1 AND role = $2';
+    const { rows } = await pool.query(query, [phoneNumber, "admin"]);
+    const user = rows[0];
 
-    if (error) {
-      console.error(error);
+    if (!user) {
       return res.status(404).json({ error: "Admin not found." });
     }
-
-    // Handle no matching user
-    if (!data) {
-      return res.status(404).json({ error: "Admin not found." });
-    }
-
-    const user = data;
 
     // Log retrieved user data
-    console.log("Retrieved User:", user[0]);
+    console.log("Retrieved User:", user);
 
-    const isValidPassword = await bcrypt.compare(password, user[0].password);
+    const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(400).json({ error: "Invalid credentials." });
     }
@@ -74,7 +65,7 @@ router.post("/login", async (req, res) => {
     res.status(200).json({
       message: "Login successful.",
       token,
-      user: user[0],
+      user,
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -95,13 +86,11 @@ router.post("/login/restaurant", async (req, res) => {
   }
 
   try {
-    const { data, error } = await supabase
-      .from("restaurants")
-      .select("*")
-      .eq("email", email)
-      .single();
+    const query = 'SELECT * FROM restaurants WHERE email = $1';
+    const { rows } = await pool.query(query, [email]);
+    const data = rows[0];
 
-    if (error || !data) {
+    if (!data) {
       return res.status(404).json({ error: "Restaurant not found." });
     }
 
@@ -155,64 +144,39 @@ router.get("/logout", (req, res) => {
   });
 });
 
-
 // Dashboard route
 router.get("/dashboard", async (req, res) => {
   try {
     // Fetch total restaurants
-    const { data: totalRestaurants, error: restaurantError } = await supabase
-      .from("restaurants")
-      .select("*", { count: "exact" });
-
-    if (restaurantError) {
-      console.error("Error fetching restaurant data:", restaurantError);
-    }
+    const restaurantQuery = 'SELECT COUNT(*) FROM restaurants';
+    const { rows: totalRestaurantsRows } = await pool.query(restaurantQuery);
+    const totalRestaurants = totalRestaurantsRows[0].count;
 
     // Fetch total active restaurants
-    const { data: totalActiveRestaurants, error: activeRestaurantError } =
-      await supabase
-        .from("restaurants")
-        .select("*", { count: "exact" })
-        .eq("is_active", true);
-
-    if (activeRestaurantError) {
-      console.error("Error fetching restaurant data:", activeRestaurantError);
-    }
+    const activeRestaurantQuery = 'SELECT COUNT(*) FROM restaurants WHERE is_active = true';
+    const { rows: totalActiveRestaurantsRows } = await pool.query(activeRestaurantQuery);
+    const totalActiveRestaurants = totalActiveRestaurantsRows[0].count;
 
     // Fetch total deliverers
-    const { data: totalDeliverers, error: delivererError } = await supabase
-      .from("deliverers")
-      .select("*", { count: "exact" });
-
-    if (delivererError) {
-      console.error("Error fetching deliverer data:", delivererError);
-    }
+    const delivererQuery = 'SELECT COUNT(*) FROM deliverers';
+    const { rows: totalDeliverersRows } = await pool.query(delivererQuery);
+    const totalDeliverers = totalDeliverersRows[0].count;
 
     // Fetch total orders
-    const { data: totalOrders, error: orderError } = await supabase
-      .from("orders")
-      .select("*", { count: "exact" });
-
-    if (orderError) {
-      console.error("Error fetching orders data:", orderError);
-    }
+    const orderQuery = 'SELECT COUNT(*) FROM orders';
+    const { rows: totalOrdersRows } = await pool.query(orderQuery);
+    const totalOrders = totalOrdersRows[0].count;
 
     // Fetch monthly orders data
-    const { data: monthlyOrders, error: monthlyOrdersError } = await supabase
-      .rpc('get_monthly_orders');
-
-    if (monthlyOrdersError) {
-      console.error("Error fetching monthly orders data:", monthlyOrdersError);
-    }
+    const monthlyOrdersQuery = 'SELECT * FROM get_monthly_orders()';
+    const { rows: monthlyOrders } = await pool.query(monthlyOrdersQuery);
 
     // Pass all data to the EJS template
     res.render("admin/dashboard", {
-      totalOrders: totalOrders ? totalOrders.length : 0,
-      totalRestaurants: totalRestaurants ? totalRestaurants.length : 0,
-      totalActiveRestaurants: totalActiveRestaurants
-        ? totalActiveRestaurants.length
-        : 0,
-      totalDeliverers: totalDeliverers ? totalDeliverers.length : 0,
+      totalOrders,
+      totalRestaurants,
+      totalActiveRestaurants,
+      totalDeliverers,
       monthlyOrders: monthlyOrders || [],
     });
   } catch (error) {
@@ -333,27 +297,11 @@ router.post("/upload", async (req, res) => {
     const { image, restaurantId } = req.body; // Ensure image is sent as a base64 or binary file
     const fileName = `${restaurantId}-${Date.now()}.jpg`;
 
-    const { data, error } = await supabase.storage
-      .from("restaurant-images")
-      .upload(fileName, image, {
-        contentType: "image/jpeg",
-      });
-
-    if (error) throw new Error(error.message);
-
-    const { publicUrl } = supabase.storage
-      .from("restaurant-images")
-      .getPublicUrl(fileName);
-
     // Save the public URL in your restaurants table
-    const { error: dbError } = await supabase
-      .from("restaurants")
-      .update({ image_url: publicUrl })
-      .eq("id", restaurantId);
+    const updateQuery = 'UPDATE restaurants SET image_url = $1 WHERE id = $2';
+    await pool.query(updateQuery, [fileName, restaurantId]);
 
-    if (dbError) throw new Error(dbError.message);
-
-    res.status(200).json({ message: "Image uploaded successfully", publicUrl });
+    res.status(200).json({ message: "Image uploaded successfully", publicUrl: fileName });
   } catch (err) {
     console.error("Upload error:", err);
     res.status(500).json({ error: err.message });
@@ -615,28 +563,29 @@ const typeDefs = gql`
 const resolvers = {
   Query: {
     restaurants: async () => {
-      const { data, error } = await supabase.from("restaurants").select("*");
-      if (error) throw new Error("Error fetching restaurants.");
-      return data;
+      const query = 'SELECT * FROM restaurants';
+      const { rows } = await pool.query(query);
+      return rows;
     },
     restaurant: async (_, { id }) => {
-      const { data, error } = await supabase
-        .from("restaurants")
-        .select("*")
-        .eq("id", id)
-        .single();
-      if (error) throw new Error("Error fetching restaurant.");
+      const query = 'SELECT * FROM restaurants WHERE id = $1';
+      const { rows } = await pool.query(query, [id]);
+      const data = rows[0];
+      if (!data) throw new Error("Error fetching restaurant.");
       return data;
     },
   },
   Mutation: {
     addRestaurant: async (_, args) => {
-      const { data, error } = await supabase
-        .from("restaurants")
-        .insert(args)
-        .select()
-        .single();
-      if (error) throw new Error("Error adding restaurant.");
+      const insertQuery = `
+        INSERT INTO restaurants (name, description, address, type, phone_number, email, image_url, is_active, opening_hours)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING *;
+      `;
+      const values = [args.name, args.description, args.address, args.type, args.phoneNumber, args.email, args.imageUrl, args.isActive, args.openingHours];
+      const { rows } = await pool.query(insertQuery, values);
+      const data = rows[0];
+      if (!data) throw new Error("Error adding restaurant.");
       return data;
     },
   },

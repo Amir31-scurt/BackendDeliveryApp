@@ -3,12 +3,12 @@ import { validateEmail } from "./utils/validators.js";
 
 const resolvers = {
   Query: {
-    users: async (_, __, { supabase }) => {
-      const { data, error } = await supabase.from("users").select("*");
-      if (error) throw new Error(error.message);
+    users: async (_, __, { pool }) => {
+      const query = 'SELECT * FROM users';
+      const { rows } = await pool.query(query);
 
       // Handle null phone numbers
-      const sanitizedData = data.map((user) => ({
+      const sanitizedData = rows.map((user) => ({
         ...user,
         name: user.name || "Not provided", // Fallback value
         phoneNumber: user.phone_number || "Not provided", // Fallback value
@@ -19,13 +19,10 @@ const resolvers = {
 
       return sanitizedData;
     },
-    user: async (_, { id }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", id)
-        .single();
-      if (error) throw new Error(error.message);
+    user: async (_, { id }, { pool }) => {
+      const query = 'SELECT * FROM users WHERE id = $1';
+      const { rows } = await pool.query(query, [id]);
+      const data = rows[0];
       return {
         ...data,
         name: data.name,
@@ -35,12 +32,12 @@ const resolvers = {
         createdAt: data.created_at,
       };
     },
-    restaurants: async (_, __, { supabase }) => {
-      const { data, error } = await supabase.from("restaurants").select("*");
-      if (error) throw new Error(error.message);
+    restaurants: async (_, __, { pool }) => {
+      const query = 'SELECT * FROM restaurants';
+      const { rows } = await pool.query(query);
 
       // Handle null phone numbers
-      const sanitizedData = data.map((restaurant) => ({
+      const sanitizedData = rows.map((restaurant) => ({
         ...restaurant,
         phoneNumber: restaurant.phone_number || "Not provided", // Fallback value
         createdAt: restaurant.created_at || "Not provided", // Fallback value
@@ -81,13 +78,10 @@ const resolvers = {
 
       return sanitizedData;
     },
-    restaurant: async (_, { id }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("restaurants")
-        .select("*")
-        .eq("id", id)
-        .single();
-      if (error) throw new Error(error.message);
+    restaurant: async (_, { id }, { pool }) => {
+      const query = 'SELECT * FROM restaurants WHERE id = $1';
+      const { rows } = await pool.query(query, [id]);
+      const data = rows[0];
 
       if (!data.opening_hours) {
         // Provide a default value for opening hours
@@ -111,33 +105,30 @@ const resolvers = {
         updatedAt: data.updated_at,
       };
     },
-    searchRestaurants: async (_, { query }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("restaurants")
-        .select("*")
-        .or(`name.ilike.%${query}%,address.ilike.%${query}%`);
-      if (error) throw new Error(error.message);
-      return data;
+    searchRestaurants: async (_, { query }, { pool }) => {
+      const sqlQuery = `
+        SELECT * FROM restaurants
+        WHERE name ILIKE $1 OR address ILIKE $1
+      `;
+      const { rows } = await pool.query(sqlQuery, [`%${query}%`]);
+      return rows;
     },
-    menuItems: async (_, { restaurantId }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("menu_items")
-        .select("*")
-        .eq("restaurant_id", restaurantId);
-      if (error) throw new Error(error.message);
+    menuItems: async (_, { restaurantId }, { pool }) => {
+      const query = 'SELECT * FROM menu_items WHERE restaurant_id = $1';
+      const { rows } = await pool.query(query, [restaurantId]);
 
-      return data.map((menuItem) => ({
+      return rows.map((menuItem) => ({
         ...menuItem,
         createdAt: menuItem.created_at || "Not provided",
         updatedAt: menuItem.updated_at || "Not provided",
         imageUrl: menuItem.image_url || null,
       }));
     },
-    allMenuItems: async (_, __, { supabase }) => {
-      const { data, error } = await supabase.from("menu_items").select("*");
-      if (error) throw new Error(error.message);
+    allMenuItems: async (_, __, { pool }) => {
+      const query = 'SELECT * FROM menu_items';
+      const { rows } = await pool.query(query);
 
-      return data.map((menuItem) => ({
+      return rows.map((menuItem) => ({
         ...menuItem,
         restaurantId: menuItem.restaurant_id,
         createdAt: menuItem.created_at || "Not provided",
@@ -145,19 +136,37 @@ const resolvers = {
         imageUrl: menuItem.image_url || null,
       }));
     },
-    orders: async (_, { userId, restaurantId, status }, { supabase }) => {
+    orders: async (_, { userId, restaurantId, status }, { pool }) => {
       try {
-        let query = supabase
-          .from("orders")
-          .select("*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), user:users(id, name, phone_number)");
+        let query = `
+          SELECT o.*, oi.menu_item_id, oi.quantity, oi.price, mi.id, mi.name, mi.description, mi.price, mi.image_url, u.id, u.name, u.phone_number
+          FROM orders o
+          JOIN order_items oi ON o.id = oi.order_id
+          JOIN menu_items mi ON oi.menu_item_id = mi.id
+          JOIN users u ON o.user_id = u.id
+        `;
+        const conditions = [];
+        const values = [];
 
-        if (userId) query = query.eq("user_id", userId);
-        if (restaurantId) query = query.eq("restaurant_id", restaurantId);
-        if (status) query = query.eq("status", status);
+        if (userId) {
+          conditions.push(`o.user_id = $${conditions.length + 1}`);
+          values.push(userId);
+        }
+        if (restaurantId) {
+          conditions.push(`o.restaurant_id = $${conditions.length + 1}`);
+          values.push(restaurantId);
+        }
+        if (status) {
+          conditions.push(`o.status = $${conditions.length + 1}`);
+          values.push(status);
+        }
 
-        const { data: orders, error } = await query;
+        if (conditions.length > 0) {
+          query += ` WHERE ${conditions.join(' AND ')}`;
+        }
 
-        if (error) throw new Error(`Failed to fetch orders: ${error.message}`);
+        const { rows: orders } = await pool.query(query, values);
+
         if (!orders || orders.length === 0) throw new Error("No orders found");
 
         return orders.map((order) => ({
@@ -186,16 +195,18 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
-    order: async (_, { id }, { supabase }) => {
+    order: async (_, { id }, { pool }) => {
       try {
-        // Fetch the order by ID
-        const { data: order, error } = await supabase
-          .from("orders")
-          .select("*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url))")
-          .eq("id", id)
-          .single();
+        const query = `
+          SELECT o.*, oi.menu_item_id, oi.quantity, oi.price, mi.id, mi.name, mi.description, mi.price, mi.image_url
+          FROM orders o
+          JOIN order_items oi ON o.id = oi.order_id
+          JOIN menu_items mi ON oi.menu_item_id = mi.id
+          WHERE o.id = $1
+        `;
+        const { rows } = await pool.query(query, [id]);
+        const order = rows[0];
 
-        if (error) throw new Error(`Failed to fetch order: ${error.message}`);
         if (!order) throw new Error("Order not found");
 
         return {
@@ -224,21 +235,19 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
-    restaurantByEmail: async (_, { email }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("restaurants")
-        .select("*")
-        .eq("email", email)
-        .single();
-      if (error) throw new Error("Restaurant not found.");
+    restaurantByEmail: async (_, { email }, { pool }) => {
+      const query = 'SELECT * FROM restaurants WHERE email = $1';
+      const { rows } = await pool.query(query, [email]);
+      const data = rows[0];
+      if (!data) throw new Error("Restaurant not found.");
       return data;
     },
   },
   Mutation: {
-    createUser: async (_, { input }, { supabase }) => {
+    createUser: async (_, { input }, { pool }) => {
       const password = "123456789";
       const hashedPassword = await bcrypt.hash(password, 10);
-      // Map GraphQL fields to Supabase fields
+      // Map GraphQL fields to PostgreSQL fields
       const dbInput = {
         ...input,
         name: input.name,
@@ -253,39 +262,33 @@ const resolvers = {
       console.log("DB Input:", dbInput);
 
       // Check if the phone number already exists in the users table
-      const { data: existingUser, error: existingUserError } = await supabase
-        .from("users")
-        .select("phone_number")
-        .eq("phone_number", input.phoneNumber)
-        .single();
+      const checkQuery = 'SELECT phone_number FROM users WHERE phone_number = $1';
+      const { rows: existingUser } = await pool.query(checkQuery, [input.phoneNumber]);
 
-      if (existingUser) {
+      if (existingUser.length > 0) {
         throw new Error("Ce numéro est déjà utilisé.");
       }
 
-      if (existingUserError && existingUserError.code !== "PGRST116") {
-        console.error("Erreur de vérification du numéro:", existingUserError);
-        throw new Error("Erreur interne du serveur.");
-      }
+      const insertQuery = `
+        INSERT INTO users (name, password, phone_number, is_verified, role)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *;
+      `;
+      const values = [dbInput.name, dbInput.password, dbInput.phone_number, dbInput.is_verified, dbInput.role];
+      const { rows } = await pool.query(insertQuery, values);
+      const data = rows[0];
 
-      const { data, error } = await supabase
-        .from("users")
-        .insert([dbInput])
-        .select()
-        .single();
-
-      if (error) throw new Error(error.message);
       return {
         ...data,
         phoneNumber: data.phone_number, // Map phone_number back to phoneNumber
       };
     },
-    createRestaurant: async (_, { input }, { supabase }) => {
+    createRestaurant: async (_, { input }, { pool }) => {
       if (!validateEmail(input.email)) {
         throw new Error(`${input.email} n'est pas un adresse mail valide!`);
       }
 
-      // Map GraphQL fields to Supabase fields
+      // Map GraphQL fields to PostgreSQL fields
       const dbInput = {
         ...input,
         phone_number: input.phoneNumber,
@@ -299,38 +302,40 @@ const resolvers = {
       delete dbInput.phoneNumber; // Remove GraphQL-only field
       delete dbInput.imageUrl; // Remove GraphQL-only field
 
-      const { data, error } = await supabase
-        .from("restaurants")
-        .insert([dbInput])
-        .select()
-        .single();
+      const insertQuery = `
+        INSERT INTO restaurants (name, description, address, type, phone_number, email, opening_hours, is_active, image_url)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING *;
+      `;
+      const values = [dbInput.name, dbInput.description, dbInput.address, dbInput.type, dbInput.phone_number, dbInput.email, dbInput.opening_hours, dbInput.is_active, dbInput.image_url];
+      const { rows } = await pool.query(insertQuery, values);
+      const data = rows[0];
 
-      if (error) throw new Error(error.message);
       return data;
     },
 
-    updateRestaurant: async (_, { id, input }, { supabase }) => {
+    updateRestaurant: async (_, { id, input }, { pool }) => {
       if (input.email && !validateEmail(input.email)) {
         throw new Error(`${input.email} n'est pas un adresse mail valide!`);
       }
-      const { data, error } = await supabase
-        .from("restaurants")
-        .update(input)
-        .eq("id", id)
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
+      const updateQuery = `
+        UPDATE restaurants
+        SET name = $1, description = $2, address = $3, type = $4, phone_number = $5, email = $6, opening_hours = $7, is_active = $8, image_url = $9
+        WHERE id = $10
+        RETURNING *;
+      `;
+      const values = [input.name, input.description, input.address, input.type, input.phoneNumber, input.email, input.openingHours, input.isActive, input.imageUrl, id];
+      const { rows } = await pool.query(updateQuery, values);
+      const data = rows[0];
+
       return data;
     },
-    deleteRestaurant: async (_, { id }, { supabase }) => {
-      const { error } = await supabase
-        .from("restaurants")
-        .delete()
-        .eq("id", id);
-      if (error) throw new Error(error.message);
+    deleteRestaurant: async (_, { id }, { pool }) => {
+      const deleteQuery = 'DELETE FROM restaurants WHERE id = $1';
+      await pool.query(deleteQuery, [id]);
       return true;
     },
-    addMenuItem: async (_, { input }, { supabase }) => {
+    addMenuItem: async (_, { input }, { pool }) => {
       const dbInput = {
         ...input,
         restaurant_id: input.restaurantId, // Map restaurantId to restaurant_id
@@ -340,13 +345,15 @@ const resolvers = {
       delete dbInput.restaurantId; // Remove GraphQL-only field
       delete dbInput.imageUrl; // Remove GraphQL-only field
 
-      const { data, error } = await supabase
-        .from("menu_items")
-        .insert([dbInput])
-        .select()
-        .single();
+      const insertQuery = `
+        INSERT INTO menu_items (name, description, price, category, image_url, restaurant_id)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        RETURNING *;
+      `;
+      const values = [dbInput.name, dbInput.description, dbInput.price, dbInput.category, dbInput.image_url, dbInput.restaurant_id];
+      const { rows } = await pool.query(insertQuery, values);
+      const data = rows[0];
 
-      if (error) throw new Error(error.message);
       return {
         ...data,
         imageUrl: data.image_url || "Not provided", // Fallback value
@@ -354,28 +361,25 @@ const resolvers = {
         updatedAt: data.updated_at,
       };
     },
-    updateMenuItem: async (_, { id, input }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("menu_items")
-        .update(input)
-        .eq("id", id)
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
+    updateMenuItem: async (_, { id, input }, { pool }) => {
+      const updateQuery = `
+        UPDATE menu_items
+        SET name = $1, description = $2, price = $3, category = $4, image_url = $5
+        WHERE id = $6
+        RETURNING *;
+      `;
+      const values = [input.name, input.description, input.price, input.category, input.imageUrl, id];
+      const { rows } = await pool.query(updateQuery, values);
+      const data = rows[0];
+
       return data;
     },
-    createOrder: async (_, { input }, { supabase }) => {
+    createOrder: async (_, { input }, { pool }) => {
       try {
-        const { data: menuItems, error: fetchError } = await supabase
-          .from("menu_items")
-          .select("id, price")
-          .in(
-            "id",
-            input.items.map((item) => item.menuItemId)
-          );
-
-        if (fetchError)
-          throw new Error(`Failed to fetch menu items: ${fetchError.message}`);
+        const menuItemsQuery = `
+          SELECT id, price FROM menu_items WHERE id = ANY($1::int[])
+        `;
+        const { rows: menuItems } = await pool.query(menuItemsQuery, [input.items.map((item) => item.menuItemId)]);
 
         const priceMap = Object.fromEntries(
           menuItems.map((item) => [item.id, item.price])
@@ -387,23 +391,14 @@ const resolvers = {
           return total + itemPrice * item.quantity;
         }, 0);
 
-        const { data: newOrder, error: orderError } = await supabase
-          .from("orders")
-          .insert([
-            {
-              user_id: input.userId,
-              restaurant_id: input.restaurantId,
-              delivery_address: input.deliveryAddress,
-              instructions: input.instructions || null,
-              total_amount: totalAmount,
-              status: input.status || "Pending",
-            },
-          ])
-          .select()
-          .single();
-
-        if (orderError)
-          throw new Error(`Failed to create order: ${orderError.message}`);
+        const orderInsertQuery = `
+          INSERT INTO orders (user_id, restaurant_id, delivery_address, instructions, total_amount, status)
+          VALUES ($1, $2, $3, $4, $5, $6)
+          RETURNING *;
+        `;
+        const orderValues = [input.userId, input.restaurantId, input.deliveryAddress, input.instructions || null, totalAmount, input.status || "Pending"];
+        const { rows: newOrderRows } = await pool.query(orderInsertQuery, orderValues);
+        const newOrder = newOrderRows[0];
 
         const orderItems = input.items.map((item) => ({
           order_id: newOrder.id,
@@ -412,11 +407,13 @@ const resolvers = {
           price: priceMap[item.menuItemId],
         }));
 
-        const { error: itemsError } = await supabase
-          .from("order_items")
-          .insert(orderItems);
-        if (itemsError)
-          throw new Error(`Failed to create order items: ${itemsError.message}`);
+        const orderItemsInsertQuery = `
+          INSERT INTO order_items (order_id, menu_item_id, quantity, price)
+          VALUES ($1, $2, $3, $4)
+        `;
+        for (const item of orderItems) {
+          await pool.query(orderItemsInsertQuery, [item.order_id, item.menu_item_id, item.quantity, item.price]);
+        }
 
         return {
           id: newOrder.id,
@@ -433,14 +430,16 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
-    updateOrderStatus: async (_, { id, status }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("orders")
-        .update({ status: status })
-        .eq("id", id)
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
+    updateOrderStatus: async (_, { id, status }, { pool }) => {
+      const updateQuery = `
+        UPDATE orders
+        SET status = $1
+        WHERE id = $2
+        RETURNING *;
+      `;
+      const { rows } = await pool.query(updateQuery, [status, id]);
+      const data = rows[0];
+
       return data;
     },
   },

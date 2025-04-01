@@ -2,7 +2,6 @@ import bcrypt from "bcrypt";
 import { addMinutes } from "date-fns";
 import express from "express";
 import jwt from "jsonwebtoken";
-import { supabase } from "../supabaseClient.js";
 import { signIn } from "../utils/auth.js";
 
 const userStore = {};
@@ -23,19 +22,11 @@ router.post("/signup", async (req, res) => {
     }
 
     // Check if the phone number already exists in the users table
-    const { data: existingUser, error: existingUserError } = await supabase
-      .from("users")
-      .select("phone_number")
-      .eq("phone_number", phoneNumber)
-      .single();
+    const checkQuery = 'SELECT phone_number FROM users WHERE phone_number = $1';
+    const { rows: existingUser } = await pool.query(checkQuery, [phoneNumber]);
 
-    if (existingUser) {
+    if (existingUser.length > 0) {
       return res.status(400).json({ error: "Ce numéro est déjà utilisé." });
-    }
-
-    if (existingUserError && existingUserError.code !== "PGRST116") {
-      console.error("Erreur de vérification du numéro:", existingUserError);
-      return res.status(500).json({ error: "Erreur interne du serveur." });
     }
 
     // If the role is "deliverer", skip OTP and save directly to the database
@@ -44,44 +35,22 @@ router.post("/signup", async (req, res) => {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Save user to the database
-      const { data: userData, error } = await supabase
-        .from("users")
-        .insert({
-          phone_number: phoneNumber,
-          name,
-          password: hashedPassword,
-          role: "deliverer",
-          is_verified: true, // Deliverers are verified by admin
-        })
-        .select() // Ensures the inserted data is returned
-        .single(); // Return a single row
-
-      if (error) {
-        console.error("Erreur lors de l'enregistrement du livreur:", error);
-        return res.status(500).json({ error: "Erreur interne du serveur." });
-      }
+      const insertUserQuery = `
+        INSERT INTO users (phone_number, name, password, role, is_verified)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *;
+      `;
+      const userValues = [phoneNumber, name, hashedPassword, "deliverer", true];
+      const { rows: userDataRows } = await pool.query(insertUserQuery, userValues);
+      const userData = userDataRows[0];
 
       // Insert deliverer-specific information into the `deliverers` table
-      const { error: delivererError } = await supabase
-        .from("deliverers")
-        .insert({
-          user_id: userData.id,
-          vehicle_id: null, // Default fields for deliverers
-          is_available: true,
-          current_location: null,
-          zone: null,
-          profile_picture: null,
-        });
-
-      if (delivererError) {
-        console.error(
-          "Erreur lors de l'enregistrement des informations du livreur:",
-          delivererError
-        );
-        return res
-          .status(500)
-          .json({ error: "Erreur interne du serveur." + error, user: data });
-      }
+      const insertDelivererQuery = `
+        INSERT INTO deliverers (user_id, vehicle_id, is_available, current_location, zone, profile_picture)
+        VALUES ($1, $2, $3, $4, $5, $6);
+      `;
+      const delivererValues = [userData.id, null, true, null, null, null];
+      await pool.query(insertDelivererQuery, delivererValues);
 
       return res.status(201).json({
         message: "Livreur ajouté avec succès.",
@@ -104,9 +73,11 @@ router.post("/signup", async (req, res) => {
     };
 
     // For production, store this in your database
-    await supabase
-      .from("otps")
-      .insert({ phone_number: phoneNumber, otp, expires_at: expiresAt });
+    const insertOtpQuery = `
+      INSERT INTO otps (phone_number, otp, expires_at)
+      VALUES ($1, $2, $3);
+    `;
+    await pool.query(insertOtpQuery, [phoneNumber, otp, expiresAt]);
 
     // Return OTP for testing (don't send in production)
     res.status(200).json({
@@ -150,6 +121,7 @@ router.post("/login", async (req, res) => {
     res.status(400).json({ error: "Échec de la connexion." });
   }
 });
+
 /**
  * Verify OTP
  */
@@ -189,18 +161,14 @@ router.post("/verify-otp", async (req, res) => {
     userData.isVerified = true;
 
     // Save user to your database
-    const { data, error } = await supabase.from("users").insert({
-      phone_number: phoneNumber,
-      name,
-      password: hashedPassword,
-      role: "customer",
-      is_verified: true,
-    });
-
-    if (error) {
-      console.error("Erreur lors de l'enregistrement de l'utilisateur:", error);
-      return res.status(500).json({ error: "Erreur interne du serveur." });
-    }
+    const insertUserQuery = `
+      INSERT INTO users (phone_number, name, password, role, is_verified)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *;
+    `;
+    const userValues = [phoneNumber, name, hashedPassword, "customer", true];
+    const { rows: userRows } = await pool.query(insertUserQuery, userValues);
+    const data = userRows[0];
 
     // Clean up temporary store
     delete userStore[phoneNumber];

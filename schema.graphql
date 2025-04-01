@@ -6,6 +6,14 @@ type User {
   createdAt: String!
   role: UserType!
 }
+
+type Zone {
+  id: ID!
+  name: String!
+  latitude: Float!
+  longitude: Float!
+}
+
 type Restaurant {
   id: ID!
   name: String!
@@ -102,7 +110,7 @@ type Deliverer {
   vehicleId: ID
   isAvailable: Boolean!
   currentLocation: String
-  zone: String
+  zone: Zone!
   profilePicture: String
   isActive: Boolean!
   isVerified: Boolean!
@@ -230,10 +238,16 @@ input OrderItemInput {
   quantity: Int!
 }
 
+input ZoneInput {
+  name: String!
+  latitude: Float!
+  longitude: Float!
+}
+
 input CreateDelivererInput {
   vehicleId: ID
   isAvailable: Boolean
   currentLocation: String
-  zone: String
+  zone: ZoneInput
   profilePicture: String
 }

@@ -6,12 +6,12 @@ import expressEjsLayouts from "express-ejs-layouts";
 import { readFileSync } from "fs";
 import multer from "multer";
 import path from "path";
+import pg from 'pg';
+const { Pool } = pg; // Destructure after import
 import resolvers from "./resolvers.js";
 import { delivererResolvers } from "./resolvers/delivererResolvers.js";
 import adminRoutes from "./routes/admin.js";
 import authRoutes from "./routes/auth.js";
-import { supabase } from "./supabaseClient.js";
-// import { supabase } from "./supabaseClient.js";
 
 dotenv.config();
 
@@ -22,6 +22,29 @@ const app = express();
 const upload = multer({
   storage: multer.memoryStorage(), // Store files in memory for further processing
 });
+
+export const pool = new pg.Pool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT || 5432,
+  ssl: false,
+  connectionTimeoutMillis: 10000, // Increase timeout
+  idleTimeoutMillis: 30000
+});
+
+(async () => {
+  try {
+    const client = await pool.connect();
+    console.log('✅ Connected! PostgreSQL version:', 
+      (await client.query('SELECT version()')).rows[0]);
+  } catch (err) {
+    console.error('❌ Connection failed:', err);
+  } finally {
+    await pool.end();
+  }
+})();
 
 app.use(
   cors({
@@ -48,35 +71,21 @@ app.post("/storage/upload", upload.single("image"), async (req, res) => {
     const fileName = `restaurant-${Date.now()}-${file.originalname}`;
     console.log("Uploading file:", fileName);
 
-    // Attempt to upload the file
-    const { data, error } = await supabase.storage
-      .from("restaurant-images")
-      .upload(fileName, file.buffer, {
-        contentType: file.mimetype,
-      });
+    // Example of storing file metadata in PostgreSQL
+    const query = `
+      INSERT INTO restaurant_images (file_name, mime_type, data)
+      VALUES ($1, $2, $3)
+      RETURNING id;
+    `;
+    const values = [fileName, file.mimetype, file.buffer];
 
-    // Log the upload response
-    console.log("Upload response:", { data, error });
+    const result = await pool.query(query, values);
+    const imageId = result.rows[0].id;
 
-    if (error) {
-      console.error("Upload error:", error);
-      throw new Error("Upload failed");
-    }
+    // Generate a public URL or path to access the file
+    const publicUrl = `/images/${imageId}`; // Example path
 
-    // Generate the public URL
-    const publicUrlData = supabase.storage
-      .from("restaurant-images")
-      .getPublicUrl(fileName);
-
-    // Explicitly log the public URL data
-    console.log("Public URL data:", publicUrlData);
-
-    if (!publicUrlData.data?.publicUrl) {
-      console.error("Failed to retrieve public URL");
-      return res.status(500).json({ error: "Public URL retrieval failed" });
-    }
-
-    res.status(200).json({ publicUrl: publicUrlData.data.publicUrl });
+    res.status(200).json({ publicUrl });
   } catch (error) {
     console.error("Error uploading image:", error.message);
     res.status(500).json({ error: error.message });
@@ -86,39 +95,13 @@ app.post("/storage/upload", upload.single("image"), async (req, res) => {
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));
 
-// Serve static files
-app.use(express.static(path.join(__dirname, "public")));
-
-app.post("/storage/upload", async (req, res) => {
-  try {
-    const file = req.files.image; // Assuming `express-fileupload` or similar middleware is used
-    const fileName = `restaurant-${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage
-      .from("restaurant-images")
-      .upload(fileName, file.data, {
-        contentType: file.mimetype,
-      });
-
-    if (error) throw new Error(error.message);
-
-    const { publicUrl } = supabase.storage
-      .from("restaurant-images")
-      .getPublicUrl(fileName);
-
-    res.status(200).json({ publicUrl });
-  } catch (error) {
-    console.error("Error uploading image:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Setup GraphQL server
 const typeDefs = readFileSync(path.join(__dirname, "schema.graphql"), "utf8");
 const server = new ApolloServer({
   typeDefs,
   resolvers,
   delivererResolvers,
-  context: { supabase },
+  context: { pool }, // Pass PostgreSQL pool to context
 });
 
 // Apply middleware to the app
@@ -126,7 +109,7 @@ await server.start();
 server.applyMiddleware({ app });
 
 // Start the server
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.DB_PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(

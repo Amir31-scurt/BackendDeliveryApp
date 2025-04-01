@@ -2,143 +2,113 @@ import { supabase } from "../supabaseClient.js";
 
 export const delivererResolvers = {
   Query: {
-    deliverer: async (_, { id }) => {
-      const { data, error } = await supabase
-        .from("deliverers")
-        .select(
-          `
-          *,
-          user:users (
-            id,
-            name,
-            phone_number,
-            role
-          )
-        `
-        )
-        .eq("id", id)
-        .single();
-
-      if (error) throw error;
+    deliverer: async (_, { id }, { pool }) => {
+      const query = `
+        SELECT d.*, u.id as user_id, u.name, u.phone_number, u.role
+        FROM deliverers d
+        JOIN users u ON d.user_id = u.id
+        WHERE d.id = $1
+      `;
+      const { rows } = await pool.query(query, [id]);
+      const data = rows[0];
+      if (!data) throw new Error("Deliverer not found.");
       return data;
     },
 
-    delivererByUserId: async (_, { userId }) => {
-      const { data, error } = await supabase
-        .from("deliverers")
-        .select(
-          `
-          *,
-          user:users (
-            id,
-            name,
-            phone_number,
-            role
-          )
-        `
-        )
-        .eq("user_id", userId)
-        .single();
-
-      if (error) throw error;
+    delivererByUserId: async (_, { userId }, { pool }) => {
+      const query = `
+        SELECT d.*, u.id as user_id, u.name, u.phone_number, u.role
+        FROM deliverers d
+        JOIN users u ON d.user_id = u.id
+        WHERE d.user_id = $1
+      `;
+      const { rows } = await pool.query(query, [userId]);
+      const data = rows[0];
+      if (!data) throw new Error("Deliverer not found.");
       return data;
     },
 
-    allDeliverers: async () => {
-      const { data, error } = await supabase
-        .from("deliverers")
-        .select(
-          `
-          *,
-          user:users (
-            id,
-            name,
-            phone_number,
-            role
-          )
-        `
-        )
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
+    allDeliverers: async (_, __, { pool }) => {
+      const query = `
+        SELECT d.*, u.id as user_id, u.name, u.phone_number, u.role
+        FROM deliverers d
+        JOIN users u ON d.user_id = u.id
+        ORDER BY d.created_at DESC
+      `;
+      const { rows } = await pool.query(query);
+      return rows;
     },
 
-    availableDeliverers: async () => {
-      const { data, error } = await supabase
-        .from("deliverers")
-        .select(
-          `
-          *,
-          user:users (
-            id,
-            name,
-            phone_number,
-            role
-          )
-        `
-        )
-        .eq("is_available", true)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
+    availableDeliverers: async (_, __, { pool }) => {
+      const query = `
+        SELECT d.*, u.id as user_id, u.name, u.phone_number, u.role
+        FROM deliverers d
+        JOIN users u ON d.user_id = u.id
+        WHERE d.is_available = true
+        ORDER BY d.created_at DESC
+      `;
+      const { rows } = await pool.query(query);
+      return rows;
     },
   },
 
   Mutation: {
-    createDeliverer: async (_, { input }, context) => {
+    createDeliverer: async (_, { input }, { pool, user }) => {
       // Ensure user is authenticated
-      if (!context.user) {
+      if (!user) {
         throw new Error("Authentication required");
       }
 
-      const { data, error } = await supabase
-        .from("deliverers")
-        .insert({
-          user_id: context.user.id,
-          vehicle_id: input.vehicleId,
-          is_available: input.isAvailable ?? true,
-          current_location: input.currentLocation,
-          zone: input.zone,
-          profile_picture: input.profilePicture,
-          is_verified: false, // New deliverers start unverified
-        })
-        .single();
-
-      if (error) throw error;
+      const insertQuery = `
+        INSERT INTO deliverers (user_id, vehicle_id, is_available, current_location, zone, profile_picture, is_verified)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING *;
+      `;
+      const values = [
+        user.id,
+        input.vehicleId,
+        input.isAvailable ?? true,
+        input.currentLocation,
+        input.zone,
+        input.profilePicture,
+        false, // New deliverers start unverified
+      ];
+      const { rows } = await pool.query(insertQuery, values);
+      const data = rows[0];
       return data;
     },
 
-    updateDelivererStatus: async (_, { id, isAvailable }, context) => {
+    updateDelivererStatus: async (_, { id, isAvailable }, { pool, user }) => {
       // Ensure user is authenticated and authorized
-      if (!context.user) {
+      if (!user) {
         throw new Error("Authentication required");
       }
 
-      const { data, error } = await supabase
-        .from("deliverers")
-        .update({ is_available: isAvailable })
-        .eq("id", id)
-        .single();
-
-      if (error) throw error;
+      const updateQuery = `
+        UPDATE deliverers
+        SET is_available = $1
+        WHERE id = $2
+        RETURNING *;
+      `;
+      const { rows } = await pool.query(updateQuery, [isAvailable, id]);
+      const data = rows[0];
       return data;
     },
 
-    updateDelivererLocation: async (_, { id, location }, context) => {
+    updateDelivererLocation: async (_, { id, location }, { pool, user }) => {
       // Ensure user is authenticated and authorized
-      if (!context.user) {
+      if (!user) {
         throw new Error("Authentication required");
       }
 
-      const { data, error } = await supabase
-        .from("deliverers")
-        .update({ current_location: location })
-        .eq("id", id)
-        .single();
-
-      if (error) throw error;
+      const updateQuery = `
+        UPDATE deliverers
+        SET current_location = $1
+        WHERE id = $2
+        RETURNING *;
+      `;
+      const { rows } = await pool.query(updateQuery, [location, id]);
+      const data = rows[0];
       return data;
     },
   },
