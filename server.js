@@ -146,3 +146,4 @@ app.use("/api/auth", authRoutes);
 app.use(expressEjsLayouts);
 app.set("layout", "admin/layout");
 app.set("layout", "admin/restaurants");
+
