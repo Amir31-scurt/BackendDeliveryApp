@@ -122,6 +122,7 @@ router.post("/signup", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { phoneNumber, password } = req.body;
+    console.log(req.body);
 
     if (!phoneNumber || !password) {
       return res.status(400).json({
@@ -129,7 +130,6 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    console.log(req.body);
     const { user } = await signIn(phoneNumber, password);
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
       expiresIn: "60d",
@@ -140,7 +140,7 @@ router.post("/login", async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
-        phoneNumber: user.phone,
+        phoneNumber: phoneNumber,
         role: user.role,
       },
       token: token,
