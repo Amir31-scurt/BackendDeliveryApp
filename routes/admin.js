@@ -1,9 +1,9 @@
-import { ApolloServer, gql } from "apollo-server-express";
+import {ApolloServer, gql} from "apollo-server-express";
 import bcrypt from "bcrypt";
 import express from "express";
 import jwt from "jsonwebtoken";
-import { supabase } from "../supabaseClient.js";
-import { graphqlRequest } from "../utils/graphqlClient.js";
+import {supabase} from "../supabaseClient.js";
+import {graphqlRequest} from "../utils/graphqlClient.js";
 
 const router = express.Router();
 
@@ -12,35 +12,35 @@ export const isAdmin = (req, res, next) => {
   console.log(req.headers);
 
   if (!token) {
-    return res.status(401).json({ error: "Access denied. No token provided." });
+    return res.status(401).json({error: "Access denied. No token provided."});
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
     if (decoded.role !== "admin") {
-      return res.status(403).json({ error: "Access denied. Admins only." });
+      return res.status(403).json({error: "Access denied. Admins only."});
     }
 
     req.user = decoded; // Attach user information to the request object
     next();
   } catch (error) {
     console.error("Token verification failed:", error);
-    return res.status(401).json({ error: "Invalid token." });
+    return res.status(401).json({error: "Invalid token."});
   }
 };
 
 // Admin login route
 router.post("/login", async (req, res) => {
-  const { phoneNumber, password } = req.body;
+  const {phoneNumber, password} = req.body;
 
   if (!phoneNumber || !password) {
     return res
       .status(400)
-      .json({ error: "Phone number and password are required." });
+      .json({error: "Phone number and password are required."});
   }
 
   try {
-    const { data, error } = await supabase
+    const {data, error} = await supabase
       .from("users")
       .select("*")
       .eq("phone_number", phoneNumber)
@@ -48,12 +48,12 @@ router.post("/login", async (req, res) => {
 
     if (error) {
       console.error(error);
-      return res.status(404).json({ error: "Admin not found." });
+      return res.status(404).json({error: "Admin not found."});
     }
 
     // Handle no matching user
     if (!data) {
-      return res.status(404).json({ error: "Admin not found." });
+      return res.status(404).json({error: "Admin not found."});
     }
 
     const user = data;
@@ -63,11 +63,11 @@ router.post("/login", async (req, res) => {
 
     const isValidPassword = await bcrypt.compare(password, user[0].password);
     if (!isValidPassword) {
-      return res.status(400).json({ error: "Invalid credentials." });
+      return res.status(400).json({error: "Invalid credentials."});
     }
 
     // Generate JWT token
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+    const token = jwt.sign({id: user.id}, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
 
@@ -78,7 +78,7 @@ router.post("/login", async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ error: "An error occurred during login." });
+    res.status(500).json({error: "An error occurred during login."});
   }
 });
 
@@ -88,26 +88,30 @@ router.get("/login", (req, res) => {
 
 // Restaurant login route
 router.post("/login/restaurant", async (req, res) => {
-  const { email } = req.body;
+  const {email} = req.body;
 
   if (!email) {
-    return res.status(400).json({ error: "Email is required." });
+    return res.status(400).json({error: "Email is required."});
   }
 
   try {
-    const { data, error } = await supabase
+    const {data, error} = await supabase
       .from("restaurants")
       .select("*")
       .eq("email", email)
       .single();
 
     if (error || !data) {
-      return res.status(404).json({ error: "Restaurant not found." });
+      return res.status(404).json({error: "Restaurant not found."});
     }
 
-    const token = jwt.sign({ id: data.id, role: "restaurant" }, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    const token = jwt.sign(
+      {id: data.id, role: "restaurant"},
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1d",
+      }
+    );
 
     return res.status(200).json({
       message: "Login successful.",
@@ -116,7 +120,7 @@ router.post("/login/restaurant", async (req, res) => {
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ error: "An error occurred during login." });
+    res.status(500).json({error: "An error occurred during login."});
   }
 });
 
@@ -129,7 +133,7 @@ router.post("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       console.error("Session destruction error:", err);
-      return res.status(500).json({ error: "Failed to logout." });
+      return res.status(500).json({error: "Failed to logout."});
     }
     res.clearCookie("token");
     res.clearCookie("restaurant");
@@ -139,7 +143,7 @@ router.post("/logout", (req, res) => {
     localStorage.removeItem("restaurant");
     localStorage.removeItem("user");
     localStorage.removeItem("deliverer");
-    res.status(200).json({ message: "Logout successful." });
+    res.status(200).json({message: "Logout successful."});
   });
 });
 
@@ -149,30 +153,29 @@ router.get("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
       console.error("Session destruction error:", err);
-      return res.status(500).json({ error: "Failed to logout." });
+      return res.status(500).json({error: "Failed to logout."});
     }
-    res.status(200).json({ message: "Logout successful." });
+    res.status(200).json({message: "Logout successful."});
   });
 });
-
 
 // Dashboard route
 router.get("/dashboard", async (req, res) => {
   try {
     // Fetch total restaurants
-    const { data: totalRestaurants, error: restaurantError } = await supabase
+    const {data: totalRestaurants, error: restaurantError} = await supabase
       .from("restaurants")
-      .select("*", { count: "exact" });
+      .select("*", {count: "exact"});
 
     if (restaurantError) {
       console.error("Error fetching restaurant data:", restaurantError);
     }
 
     // Fetch total active restaurants
-    const { data: totalActiveRestaurants, error: activeRestaurantError } =
+    const {data: totalActiveRestaurants, error: activeRestaurantError} =
       await supabase
         .from("restaurants")
-        .select("*", { count: "exact" })
+        .select("*", {count: "exact"})
         .eq("is_active", true);
 
     if (activeRestaurantError) {
@@ -180,26 +183,27 @@ router.get("/dashboard", async (req, res) => {
     }
 
     // Fetch total deliverers
-    const { data: totalDeliverers, error: delivererError } = await supabase
+    const {data: totalDeliverers, error: delivererError} = await supabase
       .from("deliverers")
-      .select("*", { count: "exact" });
+      .select("*", {count: "exact"});
 
     if (delivererError) {
       console.error("Error fetching deliverer data:", delivererError);
     }
 
     // Fetch total orders
-    const { data: totalOrders, error: orderError } = await supabase
+    const {data: totalOrders, error: orderError} = await supabase
       .from("orders")
-      .select("*", { count: "exact" });
+      .select("*", {count: "exact"});
 
     if (orderError) {
       console.error("Error fetching orders data:", orderError);
     }
 
     // Fetch monthly orders data
-    const { data: monthlyOrders, error: monthlyOrdersError } = await supabase
-      .rpc('get_monthly_orders');
+    const {data: monthlyOrders, error: monthlyOrdersError} = await supabase.rpc(
+      "get_monthly_orders"
+    );
 
     if (monthlyOrdersError) {
       console.error("Error fetching monthly orders data:", monthlyOrdersError);
@@ -262,7 +266,7 @@ router.get("/restaurants", async (req, res) => {
 
 // Restaurant Details Route
 router.get("/restaurants/:id/details", async (req, res) => {
-  const { id } = req.params;
+  const {id} = req.params;
 
   try {
     // Fetch restaurant details
@@ -330,10 +334,10 @@ router.get("/restaurants/:id/details", async (req, res) => {
 
 router.post("/upload", async (req, res) => {
   try {
-    const { image, restaurantId } = req.body; // Ensure image is sent as a base64 or binary file
+    const {image, restaurantId} = req.body; // Ensure image is sent as a base64 or binary file
     const fileName = `${restaurantId}-${Date.now()}.jpg`;
 
-    const { data, error } = await supabase.storage
+    const {data, error} = await supabase.storage
       .from("restaurant-images")
       .upload(fileName, image, {
         contentType: "image/jpeg",
@@ -341,22 +345,22 @@ router.post("/upload", async (req, res) => {
 
     if (error) throw new Error(error.message);
 
-    const { publicUrl } = supabase.storage
+    const {publicUrl} = supabase.storage
       .from("restaurant-images")
       .getPublicUrl(fileName);
 
     // Save the public URL in your restaurants table
-    const { error: dbError } = await supabase
+    const {error: dbError} = await supabase
       .from("restaurants")
-      .update({ image_url: publicUrl })
+      .update({image_url: publicUrl})
       .eq("id", restaurantId);
 
     if (dbError) throw new Error(dbError.message);
 
-    res.status(200).json({ message: "Image uploaded successfully", publicUrl });
+    res.status(200).json({message: "Image uploaded successfully", publicUrl});
   } catch (err) {
     console.error("Upload error:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({error: err.message});
   }
 });
 
@@ -402,7 +406,7 @@ router.post("/restaurants/add", isAdmin, async (req, res) => {
     `;
 
     // Execute GraphQL request
-    const { data, errors } = await graphqlRequest(mutation);
+    const {data, errors} = await graphqlRequest(mutation);
 
     if (errors) {
       console.error("GraphQL Errors:", errors);
@@ -421,8 +425,8 @@ router.post("/restaurants/add", isAdmin, async (req, res) => {
 // Handle toggling the restaurant's active status
 router.post("/restaurants/:id/toggle", isAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
-    const { isActive } = req.body;
+    const {id} = req.params;
+    const {isActive} = req.body;
 
     const mutation = `
       mutation {
@@ -444,7 +448,7 @@ router.post("/restaurants/:id/toggle", isAdmin, async (req, res) => {
 // Handle deleting a restaurant
 router.post("/restaurants/:id/delete", isAdmin, async (req, res) => {
   try {
-    const { id } = req.params;
+    const {id} = req.params;
 
     const mutation = `
       mutation {
@@ -463,8 +467,8 @@ router.post("/restaurants/:id/delete", isAdmin, async (req, res) => {
 
 // Add Menu Item Route
 router.post("/restaurants/:id/menu/add", async (req, res) => {
-  const { id } = req.params;
-  const { name, description, price, category, imageUrl } = req.body;
+  const {id} = req.params;
+  const {name, description, price, category, imageUrl} = req.body;
 
   console.log(req.body);
 
@@ -504,7 +508,7 @@ router.post("/restaurants/:id/menu/add", async (req, res) => {
 
 // Render the restaurant dashboard
 router.get("/restaurants/:id/orders", async (req, res) => {
-  const { id } = req.params;
+  const {id} = req.params;
 
   try {
     const query = `
@@ -552,8 +556,8 @@ router.get("/restaurants/:id/orders", async (req, res) => {
 });
 
 router.post("/orders/:id/status", async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
+  const {id} = req.params;
+  const {status} = req.body;
 
   try {
     const mutation = `
@@ -565,14 +569,14 @@ router.post("/orders/:id/status", async (req, res) => {
       }
     `;
 
-    const variables = { id, status };
+    const variables = {id, status};
 
     await graphqlRequest(mutation, variables);
 
-    res.status(200).json({ message: "Order status updated successfully." });
+    res.status(200).json({message: "Order status updated successfully."});
   } catch (error) {
     console.error("Error updating order status:", error);
-    res.status(500).json({ error: "Failed to update order status." });
+    res.status(500).json({error: "Failed to update order status."});
   }
 });
 
@@ -615,12 +619,12 @@ const typeDefs = gql`
 const resolvers = {
   Query: {
     restaurants: async () => {
-      const { data, error } = await supabase.from("restaurants").select("*");
+      const {data, error} = await supabase.from("restaurants").select("*");
       if (error) throw new Error("Error fetching restaurants.");
       return data;
     },
-    restaurant: async (_, { id }) => {
-      const { data, error } = await supabase
+    restaurant: async (_, {id}) => {
+      const {data, error} = await supabase
         .from("restaurants")
         .select("*")
         .eq("id", id)
@@ -631,7 +635,7 @@ const resolvers = {
   },
   Mutation: {
     addRestaurant: async (_, args) => {
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from("restaurants")
         .insert(args)
         .select()
@@ -646,16 +650,16 @@ const resolvers = {
 const graphqlServer = new ApolloServer({
   typeDefs,
   resolvers,
-  context: ({ req }) => {
+  context: ({req}) => {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) throw new Error("Unauthorized");
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return { userId: decoded.id };
+    return {userId: decoded.id};
   },
 });
 
 await graphqlServer.start();
-graphqlServer.applyMiddleware({ app: router, path: "/graphql" });
+graphqlServer.applyMiddleware({app: router, path: "/graphql"});
 
 // Add more routes for other admin functionalities (e.g., orders, deliverers)
 

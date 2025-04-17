@@ -1,10 +1,10 @@
 import bcrypt from "bcrypt";
-import { validateEmail } from "./utils/validators.js";
+import {validateEmail} from "./utils/validators.js";
 
 const resolvers = {
   Query: {
-    users: async (_, __, { supabase }) => {
-      const { data, error } = await supabase.from("users").select("*");
+    users: async (_, __, {supabase}) => {
+      const {data, error} = await supabase.from("users").select("*");
       if (error) throw new Error(error.message);
 
       // Handle null phone numbers
@@ -19,8 +19,8 @@ const resolvers = {
 
       return sanitizedData;
     },
-    user: async (_, { id }, { supabase }) => {
-      const { data, error } = await supabase
+    user: async (_, {id}, {supabase}) => {
+      const {data, error} = await supabase
         .from("users")
         .select("*")
         .eq("id", id)
@@ -35,8 +35,8 @@ const resolvers = {
         createdAt: data.created_at,
       };
     },
-    restaurants: async (_, __, { supabase }) => {
-      const { data, error } = await supabase.from("restaurants").select("*");
+    restaurants: async (_, __, {supabase}) => {
+      const {data, error} = await supabase.from("restaurants").select("*");
       if (error) throw new Error(error.message);
 
       // Handle null phone numbers
@@ -81,8 +81,8 @@ const resolvers = {
 
       return sanitizedData;
     },
-    restaurant: async (_, { id }, { supabase }) => {
-      const { data, error } = await supabase
+    restaurant: async (_, {id}, {supabase}) => {
+      const {data, error} = await supabase
         .from("restaurants")
         .select("*")
         .eq("id", id)
@@ -92,13 +92,13 @@ const resolvers = {
       if (!data.opening_hours) {
         // Provide a default value for opening hours
         data.opening_hours = {
-          monday: { open: "09:00", close: "17:00" },
-          tuesday: { open: "09:00", close: "17:00" },
-          wednesday: { open: "09:00", close: "17:00" },
-          thursday: { open: "09:00", close: "17:00" },
-          friday: { open: "09:00", close: "17:00" },
-          saturday: { open: "10:00", close: "14:00" },
-          sunday: { open: "Closed", close: "Closed" },
+          monday: {open: "09:00", close: "17:00"},
+          tuesday: {open: "09:00", close: "17:00"},
+          wednesday: {open: "09:00", close: "17:00"},
+          thursday: {open: "09:00", close: "17:00"},
+          friday: {open: "09:00", close: "17:00"},
+          saturday: {open: "10:00", close: "14:00"},
+          sunday: {open: "Closed", close: "Closed"},
         };
       }
       return {
@@ -111,16 +111,16 @@ const resolvers = {
         updatedAt: data.updated_at,
       };
     },
-    searchRestaurants: async (_, { query }, { supabase }) => {
-      const { data, error } = await supabase
+    searchRestaurants: async (_, {query}, {supabase}) => {
+      const {data, error} = await supabase
         .from("restaurants")
         .select("*")
         .or(`name.ilike.%${query}%,address.ilike.%${query}%`);
       if (error) throw new Error(error.message);
       return data;
     },
-    menuItems: async (_, { restaurantId }, { supabase }) => {
-      const { data, error } = await supabase
+    menuItems: async (_, {restaurantId}, {supabase}) => {
+      const {data, error} = await supabase
         .from("menu_items")
         .select("*")
         .eq("restaurant_id", restaurantId);
@@ -133,8 +133,8 @@ const resolvers = {
         imageUrl: menuItem.image_url || null,
       }));
     },
-    allMenuItems: async (_, __, { supabase }) => {
-      const { data, error } = await supabase.from("menu_items").select("*");
+    allMenuItems: async (_, __, {supabase}) => {
+      const {data, error} = await supabase.from("menu_items").select("*");
       if (error) throw new Error(error.message);
 
       return data.map((menuItem) => ({
@@ -145,22 +145,22 @@ const resolvers = {
         imageUrl: menuItem.image_url || null,
       }));
     },
-    orders: async (_, { userId, restaurantId, status }, { supabase }) => {
+    orders: async (_, {userId, restaurantId, status}, {supabase}) => {
       try {
         let query = supabase
           .from("orders")
-          .select("*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), user:users(id, name, phone_number)");
+          .select(
+            "*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), user:users(id, name, phone_number)"
+          );
 
         if (userId) query = query.eq("user_id", userId);
         if (restaurantId) query = query.eq("restaurant_id", restaurantId);
         if (status) query = query.eq("status", status);
 
-        const { data: orders, error } = await query;
+        const {data: orders, error} = await query;
 
         if (error) throw new Error(`Failed to fetch orders: ${error.message}`);
-        if (!orders || orders.length === 0) throw new Error("No orders found");
-
-        return orders.map((order) => ({
+        return (orders || []).map((order) => ({
           id: order.id,
           restaurantId: order.restaurant_id,
           userId: order.user_id,
@@ -186,12 +186,14 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
-    order: async (_, { id }, { supabase }) => {
+    order: async (_, {id}, {supabase}) => {
       try {
         // Fetch the order by ID
-        const { data: order, error } = await supabase
+        const {data: order, error} = await supabase
           .from("orders")
-          .select("*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url))")
+          .select(
+            "*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url))"
+          )
           .eq("id", id)
           .single();
 
@@ -205,10 +207,12 @@ const resolvers = {
           user: order.user,
           items: order.order_items.map((item) => ({
             menuItemId: item.menu_item_id,
-            menuItem: item.menu_item ? {
-              ...item.menu_item,
-              imageUrl: item.menu_item.image_url || null,
-            } : null, // Handle case where menu_item might be null
+            menuItem: item.menu_item
+              ? {
+                  ...item.menu_item,
+                  imageUrl: item.menu_item.image_url || null,
+                }
+              : null, // Handle case where menu_item might be null
             quantity: item.quantity,
             price: item.price,
           })),
@@ -224,8 +228,8 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
-    restaurantByEmail: async (_, { email }, { supabase }) => {
-      const { data, error } = await supabase
+    restaurantByEmail: async (_, {email}, {supabase}) => {
+      const {data, error} = await supabase
         .from("restaurants")
         .select("*")
         .eq("email", email)
@@ -235,7 +239,7 @@ const resolvers = {
     },
   },
   Mutation: {
-    createUser: async (_, { input }, { supabase }) => {
+    createUser: async (_, {input}, {supabase}) => {
       const password = "123456789";
       const hashedPassword = await bcrypt.hash(password, 10);
       // Map GraphQL fields to Supabase fields
@@ -253,7 +257,7 @@ const resolvers = {
       console.log("DB Input:", dbInput);
 
       // Check if the phone number already exists in the users table
-      const { data: existingUser, error: existingUserError } = await supabase
+      const {data: existingUser, error: existingUserError} = await supabase
         .from("users")
         .select("phone_number")
         .eq("phone_number", input.phoneNumber)
@@ -268,7 +272,7 @@ const resolvers = {
         throw new Error("Erreur interne du serveur.");
       }
 
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from("users")
         .insert([dbInput])
         .select()
@@ -280,7 +284,7 @@ const resolvers = {
         phoneNumber: data.phone_number, // Map phone_number back to phoneNumber
       };
     },
-    createRestaurant: async (_, { input }, { supabase }) => {
+    createRestaurant: async (_, {input}, {supabase}) => {
       if (!validateEmail(input.email)) {
         throw new Error(`${input.email} n'est pas un adresse mail valide!`);
       }
@@ -299,7 +303,7 @@ const resolvers = {
       delete dbInput.phoneNumber; // Remove GraphQL-only field
       delete dbInput.imageUrl; // Remove GraphQL-only field
 
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from("restaurants")
         .insert([dbInput])
         .select()
@@ -309,11 +313,11 @@ const resolvers = {
       return data;
     },
 
-    updateRestaurant: async (_, { id, input }, { supabase }) => {
+    updateRestaurant: async (_, {id, input}, {supabase}) => {
       if (input.email && !validateEmail(input.email)) {
         throw new Error(`${input.email} n'est pas un adresse mail valide!`);
       }
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from("restaurants")
         .update(input)
         .eq("id", id)
@@ -322,15 +326,12 @@ const resolvers = {
       if (error) throw new Error(error.message);
       return data;
     },
-    deleteRestaurant: async (_, { id }, { supabase }) => {
-      const { error } = await supabase
-        .from("restaurants")
-        .delete()
-        .eq("id", id);
+    deleteRestaurant: async (_, {id}, {supabase}) => {
+      const {error} = await supabase.from("restaurants").delete().eq("id", id);
       if (error) throw new Error(error.message);
       return true;
     },
-    addMenuItem: async (_, { input }, { supabase }) => {
+    addMenuItem: async (_, {input}, {supabase}) => {
       const dbInput = {
         ...input,
         restaurant_id: input.restaurantId, // Map restaurantId to restaurant_id
@@ -340,7 +341,7 @@ const resolvers = {
       delete dbInput.restaurantId; // Remove GraphQL-only field
       delete dbInput.imageUrl; // Remove GraphQL-only field
 
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from("menu_items")
         .insert([dbInput])
         .select()
@@ -354,8 +355,8 @@ const resolvers = {
         updatedAt: data.updated_at,
       };
     },
-    updateMenuItem: async (_, { id, input }, { supabase }) => {
-      const { data, error } = await supabase
+    updateMenuItem: async (_, {id, input}, {supabase}) => {
+      const {data, error} = await supabase
         .from("menu_items")
         .update(input)
         .eq("id", id)
@@ -364,9 +365,9 @@ const resolvers = {
       if (error) throw new Error(error.message);
       return data;
     },
-    createOrder: async (_, { input }, { supabase }) => {
+    createOrder: async (_, {input}, {supabase}) => {
       try {
-        const { data: menuItems, error: fetchError } = await supabase
+        const {data: menuItems, error: fetchError} = await supabase
           .from("menu_items")
           .select("id, price")
           .in(
@@ -387,7 +388,7 @@ const resolvers = {
           return total + itemPrice * item.quantity;
         }, 0);
 
-        const { data: newOrder, error: orderError } = await supabase
+        const {data: newOrder, error: orderError} = await supabase
           .from("orders")
           .insert([
             {
@@ -412,11 +413,13 @@ const resolvers = {
           price: priceMap[item.menuItemId],
         }));
 
-        const { error: itemsError } = await supabase
+        const {error: itemsError} = await supabase
           .from("order_items")
           .insert(orderItems);
         if (itemsError)
-          throw new Error(`Failed to create order items: ${itemsError.message}`);
+          throw new Error(
+            `Failed to create order items: ${itemsError.message}`
+          );
 
         return {
           id: newOrder.id,
@@ -433,10 +436,10 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
-    updateOrderStatus: async (_, { id, status }, { supabase }) => {
-      const { data, error } = await supabase
+    updateOrderStatus: async (_, {id, status}, {supabase}) => {
+      const {data, error} = await supabase
         .from("orders")
-        .update({ status: status })
+        .update({status: status})
         .eq("id", id)
         .select()
         .single();
