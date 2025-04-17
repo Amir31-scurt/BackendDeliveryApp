@@ -446,6 +446,41 @@ const resolvers = {
       if (error) throw new Error(error.message);
       return data;
     },
+    updateUser: async (_, {id, input}, {supabase}) => {
+      // Prepare the update input, excluding phone number and role
+      const updateData = {};
+      
+      // Only update fields that are provided in the input
+      if (input.name) updateData.name = input.name;
+      if (input.profilePicture) updateData.profile_picture = input.profilePicture;
+      
+      // If password is provided, hash it
+      if (input.password) {
+        const hashedPassword = await bcrypt.hash(input.password, 10);
+        updateData.password = hashedPassword;
+      }
+
+      const {data, error} = await supabase
+        .from("users")
+        .update(updateData)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+      
+      return {
+        ...data,
+        phoneNumber: data.phone_number,
+        createdAt: data.created_at,
+        profilePicture: data.profile_picture,
+      };
+    },
+    deleteUser: async (_, {id}, {supabase}) => {
+      const {error} = await supabase.from("users").delete().eq("id", id);
+      if (error) throw new Error(error.message);
+      return true;
+    },
   },
 };
 

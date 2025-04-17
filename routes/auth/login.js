@@ -10,7 +10,7 @@ export default async function handler(req, res) {
         message: "Login successful",
         user: {
           id: user.id,
-          phoneNumber: user.phone,
+          phoneNumber: user.phoneNumber,
           role: user.user_metadata.role,
         },
         token: session.access_token,

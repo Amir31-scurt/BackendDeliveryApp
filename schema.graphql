@@ -5,6 +5,7 @@ type User {
   password: String!
   createdAt: String!
   role: UserType!
+  profilePicture: String
 }
 type Restaurant {
   id: ID!
@@ -138,6 +139,7 @@ type Mutation {
   createDeliverer(input: CreateDelivererInput!): Deliverer!
   updateDelivererStatus(id: ID!, isAvailable: Boolean!): Deliverer!
   updateDelivererLocation(id: ID!, location: String!): Deliverer!
+  deleteUser(id: ID!): Boolean!
 }
 
 input CreateUserInput {
@@ -148,9 +150,8 @@ input CreateUserInput {
 
 input UpdateUserInput {
   name: String
-  phoneNumber: String
   password: String
-  role: UserType
+  profilePicture: String
 }
 
 input CreateRestaurantInput {
