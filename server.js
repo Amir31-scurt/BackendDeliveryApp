@@ -82,6 +82,50 @@ app.post("/storage/upload", upload.single("image"), async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+app.post("/storage/profilePictures/upload", upload.single("image"), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const fileName = `profile-${Date.now()}-${file.originalname}`;
+    console.log("Uploading file:", fileName);
+
+    // Attempt to upload the file
+    const { data, error } = await supabase.storage
+      .from("profile-pictures")
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+      });
+
+    // Log the upload response
+    console.log("Upload response:", { data, error });
+
+    if (error) {
+      console.error("Upload error:", error);
+      throw new Error("Upload failed");
+    }
+
+    // Generate the public URL
+    const publicUrlData = supabase.storage
+      .from("profile-pictures")
+      .getPublicUrl(fileName);
+
+    // Explicitly log the public URL data
+    console.log("Public URL data:", publicUrlData);
+
+    if (!publicUrlData.data?.publicUrl) {
+      console.error("Failed to retrieve public URL");
+      return res.status(500).json({ error: "Public URL retrieval failed" });
+    }
+
+    res.status(200).json({ publicUrl: publicUrlData.data.publicUrl });
+  } catch (error) {
+    console.error("Error uploading image:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));

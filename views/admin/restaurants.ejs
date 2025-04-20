@@ -76,7 +76,7 @@
   </div>
 
   <div id="restaurantModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
-    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
+    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl absolute top-12 h-5/6 overflow-y-scroll">
       <h2 class="text-2xl font-bold mb-6">Add New Restaurant</h2>
       <form id="restaurantForm" class="space-y-4">
         <!-- Restaurant Name -->
@@ -174,10 +174,14 @@
         </div>
 
         <!-- Submit Button -->
-        <div>
+        <div class="flex space-x-4 mt-10">
           <button type="button" onclick="submitRestaurant()"
             class="w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
             Add Restaurant
+          </button>
+          <button type="button" onclick="closeModal()"
+            class="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+            Cancel
           </button>
         </div>
       </form>

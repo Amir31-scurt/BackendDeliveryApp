@@ -2,214 +2,186 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Panel - Restaurants</title>
-  <link
-    href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
-    rel="stylesheet"
-  />
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
 </head>
+
 <body>
   <div class="container mx-auto p-6">
     <!-- Restaurant Details -->
     <div class="bg-white p-6 rounded-lg shadow mb-8">
       <img src="<%= restaurant.imageUrl %>" alt="" class="w-36" />
-      <h2 class="text-2xl font-bold mb-6"><%= restaurant.name %></h2>
-      <p><strong>Description:</strong> <%= restaurant.description %></p>
-      <p><strong>Address:</strong> <%= restaurant.address %></p>
-      <p><strong>Type:</strong> <%= restaurant.type %></p>
-      <p><strong>Phone:</strong> <%= restaurant.phoneNumber %></p>
-      <p><strong>Email:</strong> <%= restaurant.email %></p>
+      <h2 class="text-2xl font-bold mb-6">
+        <%= restaurant.name %>
+      </h2>
+      <p><strong>Description:</strong>
+        <%= restaurant.description %>
+      </p>
+      <p><strong>Address:</strong>
+        <%= restaurant.address %>
+      </p>
+      <p><strong>Type:</strong>
+        <%= restaurant.type %>
+      </p>
+      <p><strong>Phone:</strong>
+        <%= restaurant.phoneNumber %>
+      </p>
+      <p><strong>Email:</strong>
+        <%= restaurant.email %>
+      </p>
       <p>
-        <strong>Status:</strong> <%= restaurant.isActive ? "Active" : "Inactive"
-        %>
+        <strong>Status:</strong>
+        <%= restaurant.isActive ? "Active" : "Inactive" %>
       </p>
       <p><strong>Opening Hours:</strong></p>
       <ul class="list-disc pl-5">
-        <% Object.entries(restaurant.openingHours).forEach(([day, hours]) => {
-        %>
-        <li>
-          <%= day.charAt(0).toUpperCase() + day.slice(1) %>: <%= hours.open %> -
-          <%= hours.close %>
-        </li>
-        <% }); %>
+        <% Object.entries(restaurant.openingHours).forEach(([day, hours])=> {
+          %>
+          <li>
+            <%= day.charAt(0).toUpperCase() + day.slice(1) %>: <%= hours.open %> -
+                <%= hours.close %>
+          </li>
+          <% }); %>
       </ul>
     </div>
 
-    <button
-      onclick="openModal()"
-      class="m-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-    >
+    <button onclick="openModal()"
+      class="m-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
       Add Menu Item
     </button>
     <!-- Menu Items Section -->
     <div class="bg-white p-6 rounded-lg shadow mb-8">
       <h2 class="text-xl font-bold mb-4">Menu Items</h2>
-      <% if (menuItems.length > 0) { %>
-      <table class="min-w-full border-collapse border border-gray-200">
-        <thead>
-          <tr class="bg-gray-100">
-            <th
-              class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700"
-            >
-              Image
-            </th>
-            <th
-              class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700"
-            >
-              Name
-            </th>
-            <th
-              class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700"
-            >
-              Description
-            </th>
-            <th
-              class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700"
-            >
-              Price
-            </th>
-            <th
-              class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700"
-            >
-              Created At
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          <% menuItems.forEach((item) => { %>
-          <tr>
-            <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
-              <img
-                src="<%= item.imageUrl %>"
-                alt="<%= item.name %>"
-                class="h-12"
-              />
-            </td>
-            <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
-              <%= item.name %>
-            </td>
-            <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
-              <%= item.description %>
-            </td>
-            <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
-              $<%= item.price.toFixed(2) %>
-            </td>
-            <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
-              <%= item.createdAt %>
-            </td>
-          </tr>
-          <% }); %>
-        </tbody>
-      </table>
-      <% } else { %>
-      <p class="text-gray-500">No menu items available.</p>
-      <% } %>
+      <% if (menuItems.length> 0) { %>
+        <table class="min-w-full border-collapse border border-gray-200">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                Image
+              </th>
+              <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                Name
+              </th>
+              <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                Description
+              </th>
+              <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                Price
+              </th>
+              <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                Created At
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <% menuItems.forEach((item)=> { %>
+              <tr>
+                <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
+                  <img src="<%= item.imageUrl %>" alt="<%= item.name %>" class="h-12" />
+                </td>
+                <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
+                  <%= item.name %>
+                </td>
+                <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
+                  <%= item.description %>
+                </td>
+                <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
+                  $<%= item.price.toFixed(2) %>
+                </td>
+                <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
+                  <%= item.createdAt %>
+                </td>
+              </tr>
+              <% }); %>
+          </tbody>
+        </table>
+        <% } else { %>
+          <p class="text-gray-500">No menu items available.</p>
+          <% } %>
     </div>
 
     <!-- Add Menu Item Form -->
-    <div
-      id="menuItemModal"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden"
-    >
-      <div class="bg-white p-6 rounded-lg shadow">
+    <div id="menuItemModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
+      <div class="bg-white p-6 rounded-lg shadow w-96">
         <h2 class="text-xl font-bold mb-4">Add Menu Item</h2>
-        <form
-          action="/admin/restaurants/<%= restaurant.id %>/menu/add"
-          method="POST"
-          class="space-y-4"
-          id="menuItemForm"
-        >
+        <form action="/admin/restaurants/<%= restaurant.id %>/menu/add" method="POST" class="space-y-4"
+          id="menuItemForm">
           <div>
-            <label for="name" class="block text-sm font-medium text-gray-700"
-              >Name</label
-            >
-            <input
-              type="text"
-              id="name"
-              name="name"
+            <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+            <input type="text" id="name" name="name"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Enter menu item name"
-              required
-            />
+              placeholder="Enter menu item name" required />
           </div>
           <div>
-            <label
-              for="description"
-              class="block text-sm font-medium text-gray-700"
-              >Description</label
-            >
-            <textarea
-              id="description"
-              name="description"
+            <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+            <textarea id="description" name="description"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Enter menu item description"
-              rows="3"
-              required
-            ></textarea>
+              placeholder="Enter menu item description" rows="3" required></textarea>
           </div>
           <div>
-            <label for="price" class="block text-sm font-medium text-gray-700"
-              >Price</label
-            >
-            <input
-              type="number"
-              id="price"
-              name="price"
-              step="0.01"
+            <label for="price" class="block text-sm font-medium text-gray-700">Price</label>
+            <input type="number" id="price" name="price" step="0.01"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Enter menu item price"
-              required
-            />
+              placeholder="Enter menu item price" required />
           </div>
           <div>
-            <label
-              for="isActive"
-              class="block text-sm font-medium text-gray-700"
-              >Category</label
-            >
-            <select
-              id="category"
-              name="category"
+            <label for="isActive" class="block text-sm font-medium text-gray-700">Category</label>
+            <select id="category" name="category"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              required
-            >
-              <option value="PLAT">Plat</option>
-              <option value="FASTFOOD">Fast Food</option>
-              <option value="GRILLADE">Grillade</option>
+              required>
+              <!-- Categories will be populated based on restaurant type -->
             </select>
           </div>
           <div>
-            <label for="image" class="block text-sm font-medium text-gray-700"
-              >Upload Image</label
-            >
-            <input
-              type="file"
-              id="image"
-              name="image"
-              accept="image/*"
+            <label for="image" class="block text-sm font-medium text-gray-700">Upload Image</label>
+            <input type="file" id="image" name="image" accept="image/*"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              required
-            />
+              required />
           </div>
-          <button
-            type="button"
-            onclick="submitMenuItem()"
-            class="w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-          >
-            Add Menu Item
-          </button>
+          <div class="flex space-x-4 mt-10">
+            <button type="button" onclick="submitMenuItem()"
+              class="flex-1 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+              Add Item
+            </button>
+            <button type="button" onclick="closeModal()"
+              class="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+              Cancel
+            </button>
+          </div>
         </form>
-        <button
-          onclick="closeModal()"
-          class="absolute top-4 right-4 text-gray-600 hover:text-gray-800"
-        >
+        <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800">
           &times;
         </button>
       </div>
     </div>
   </div>
   <script>
+    const restaurantType = "<%= restaurant.type %>";
+
     function openModal() {
       document.getElementById("menuItemModal").classList.remove("hidden");
+      populateCategoriesByType();
+    }
+
+    function populateCategoriesByType() {
+      const categorySelect = document.getElementById("category");
+      categorySelect.innerHTML = ""; // Clear existing options
+
+      const categories = {
+        "RESTAURANT": ["PLAT", "FASTFOOD", "GRILLADE"],
+        "BOULANGERIE": ["PAINS", "VIENNOISERIES", "PATISSERIE"],
+        "EXPRESS": ["EXPRESS", "GOURMET", "DESSERT"]
+      };
+
+      // Get the appropriate categories based on restaurant type
+      const typeCategories = categories[restaurantType] || ["PLAT", "FASTFOOD", "GRILLADE"];
+
+      // Add options to select dropdown
+      typeCategories.forEach(category => {
+        const option = document.createElement("option");
+        option.value = category;
+        option.textContent = category.charAt(0) + category.slice(1).toLowerCase();
+        categorySelect.appendChild(option);
+      });
     }
 
     // Close Modal
