@@ -145,6 +145,42 @@ const resolvers = {
         imageUrl: menuItem.image_url || null,
       }));
     },
+    menuItem: async (_, {id}, {supabase}) => {
+      try {
+        console.log(`Fetching menu item with id: ${id}`);
+        
+        const {data, error} = await supabase
+          .from("menu_items")
+          .select("*")
+          .eq("id", id)
+          .single();
+          
+        if (error) {
+          console.error(`Error fetching menu item: ${error.message}`);
+          throw new Error(error.message);
+        }
+        
+        if (!data) {
+          console.error(`Menu item with id ${id} not found`);
+          throw new Error(`Menu item with id ${id} not found`);
+        }
+        
+        console.log(`Found menu item: ${JSON.stringify(data)}`);
+        
+        return {
+          ...data,
+          id: data.id,
+          restaurantId: data.restaurant_id,
+          createdAt: data.created_at || "Not provided",
+          updatedAt: data.updated_at || "Not provided",
+          imageUrl: data.image_url || null,
+          isAvailable: data.is_available || true,
+        };
+      } catch (error) {
+        console.error(`Error in menuItem resolver: ${error.message}`);
+        throw new Error(`Error fetching menu item: ${error.message}`);
+      }
+    },
     orders: async (_, {userId, restaurantId, status}, {supabase}) => {
       try {
         let query = supabase
@@ -398,14 +434,68 @@ const resolvers = {
       };
     },
     updateMenuItem: async (_, {id, input}, {supabase}) => {
-      const {data, error} = await supabase
-        .from("menu_items")
-        .update(input)
-        .eq("id", id)
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      return data;
+      try {
+        console.log(`Updating menu item with id: ${id}, input:`, input);
+        
+        // Map GraphQL fields to database column names
+        const dbInput = {};
+        
+        if (input.name !== undefined) dbInput.name = input.name;
+        if (input.description !== undefined) dbInput.description = input.description;
+        if (input.price !== undefined) dbInput.price = input.price;
+        if (input.category !== undefined) dbInput.category = input.category;
+        if (input.isAvailable !== undefined) dbInput.is_available = input.isAvailable;
+        
+        // Map imageUrl to image_url
+        if (input.imageUrl !== undefined) dbInput.image_url = input.imageUrl;
+        
+        console.log("Mapped database input:", dbInput);
+        
+        const {data, error} = await supabase
+          .from("menu_items")
+          .update(dbInput)
+          .eq("id", id)
+          .select()
+          .single();
+          
+        if (error) {
+          console.error(`Error updating menu item: ${error.message}`);
+          throw new Error(error.message);
+        }
+        
+        console.log("Updated menu item data:", data);
+        
+        return {
+          ...data,
+          id: data.id,
+          restaurantId: data.restaurant_id,
+          imageUrl: data.image_url,
+          isAvailable: data.is_available,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at
+        };
+      } catch (error) {
+        console.error(`Error in updateMenuItem: ${error.message}`);
+        throw new Error(`Failed to update menu item: ${error.message}`);
+      }
+    },
+    deleteMenuItem: async (_, {id}, {supabase}) => {
+      try {
+        console.log(`Attempting to delete menu item with id: ${id}`);
+        
+        const {error} = await supabase.from("menu_items").delete().eq("id", id);
+        
+        if (error) {
+          console.error(`Error deleting menu item: ${error.message}`);
+          throw new Error(error.message);
+        }
+        
+        console.log(`Successfully deleted menu item with id: ${id}`);
+        return true;
+      } catch (error) {
+        console.error(`Error in deleteMenuItem: ${error.message}`);
+        throw new Error(`Failed to delete menu item: ${error.message}`);
+      }
     },
     createOrder: async (_, {input}, {supabase}) => {
       try {

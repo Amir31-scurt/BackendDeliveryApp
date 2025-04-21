@@ -3,6 +3,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Panel - Restaurants</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
 </head>
 
 <body>
@@ -80,6 +81,9 @@
               <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
                 Créé le
               </th>
+              <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -99,6 +103,15 @@
                 </td>
                 <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
                   <%= item.createdAt %>
+                </td>
+                <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
+                  <div class="flex space-x-4">
+                    <i class="fas fa-edit text-indigo-600 hover:text-indigo-900 cursor-pointer"
+                      onclick="event.stopPropagation(); editMenuItem('<%= item.id %>')"></i>
+
+                    <i class="fas fa-trash text-red-600 hover:text-red-900 cursor-pointer"
+                      onclick="event.stopPropagation(); confirmDeleteMenuItem('<%= item.id %>', '<%= item.name %>')"></i>
+                  </div>
                 </td>
               </tr>
               <% }); %>
@@ -197,20 +210,164 @@
     // Close Modal
     function closeModal() {
       document.getElementById("menuItemModal").classList.add("hidden");
+      document.getElementById("menuItemForm").reset();
+      document.getElementById("menuItemForm").removeAttribute("data-mode");
+      document.getElementById("menuItemForm").removeAttribute("data-id");
+      const modalTitle = document.querySelector("#menuItemModal h2");
+      modalTitle.textContent = "Ajouter un Article";
+      const submitButton = document.querySelector("#menuItemModal button[onclick='submitMenuItem()']");
+      submitButton.textContent = "Ajouter";
+    }
+
+    // Edit Menu Item
+    async function editMenuItem(id) {
+      try {
+        console.log("Fetching menu item with ID:", id);
+
+        // Fetch menu item data from server
+        const query = `
+          query {
+            menuItem(id: "${id}") {
+              id
+              name
+              description
+              price
+              category
+              imageUrl
+            }
+          }
+        `;
+
+        console.log("Sending GraphQL query:", query);
+
+        const response = await fetch("/graphql", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query }),
+        });
+
+        const result = await response.json();
+        console.log("GraphQL response:", result);
+
+        if (result.errors) {
+          console.error("GraphQL errors:", result.errors);
+          throw new Error(result.errors[0].message);
+        }
+
+        if (!result.data || !result.data.menuItem) {
+          console.error("No menu item data returned");
+          throw new Error("No menu item data returned from server");
+        }
+
+        const menuItem = result.data.menuItem;
+        console.log("Menu item data:", menuItem);
+
+        openEditMenuItemModal(menuItem);
+      } catch (error) {
+        console.error("Error fetching menu item:", error);
+        alert("Error loading menu item data. Please try again. Details: " + error.message);
+      }
+    }
+
+    // Open Edit Menu Item Modal
+    function openEditMenuItemModal(menuItem) {
+      try {
+        // Set form to edit mode
+        document.getElementById("menuItemForm").setAttribute("data-mode", "edit");
+        document.getElementById("menuItemForm").setAttribute("data-id", menuItem.id);
+
+        // Update modal title and button text
+        const modalTitle = document.querySelector("#menuItemModal h2");
+        modalTitle.textContent = "Modifier l'Article";
+
+        const submitButton = document.querySelector("#menuItemModal button[onclick='submitMenuItem()']");
+        submitButton.textContent = "Mettre à jour";
+
+        // Fill form with menu item data
+        document.getElementById("name").value = menuItem.name || "";
+        document.getElementById("description").value = menuItem.description || "";
+        document.getElementById("price").value = menuItem.price || "";
+
+        // Populate categories first
+        populateCategoriesByType();
+
+        // Then set the selected category
+        if (menuItem.category) {
+          const categorySelect = document.getElementById("category");
+          for (let i = 0; i < categorySelect.options.length; i++) {
+            if (categorySelect.options[i].value === menuItem.category) {
+              categorySelect.selectedIndex = i;
+              break;
+            }
+          }
+        }
+
+        // Make image upload not required in edit mode
+        document.getElementById("image").removeAttribute("required");
+
+        // Show the modal
+        document.getElementById("menuItemModal").classList.remove("hidden");
+      } catch (error) {
+        console.error("Error in openEditMenuItemModal:", error);
+        alert("Error opening edit modal. Please try again.");
+      }
+    }
+
+    // Confirm Delete Menu Item
+    function confirmDeleteMenuItem(id, name) {
+      if (confirm(`Êtes-vous sûr de vouloir supprimer l'article "${name}"?`)) {
+        deleteMenuItem(id);
+      }
+    }
+
+    // Delete Menu Item
+    async function deleteMenuItem(id) {
+      const query = `
+        mutation {
+          deleteMenuItem(id: "${id}")
+        }
+      `;
+
+      try {
+        const response = await fetch("/graphql", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query }),
+        });
+
+        const result = await response.json();
+        if (result.errors) {
+          alert("Erreur lors de la suppression de l'article: " + result.errors[0].message);
+          return;
+        }
+
+        alert("Article supprimé avec succès!");
+        window.location.reload();
+      } catch (error) {
+        console.error("Error:", error);
+        alert("Une erreur s'est produite lors de la suppression de l'article. Veuillez réessayer.");
+      }
     }
 
     async function submitMenuItem() {
       const restaurantId = "<%= restaurant.id %>";
       const form = document.getElementById("menuItemForm");
       const formData = new FormData(form);
-      // Add the restaurant ID to the form data
+
+      // Get form mode (add or edit)
+      const mode = form.getAttribute("data-mode") || "add";
+      const menuItemId = form.getAttribute("data-id") || "";
 
       // Extract file input
       const imageFile = formData.get("image");
 
-      // Upload the image to Supabase Storage
+      // Upload the image to Supabase Storage if a new file was selected
       let imageUrl = "";
-      if (imageFile) {
+      if (imageFile && imageFile.size > 0) {
         try {
           const fileName = `menu-${Date.now()}-${imageFile.name}`;
           const storageUrl = "/storage/upload"; // Replace with your API endpoint or direct Supabase call
@@ -241,33 +398,61 @@
       const input = {
         name: formData.get("name"),
         description: formData.get("description"),
-        price: formData.get("price"),
-        category: formData.get("category"),
-        restaurantId: restaurantId,
-        imageUrl: imageUrl || null,
-        isAvailable: true,
+        price: parseFloat(formData.get("price")),
+        category: formData.get("category")
       };
 
-      const query = `
-      mutation {
-        addMenuItem(input: {
-          name: "${input.name}",
-          description: "${input.description}",
-          price: ${input.price},
-          restaurantId: "${input.restaurantId}",
-          imageUrl: "${input.imageUrl}",
-          category: "${input.category}"
-        }) {
-          id
-          name
-          description
-          price
-          category
-          imageUrl
-          createdAt
-        }
+      // Add restaurant ID only for new items
+      if (mode !== "edit") {
+        input.restaurantId = restaurantId;
       }
-    `;
+
+      // Only include imageUrl if a new image was uploaded
+      if (imageUrl) {
+        input.imageUrl = imageUrl;
+      }
+
+      let query;
+
+      if (mode === "edit") {
+        // Update menu item query
+        query = `
+        mutation {
+          updateMenuItem(id: "${menuItemId}", input: {
+            name: "${input.name}",
+            description: "${input.description}",
+            price: ${input.price},
+            category: "${input.category}"
+            ${imageUrl ? `, imageUrl: "${input.imageUrl}"` : ''}
+          }) {
+            id
+            name
+          }
+        }
+        `;
+      } else {
+        // Create menu item query
+        query = `
+        mutation {
+          addMenuItem(input: {
+            name: "${input.name}",
+            description: "${input.description}",
+            price: ${input.price},
+            restaurantId: "${input.restaurantId}",
+            category: "${input.category}"
+            ${imageUrl ? `, imageUrl: "${input.imageUrl}"` : ''}
+          }) {
+            id
+            name
+            description
+            price
+            category
+            imageUrl
+            createdAt
+          }
+        }
+        `;
+      }
 
       try {
         const response = await fetch("/graphql", {
@@ -282,12 +467,12 @@
 
         const result = await response.json();
         if (result.errors) {
-          alert("Erreur lors de la création de l'article: " + result.errors[0].message);
+          alert(`Erreur lors de la ${mode === "edit" ? "modification" : "création"} de l'article: ` + result.errors[0].message);
           return;
         }
 
-        alert("Article ajouté avec succès!");
-        window.location.reload(); // Reload to refresh the restaurant list
+        alert(`Article ${mode === "edit" ? "modifié" : "ajouté"} avec succès!`);
+        window.location.reload(); // Reload to refresh the menu items
       } catch (error) {
         console.error("Erreur:", error);
         alert("Une erreur s'est produite. Veuillez réessayer.");

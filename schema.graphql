@@ -30,6 +30,7 @@ type MenuItem {
   restaurantId: ID!
   imageUrl: String
   category: String! # Add category field
+  isAvailable: Boolean
   createdAt: String
   updatedAt: String
 }
@@ -125,6 +126,7 @@ type Query {
   restaurant(id: ID!): Restaurant
   searchRestaurants(query: String!): [Restaurant!]!
   menuItems(restaurantId: ID!): [MenuItem!]!
+  menuItem(id: ID!): MenuItem
   allMenuItems: [MenuItem!]!
   orders(userId: ID, restaurantId: ID, status: String): [Order!]!
   order(id: ID!): Order
@@ -144,6 +146,7 @@ type Mutation {
   deleteRestaurant(id: ID!): Boolean!
   addMenuItem(input: AddMenuItemInput!): MenuItem!
   updateMenuItem(id: ID!, input: UpdateMenuItemInput!): MenuItem!
+  deleteMenuItem(id: ID!): Boolean!
   createOrder(input: OrderInput!): Order!
   updateOrderStatus(id: ID!, status: OrderStatus!): Order!
   createDeliverer(input: CreateDelivererInput!): Deliverer!
@@ -219,6 +222,7 @@ input UpdateMenuItemInput {
   description: String
   price: Float
   category: String
+  imageUrl: String
   isAvailable: Boolean
 }
 
