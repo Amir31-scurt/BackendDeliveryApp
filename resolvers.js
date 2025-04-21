@@ -237,6 +237,30 @@ const resolvers = {
       if (error) throw new Error("Restaurant not found.");
       return data;
     },
+    notifications: async (_, {userId}, {supabase}) => {
+      try {
+        const {data, error} = await supabase
+          .from("notifications")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", {ascending: false});
+          
+        if (error) throw new Error(`Error fetching notifications: ${error.message}`);
+        
+        // Transform data to match GraphQL schema
+        return (data || []).map(notification => ({
+          id: notification.id,
+          userId: notification.user_id,
+          title: notification.title,
+          body: notification.body,
+          read: notification.read || false,
+          createdAt: notification.created_at
+        }));
+      } catch (err) {
+        console.error("Error in notifications query:", err);
+        throw new Error(err.message);
+      }
+    },
   },
   Mutation: {
     createUser: async (_, {input}, {supabase}) => {
@@ -511,6 +535,46 @@ const resolvers = {
       const {error} = await supabase.from("users").delete().eq("id", id);
       if (error) throw new Error(error.message);
       return true;
+    },
+    markNotificationAsRead: async (_, {id}, {supabase}) => {
+      try {
+        const {data, error} = await supabase
+          .from("notifications")
+          .update({read: true})
+          .eq("id", id)
+          .select()
+          .single();
+          
+        if (error) throw new Error(`Error updating notification: ${error.message}`);
+        
+        return {
+          id: data.id,
+          userId: data.user_id,
+          title: data.title,
+          body: data.body,
+          read: data.read,
+          createdAt: data.created_at
+        };
+      } catch (err) {
+        console.error("Error marking notification as read:", err);
+        throw new Error(err.message);
+      }
+    },
+    markAllNotificationsAsRead: async (_, {userId}, {supabase}) => {
+      try {
+        const {error} = await supabase
+          .from("notifications")
+          .update({read: true})
+          .eq("user_id", userId)
+          .eq("read", false);
+          
+        if (error) throw new Error(`Error updating notifications: ${error.message}`);
+        
+        return true;
+      } catch (err) {
+        console.error("Error marking all notifications as read:", err);
+        throw new Error(err.message);
+      }
     },
   },
   Order: {

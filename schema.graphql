@@ -109,6 +109,15 @@ type Deliverer {
   isVerified: Boolean!
 }
 
+type Notification {
+  id: ID!
+  userId: ID!
+  title: String!
+  body: String!
+  read: Boolean!
+  createdAt: String!
+}
+
 type Query {
   users: [User!]!
   user(id: ID!): User
@@ -124,6 +133,7 @@ type Query {
   allDeliverers: [Deliverer!]!
   availableDeliverers: [Deliverer!]!
   restaurantByEmail(email: String!): Restaurant
+  notifications(userId: ID!): [Notification!]!
 }
 
 type Mutation {
@@ -140,6 +150,8 @@ type Mutation {
   updateDelivererStatus(id: ID!, isAvailable: Boolean!): Deliverer!
   updateDelivererLocation(id: ID!, location: String!): Deliverer!
   deleteUser(id: ID!): Boolean!
+  markNotificationAsRead(id: ID!): Notification!
+  markAllNotificationsAsRead(userId: ID!): Boolean!
 }
 
 input CreateUserInput {
