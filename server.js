@@ -180,7 +180,8 @@ app.listen(PORT, () => {
 
 // Root route
 app.get("/", (req, res) => {
-  res.render('landing', { layout: false });
+  // res.render('landing', { layout: false });
+   res.send("Gourmet d'amour API is running");
 });
 // Admin routes
 app.use("/admin", adminRoutes);
