@@ -79,7 +79,7 @@ const resolvers = {
         imageUrl: restaurant.image_url || "Not provided", // Fallback value
       }));
 
-      return sanitizedData;
+      return sanitizedData || [];
     },
     restaurant: async (_, {id}, {supabase}) => {
       const {data, error} = await supabase

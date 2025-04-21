@@ -160,10 +160,8 @@ app.post("/storage/upload", async (req, res) => {
 const typeDefs = readFileSync(path.join(__dirname, "schema.graphql"), "utf8");
 const server = new ApolloServer({
   typeDefs,
-  resolvers: {
-    ...resolvers,
-    ...delivererResolvers
-  },
+  resolvers,
+  delivererResolvers,
   context: { supabase },
 });
 
