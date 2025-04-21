@@ -341,12 +341,30 @@ const resolvers = {
       if (input.email && !validateEmail(input.email)) {
         throw new Error(`${input.email} n'est pas un adresse mail valide!`);
       }
+      
+      // Map GraphQL fields to Supabase fields
+      const dbInput = {};
+      
+      // Only include fields that are provided in the input
+      if (input.name) dbInput.name = input.name;
+      if (input.description) dbInput.description = input.description;
+      if (input.address) dbInput.address = input.address;
+      if (input.type) dbInput.type = input.type;
+      if (input.email) dbInput.email = input.email;
+      
+      // Map camelCase to snake_case
+      if (input.phoneNumber) dbInput.phone_number = input.phoneNumber;
+      if (input.imageUrl) dbInput.image_url = input.imageUrl;
+      if (input.isActive !== undefined) dbInput.is_active = input.isActive;
+      if (input.openingHours) dbInput.opening_hours = input.openingHours;
+      
       const {data, error} = await supabase
         .from("restaurants")
-        .update(input)
+        .update(dbInput)
         .eq("id", id)
         .select()
         .single();
+      
       if (error) throw new Error(error.message);
       return data;
     },

@@ -3,6 +3,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Panel - Restaurants</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
 </head>
 
 <body>
@@ -43,7 +44,7 @@
       </thead>
       <tbody>
         <% if (restaurants && restaurants.length> 0) { %> <% restaurants.forEach((restaurant)=> { %>
-            <tr onclick="redirectToDetails('<%= restaurant.id %>')" class="cursor-pointer hover:bg-gray-100">
+            <tr class="cursor-pointer hover:bg-gray-100">
               <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
                 <img src="<%= restaurant.imageUrl %>" alt="" class="h-12" />
               </td>
@@ -60,7 +61,21 @@
                 <%= restaurant.isActive ? "Active" : "Inactive" %>
               </td>
               <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-                <a href="#" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                <div class="flex space-x-4">
+                  <a href="/admin/restaurants/<%= restaurant.id %>/details" onclick="event.stopPropagation();"
+                    class="text-blue-600 hover:text-blue-900" title="View Details">
+                    <i class="fas fa-eye"></i>
+                  </a>
+                  <!-- <a href="#" onclick="event.stopPropagation(); editRestaurant('<%= restaurant.id %>')"
+                    class="text-indigo-600 hover:text-indigo-900" title="Edit Restaurant">
+                  </a> -->
+                  <i class="fas fa-edit text-indigo-600 hover:text-indigo-900"
+                    onclick="event.stopPropagation(); editRestaurant('<%= restaurant.id %>')"></i>
+
+                  <i class="fas fa-trash text-red-600 hover:text-red-900"
+                    onclick="event.stopPropagation(); confirmDelete('<%= restaurant.id %>', '<%= restaurant.name %>')"></i>
+
+                </div>
               </td>
             </tr>
             <% }); %>
@@ -77,8 +92,9 @@
 
   <div id="restaurantModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
     <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl absolute top-12 h-5/6 overflow-y-scroll">
-      <h2 class="text-2xl font-bold mb-6">Add New Restaurant</h2>
+      <h2 id="modalTitle" class="text-2xl font-bold mb-6">Add New Restaurant</h2>
       <form id="restaurantForm" class="space-y-4">
+        <input type="hidden" id="restaurantId" name="restaurantId" />
         <!-- Restaurant Name -->
         <div>
           <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
@@ -175,7 +191,7 @@
 
         <!-- Submit Button -->
         <div class="flex space-x-4 mt-10">
-          <button type="button" onclick="submitRestaurant()"
+          <button type="button" id="submitButton" onclick="submitRestaurant()"
             class="w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
             Add Restaurant
           </button>
@@ -192,9 +208,108 @@
   </div>
 
   <script>
-    // Open Modal
+    let isEditMode = false;
+
+    // Open Modal for adding
     function openModal() {
+      isEditMode = false;
+      document.getElementById("modalTitle").textContent = "Add New Restaurant";
+      document.getElementById("submitButton").textContent = "Add Restaurant";
+      document.getElementById("restaurantForm").reset();
+      document.getElementById("restaurantId").value = "";
       document.getElementById("restaurantModal").classList.remove("hidden");
+    }
+
+    // Fetch restaurant data and open edit modal
+    async function editRestaurant(id) {
+      try {
+        // Fetch restaurant data from server
+        const query = `
+          query {
+            restaurant(id: "${id}") {
+              id
+              name
+              description
+              address
+              type
+              phoneNumber
+              email
+              imageUrl
+              isActive
+              openingHours {
+                monday { open close }
+                tuesday { open close }
+                wednesday { open close }
+                thursday { open close }
+                friday { open close }
+                saturday { open close }
+                sunday { open close }
+              }
+            }
+          }
+        `;
+
+        const response = await fetch("/graphql", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query }),
+        });
+
+        const result = await response.json();
+
+        if (result.errors) {
+          throw new Error(result.errors[0].message);
+        }
+
+        const restaurant = result.data.restaurant;
+        openEditModal(restaurant);
+      } catch (error) {
+        console.error("Error fetching restaurant:", error);
+        alert("Error loading restaurant data. Please try again.");
+      }
+    }
+
+    // Open Modal for editing
+    function openEditModal(restaurant) {
+      try {
+        isEditMode = true;
+        console.log("Restaurant data:", restaurant);
+
+        document.getElementById("modalTitle").textContent = "Edit Restaurant";
+        document.getElementById("submitButton").textContent = "Update Restaurant";
+
+        // Fill form with restaurant data
+        document.getElementById("restaurantId").value = restaurant.id;
+        document.getElementById("name").value = restaurant.name || "";
+        document.getElementById("description").value = restaurant.description || "";
+        document.getElementById("address").value = restaurant.address || "";
+        document.getElementById("type").value = (restaurant.type || "RESTAURANT").toLowerCase();
+        document.getElementById("phoneNumber").value = restaurant.phoneNumber || "";
+        document.getElementById("email").value = restaurant.email || "";
+        document.getElementById("isActive").value = (restaurant.isActive || false).toString();
+
+        // Make image upload not required in edit mode
+        document.getElementById("image").removeAttribute("required");
+
+        // Fill opening hours if they exist
+        if (restaurant.openingHours) {
+          const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+          days.forEach(day => {
+            if (restaurant.openingHours[day]) {
+              document.querySelector(`input[name="openingHours[${day}][open]"]`).value = restaurant.openingHours[day].open || "";
+              document.querySelector(`input[name="openingHours[${day}][close]"]`).value = restaurant.openingHours[day].close || "";
+            }
+          });
+        }
+
+        // Show the modal
+        document.getElementById("restaurantModal").classList.remove("hidden");
+      } catch (error) {
+        console.error("Error in openEditModal:", error);
+        alert("Error opening edit modal. Please try again.");
+      }
     }
 
     // Close Modal
@@ -210,13 +325,14 @@
     async function submitRestaurant() {
       const form = document.getElementById("restaurantForm");
       const formData = new FormData(form);
+      const restaurantId = formData.get("restaurantId");
 
       // Extract file input
       const imageFile = formData.get("image");
 
-      // Upload the image to Supabase Storage
+      // Upload the image to Supabase Storage if a new file was selected
       let imageUrl = "";
-      if (imageFile) {
+      if (imageFile && imageFile.size > 0) {
         try {
           const fileName = `restaurant-${Date.now()}-${imageFile.name}`;
           const storageUrl = "/storage/upload"; // Replace with your API endpoint or direct Supabase call
@@ -251,7 +367,6 @@
         type: formData.get("type").toUpperCase(),
         phoneNumber: formData.get("phoneNumber"),
         email: formData.get("email"),
-        imageUrl: imageUrl || null,
         isActive: formData.get("isActive"),
         openingHours: {
           monday: {
@@ -285,39 +400,60 @@
         },
       };
 
-      const query = `
-      mutation {
-        createRestaurant(input: {
-          name: "${input.name}",
-          description: "${input.description}",
-          address: "${input.address}",
-          type: ${input.type},
-          phoneNumber: "${input.phoneNumber}",
-          email: "${input.email}",
-          imageUrl: "${input.imageUrl}",
-          isActive: ${input.isActive === "true" ? true : false},
-          openingHours: {
-            monday: { open: "${input.openingHours.monday.open}", close: "${input.openingHours.monday.close
-        }" }
-            tuesday: { open: "${input.openingHours.tuesday.open}", close: "${input.openingHours.tuesday.close
-        }" }
-            wednesday: { open: "${input.openingHours.wednesday.open
-        }", close: "${input.openingHours.wednesday.close}" }
-            thursday: { open: "${input.openingHours.thursday.open}", close: "${input.openingHours.thursday.close
-        }" }
-            friday: { open: "${input.openingHours.friday.open}", close: "${input.openingHours.friday.close
-        }" }
-            saturday: { open: "${input.openingHours.saturday.open}", close: "${input.openingHours.saturday.close
-        }" }
-            sunday: { open: "${input.openingHours.sunday.open}", close: "${input.openingHours.sunday.close
-        }" }
-          }
-        }) {
-          id
-          name
-        }
+      // Add imageUrl only if a new image was uploaded
+      if (imageUrl) {
+        input.imageUrl = imageUrl;
       }
-    `;
+
+      let query;
+
+      if (isEditMode) {
+        // Update restaurant query with correct GraphQL schema field names
+        query = `
+        mutation {
+          updateRestaurant(id: "${restaurantId}", input: {
+            name: "${input.name}",
+            description: "${input.description}",
+            address: "${input.address}",
+            type: ${input.type},
+            phoneNumber: "${input.phoneNumber}",
+            email: "${input.email}"
+            ${imageUrl ? `, imageUrl: "${input.imageUrl}"` : ''}
+          }) {
+            id
+            name
+          }
+        }
+      `;
+      } else {
+        // Create restaurant query
+        query = `
+        mutation {
+          createRestaurant(input: {
+            name: "${input.name}",
+            description: "${input.description}",
+            address: "${input.address}",
+            type: ${input.type},
+            phoneNumber: "${input.phoneNumber}",
+            email: "${input.email}",
+            imageUrl: "${input.imageUrl}",
+            isActive: ${input.isActive === "true" ? true : false},
+            openingHours: {
+              monday: { open: "${input.openingHours.monday.open}", close: "${input.openingHours.monday.close}" }
+              tuesday: { open: "${input.openingHours.tuesday.open}", close: "${input.openingHours.tuesday.close}" }
+              wednesday: { open: "${input.openingHours.wednesday.open}", close: "${input.openingHours.wednesday.close}" }
+              thursday: { open: "${input.openingHours.thursday.open}", close: "${input.openingHours.thursday.close}" }
+              friday: { open: "${input.openingHours.friday.open}", close: "${input.openingHours.friday.close}" }
+              saturday: { open: "${input.openingHours.saturday.open}", close: "${input.openingHours.saturday.close}" }
+              sunday: { open: "${input.openingHours.sunday.open}", close: "${input.openingHours.sunday.close}" }
+            }
+          }) {
+            id
+            name
+          }
+        }
+      `;
+      }
 
       try {
         const response = await fetch("/graphql", {
@@ -332,15 +468,53 @@
 
         const result = await response.json();
         if (result.errors) {
-          alert("Error creating restaurant: " + result.errors[0].message);
+          alert(`Error ${isEditMode ? "updating" : "creating"} restaurant: ` + result.errors[0].message);
           return;
         }
 
-        alert("Restaurant added successfully!");
+        alert(`Restaurant ${isEditMode ? "updated" : "added"} successfully!`);
         window.location.reload(); // Reload to refresh the restaurant list
       } catch (error) {
         console.error("Error:", error);
         alert("An error occurred. Please try again.");
+      }
+    }
+
+    // Confirm Delete
+    function confirmDelete(id, name) {
+      if (confirm(`Are you sure you want to delete restaurant "${name}"?`)) {
+        deleteRestaurant(id);
+      }
+    }
+
+    // Delete Restaurant
+    async function deleteRestaurant(id) {
+      const query = `
+        mutation {
+          deleteRestaurant(id: "${id}")
+        }
+      `;
+
+      try {
+        const response = await fetch("/graphql", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query }),
+        });
+
+        const result = await response.json();
+        if (result.errors) {
+          alert("Error deleting restaurant: " + result.errors[0].message);
+          return;
+        }
+
+        alert("Restaurant deleted successfully!");
+        window.location.reload();
+      } catch (error) {
+        console.error("Error:", error);
+        alert("An error occurred while deleting the restaurant. Please try again.");
       }
     }
   </script>
