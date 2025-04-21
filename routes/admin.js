@@ -532,6 +532,7 @@ router.get("/restaurants/:id/orders", async (req, res) => {
           userId
           user {
             name
+            phoneNumber
           }
           instructions
           createdAt

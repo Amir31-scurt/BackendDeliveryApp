@@ -7,7 +7,7 @@ const MenuItemSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ["PLAT", "FASTFOOD", "GRILLADE"],
+    enum: ["PLAT", "FASTFOOD", "GRILLADE", "PAINS", "VIENNOISERIES", "PATISSERIE", "EXPRESS", "GOURMET", "DESSERT"],
   },
   restaurant: {
     type: mongoose.Schema.Types.ObjectId,

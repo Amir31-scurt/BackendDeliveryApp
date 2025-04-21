@@ -187,6 +187,7 @@
                         <th class="py-2">N°</th>
                         <th class="py-2">Date</th>
                         <th class="py-2">Nom du client</th>
+                        <th class="py-2">Numéro du client</th>
                         <th class="py-2">Addresse</th>
                         <th class="py-2">Montant</th>
                         <th class="py-2">Statut</th>
@@ -205,6 +206,9 @@
                                 </td>
                                 <td class="py-2">
                                     <%= order.user.name %>
+                                </td>
+                                <td class="py-2">
+                                    <%= order.user.phoneNumber %>
                                 </td>
                                 <td class="py-2">
                                     <%= order.deliveryAddress.address %>

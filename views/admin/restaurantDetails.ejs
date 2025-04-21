@@ -16,28 +16,38 @@
       <p><strong>Description:</strong>
         <%= restaurant.description %>
       </p>
-      <p><strong>Address:</strong>
+      <p><strong>Adresse:</strong>
         <%= restaurant.address %>
       </p>
       <p><strong>Type:</strong>
         <%= restaurant.type %>
       </p>
-      <p><strong>Phone:</strong>
+      <p><strong>Téléphone:</strong>
         <%= restaurant.phoneNumber %>
       </p>
       <p><strong>Email:</strong>
         <%= restaurant.email %>
       </p>
       <p>
-        <strong>Status:</strong>
-        <%= restaurant.isActive ? "Active" : "Inactive" %>
+        <strong>Statut:</strong>
+        <%= restaurant.isActive ? "Actif" : "Inactif" %>
       </p>
-      <p><strong>Opening Hours:</strong></p>
+      <p><strong>Heures d'ouverture:</strong></p>
       <ul class="list-disc pl-5">
         <% Object.entries(restaurant.openingHours).forEach(([day, hours])=> {
+          const frenchDays = {
+          monday: "Lundi",
+          tuesday: "Mardi",
+          wednesday: "Mercredi",
+          thursday: "Jeudi",
+          friday: "Vendredi",
+          saturday: "Samedi",
+          sunday: "Dimanche"
+          };
+          const frenchDay = frenchDays[day] || day.charAt(0).toUpperCase() + day.slice(1);
           %>
           <li>
-            <%= day.charAt(0).toUpperCase() + day.slice(1) %>: <%= hours.open %> -
+            <%= frenchDay %>: <%= hours.open %> -
                 <%= hours.close %>
           </li>
           <% }); %>
@@ -46,11 +56,11 @@
 
     <button onclick="openModal()"
       class="m-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-      Add Menu Item
+      Ajouter un Article
     </button>
     <!-- Menu Items Section -->
     <div class="bg-white p-6 rounded-lg shadow mb-8">
-      <h2 class="text-xl font-bold mb-4">Menu Items</h2>
+      <h2 class="text-xl font-bold mb-4">Articles du Menu</h2>
       <% if (menuItems.length> 0) { %>
         <table class="min-w-full border-collapse border border-gray-200">
           <thead>
@@ -59,16 +69,16 @@
                 Image
               </th>
               <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
-                Name
+                Nom
               </th>
               <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
                 Description
               </th>
               <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
-                Price
+                Prix
               </th>
               <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
-                Created At
+                Créé le
               </th>
             </tr>
           </thead>
@@ -85,7 +95,7 @@
                   <%= item.description %>
                 </td>
                 <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
-                  $<%= item.price.toFixed(2) %>
+                  <%= item.price.toFixed(2) %> Fcfa
                 </td>
                 <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
                   <%= item.createdAt %>
@@ -95,36 +105,36 @@
           </tbody>
         </table>
         <% } else { %>
-          <p class="text-gray-500">No menu items available.</p>
+          <p class="text-gray-500">Aucun article de menu disponible.</p>
           <% } %>
     </div>
 
     <!-- Add Menu Item Form -->
     <div id="menuItemModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
       <div class="bg-white p-6 rounded-lg shadow w-96">
-        <h2 class="text-xl font-bold mb-4">Add Menu Item</h2>
+        <h2 class="text-xl font-bold mb-4">Ajouter un Article</h2>
         <form action="/admin/restaurants/<%= restaurant.id %>/menu/add" method="POST" class="space-y-4"
           id="menuItemForm">
           <div>
-            <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+            <label for="name" class="block text-sm font-medium text-gray-700">Nom</label>
             <input type="text" id="name" name="name"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Enter menu item name" required />
+              placeholder="Entrer le nom de l'article" required />
           </div>
           <div>
             <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
             <textarea id="description" name="description"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Enter menu item description" rows="3" required></textarea>
+              placeholder="Entrer la description de l'article" rows="3" required></textarea>
           </div>
           <div>
-            <label for="price" class="block text-sm font-medium text-gray-700">Price</label>
+            <label for="price" class="block text-sm font-medium text-gray-700">Prix</label>
             <input type="number" id="price" name="price" step="0.01"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Enter menu item price" required />
+              placeholder="Entrer le prix de l'article" required />
           </div>
           <div>
-            <label for="isActive" class="block text-sm font-medium text-gray-700">Category</label>
+            <label for="isActive" class="block text-sm font-medium text-gray-700">Catégorie</label>
             <select id="category" name="category"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               required>
@@ -132,7 +142,7 @@
             </select>
           </div>
           <div>
-            <label for="image" class="block text-sm font-medium text-gray-700">Upload Image</label>
+            <label for="image" class="block text-sm font-medium text-gray-700">Télécharger une Image</label>
             <input type="file" id="image" name="image" accept="image/*"
               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               required />
@@ -140,11 +150,11 @@
           <div class="flex space-x-4 mt-10">
             <button type="button" onclick="submitMenuItem()"
               class="flex-1 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-              Add Item
+              Ajouter
             </button>
             <button type="button" onclick="closeModal()"
               class="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-              Cancel
+              Annuler
             </button>
           </div>
         </form>
@@ -217,13 +227,13 @@
 
           if (uploadResponse.ok && uploadResult.publicUrl) {
             imageUrl = uploadResult.publicUrl;
-            console.log("Image uploaded successfully:", imageUrl);
+            console.log("Image téléchargée avec succès:", imageUrl);
           } else {
-            throw new Error("Failed to upload image");
+            throw new Error("Échec du téléchargement de l'image");
           }
         } catch (error) {
-          console.error("Image upload failed:", error);
-          alert("Image upload failed. Please try again.");
+          console.error("Échec du téléchargement de l'image:", error);
+          alert("Échec du téléchargement de l'image. Veuillez réessayer.");
           return;
         }
       }
@@ -272,15 +282,15 @@
 
         const result = await response.json();
         if (result.errors) {
-          alert("Error creating Menu Item: " + result.errors[0].message);
+          alert("Erreur lors de la création de l'article: " + result.errors[0].message);
           return;
         }
 
-        alert("Menu Item added successfully!");
+        alert("Article ajouté avec succès!");
         window.location.reload(); // Reload to refresh the restaurant list
       } catch (error) {
-        console.error("Error:", error);
-        alert("An error occurred. Please try again.");
+        console.error("Erreur:", error);
+        alert("Une erreur s'est produite. Veuillez réessayer.");
       }
     }
   </script>

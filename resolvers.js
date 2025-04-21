@@ -437,14 +437,45 @@ const resolvers = {
       }
     },
     updateOrderStatus: async (_, {id, status}, {supabase}) => {
-      const {data, error} = await supabase
+      const {data: order, error} = await supabase
         .from("orders")
         .update({status: status})
         .eq("id", id)
         .select()
         .single();
+        
       if (error) throw new Error(error.message);
-      return data;
+      
+      // Create notification for the user
+      if (order && order.user_id) {
+        // Translate status to French
+        let statusFrench;
+        switch (status) {
+          case 'PREPARING':
+            statusFrench = 'en cours de préparation';
+            break;
+          case 'DELIVERING':
+            statusFrench = 'en cours de livraison';
+            break;
+          case 'COMPLETED':
+            statusFrench = 'livrée';
+            break;
+          case 'CANCELLED':
+            statusFrench = 'annulée';
+            break;
+          default:
+            statusFrench = 'mise à jour';
+        }
+        
+        // Insert notification in French
+        await supabase.from('notifications').insert({
+          user_id: order.user_id,
+          title: 'Mise à jour de commande',
+          body: `Votre commande #${order.id} est maintenant ${statusFrench}`,
+        });
+      }
+      
+      return order;
     },
     updateUser: async (_, {id, input}, {supabase}) => {
       // Prepare the update input, excluding phone number and role
@@ -481,6 +512,16 @@ const resolvers = {
       if (error) throw new Error(error.message);
       return true;
     },
+  },
+  Order: {
+    user: (parent) => {
+      if (!parent.user) return null;
+      return {
+        ...parent.user,
+        phoneNumber: parent.user.phone_number || "Not provided",
+        createdAt: parent.user.created_at,
+      };
+    }
   },
 };
 

@@ -160,8 +160,10 @@ app.post("/storage/upload", async (req, res) => {
 const typeDefs = readFileSync(path.join(__dirname, "schema.graphql"), "utf8");
 const server = new ApolloServer({
   typeDefs,
-  resolvers,
-  delivererResolvers,
+  resolvers: {
+    ...resolvers,
+    ...delivererResolvers
+  },
   context: { supabase },
 });
 
@@ -180,7 +182,7 @@ app.listen(PORT, () => {
 
 // Root route
 app.get("/", (req, res) => {
-  res.send("Food Delivery API is running");
+  res.render('landing', { layout: false });
 });
 // Admin routes
 app.use("/admin", adminRoutes);
