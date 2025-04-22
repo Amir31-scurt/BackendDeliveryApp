@@ -127,6 +127,25 @@ app.post("/storage/profilePictures/upload", upload.single("image"), async (req, 
   }
 });
 
+// Add this route
+app.post('/api/push-token', async (req, res) => {
+  const { userId, token } = req.body;
+
+  if (!userId || !token) {
+    return res.status(400).json({ message: 'Missing userId or token' });
+  }
+
+  const { error } = await supabase
+    .from('push_tokens')
+    .upsert({ user_id: userId, token }, { onConflict: ['user_id'] });
+
+  if (error) {
+    return res.status(500).json({ message: 'Failed to save token', error });
+  }
+
+  return res.status(200).json({ message: 'Token saved successfully' });
+});
+
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));
 
