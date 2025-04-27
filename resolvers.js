@@ -250,6 +250,8 @@ const resolvers = {
           deliveryAddress: order.delivery_address,
           instructions: order.instructions,
           status: order.status,
+          isPaid: order.is_paid || false,
+          paymentMethod: order.payment_method || "CASH",
           createdAt: order.created_at,
           updatedAt: order.updated_at,
         }));
@@ -292,6 +294,8 @@ const resolvers = {
           deliveryAddress: order.delivery_address,
           instructions: order.instructions,
           status: order.status,
+          isPaid: order.is_paid || false,
+          paymentMethod: order.payment_method || "CASH",
           createdAt: order.created_at || null, // Ensure createdAt is mapped correctly
           updatedAt: order.updated_at || null,
         };
@@ -566,6 +570,8 @@ const resolvers = {
               instructions: input.instructions || null,
               total_amount: totalAmount,
               status: input.status || "Pending",
+              is_paid: input.isPaid || false,
+              payment_method: input.paymentMethod || "CASH",
             },
           ])
           .select()
@@ -598,6 +604,8 @@ const resolvers = {
           deliveryAddress: newOrder.delivery_address,
           instructions: newOrder.instructions,
           status: newOrder.status,
+          isPaid: newOrder.is_paid || false,
+          paymentMethod: newOrder.payment_method || "CASH",
         };
       } catch (err) {
         console.error("Error in createOrder function:", err.message);

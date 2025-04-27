@@ -79,6 +79,8 @@ type Order {
   deliveryAddress: Address
   instructions: String
   status: OrderStatus!
+  isPaid: Boolean!
+  paymentMethod: PaymentMethod!
   createdAt: String!
   updatedAt: String!
 }
@@ -96,6 +98,12 @@ enum OrderStatus {
   DELIVERING
   COMPLETED
   CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  ORANGE_MONEY
+  WAVE
 }
 
 type Deliverer {
@@ -234,6 +242,8 @@ input OrderInput {
   deliveryAddress: AddressInput!
   instructions: String
   status: OrderStatus
+  isPaid: Boolean
+  paymentMethod: PaymentMethod
 }
 
 input AddressInput {

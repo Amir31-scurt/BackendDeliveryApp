@@ -19,6 +19,12 @@ const orderSchema = new mongoose.Schema({
     enum: ["pending", "preparing", "delivering", "completed", "cancelled"],
     default: "pending",
   },
+  isPaid: { type: Boolean, default: false },
+  paymentMethod: {
+    type: String,
+    enum: ["cash", "mobileMoney"],
+    default: "cash"
+  },
   deliveryAddress: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
 });
