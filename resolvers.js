@@ -222,7 +222,7 @@ const resolvers = {
         let query = supabase
           .from("orders")
           .select(
-            "*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), user:users(id, name, phone_number)"
+            "*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), user:users(id, name, phone_number), restaurant:restaurants(id, name, description, address, type, opening_hours, phone_number, email, image_url, is_active, created_at, updated_at)"
           );
 
         if (userId) query = query.eq("user_id", userId);
@@ -236,6 +236,8 @@ const resolvers = {
           id: order.id,
           restaurantId: order.restaurant_id,
           userId: order.user_id,
+          user: order.user,
+          restaurant: order.restaurant, // Added restaurant field
           items: order.order_items.map((item) => ({
             menuItemId: item.menu_item_id,
             menuItem: {
@@ -245,7 +247,6 @@ const resolvers = {
             quantity: item.quantity,
             price: item.price,
           })),
-          user: order.user,
           totalAmount: order.total_amount,
           deliveryAddress: order.delivery_address,
           instructions: order.instructions,
@@ -254,6 +255,8 @@ const resolvers = {
           paymentMethod: order.payment_method || "CASH",
           createdAt: order.created_at,
           updatedAt: order.updated_at,
+          delivererId: order.deliverer_id, // Added delivererId field
+          deliverer: order.deliverer, // Added deliverer field
         }));
       } catch (err) {
         console.error("Error fetching orders:", err.message);
@@ -266,7 +269,7 @@ const resolvers = {
         const {data: order, error} = await supabase
           .from("orders")
           .select(
-            "*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url))"
+            "*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), user:users(id, name, phone_number), restaurant:restaurants(id, name, description, address, type, opening_hours, phone_number, email, image_url, is_active, created_at, updated_at)"
           )
           .eq("id", id)
           .single();
@@ -279,6 +282,7 @@ const resolvers = {
           restaurantId: order.restaurant_id,
           userId: order.user_id,
           user: order.user,
+          restaurant: order.restaurant, // Added restaurant field
           items: order.order_items.map((item) => ({
             menuItemId: item.menu_item_id,
             menuItem: item.menu_item
@@ -298,6 +302,8 @@ const resolvers = {
           paymentMethod: order.payment_method || "CASH",
           createdAt: order.created_at || null, // Ensure createdAt is mapped correctly
           updatedAt: order.updated_at || null,
+          delivererId: order.deliverer_id, // Added delivererId field
+          deliverer: order.deliverer, // Added deliverer field
         };
       } catch (err) {
         console.error("Error fetching order:", err.message);

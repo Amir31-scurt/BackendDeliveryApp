@@ -74,6 +74,7 @@ type Order {
   restaurantId: ID!
   userId: ID!
   user: User
+  restaurant: Restaurant # Added restaurant field
   items: [OrderItem]!
   totalAmount: Float!
   deliveryAddress: Address
@@ -83,6 +84,8 @@ type Order {
   paymentMethod: PaymentMethod!
   createdAt: String!
   updatedAt: String!
+  delivererId: ID! # Added delivererId field
+  deliverer: Deliverer # Added deliverer field
 }
 
 type OrderItem {
@@ -244,6 +247,7 @@ input OrderInput {
   status: OrderStatus
   isPaid: Boolean
   paymentMethod: PaymentMethod
+  delivererId: ID! # Added delivererId field
 }
 
 input AddressInput {
