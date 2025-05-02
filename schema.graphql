@@ -84,7 +84,7 @@ type Order {
   paymentMethod: PaymentMethod!
   createdAt: String!
   updatedAt: String!
-  delivererId: ID! # Added delivererId field
+  delivererId: ID # Added delivererId field
   deliverer: Deliverer # Added deliverer field
 }
 
