@@ -578,6 +578,7 @@ const resolvers = {
               status: input.status || "Pending",
               is_paid: input.isPaid || false,
               payment_method: input.paymentMethod || "CASH",
+              deliverer_id: input.delivererId || null,
             },
           ])
           .select()
@@ -612,6 +613,7 @@ const resolvers = {
           status: newOrder.status,
           isPaid: newOrder.is_paid || false,
           paymentMethod: newOrder.payment_method || "CASH",
+          delivererID: newOrder.deliverer_id,
         };
       } catch (err) {
         console.error("Error in createOrder function:", err.message);
