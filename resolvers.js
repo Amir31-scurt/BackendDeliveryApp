@@ -71,6 +71,47 @@ const resolvers = {
         createdAt: data.created_at,
       };
     },
+    deliverer: async (_, { id }, { supabase }) => {
+      const { data, error } = await supabase
+        .from("deliverers")
+        .select("*")
+        .eq("user_id", id)
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      return {
+        ...data,
+        userId: data.user_id,
+        vehicleId: data.vehicle_id,
+        isAvailable: data.is_available,
+        currentLocation: data.current_location,
+        zone: data.zone,
+        profilePicture: data.profile_picture,
+        isActive: data.is_active,
+        isVerified: data.is_verified,
+      };
+    },
+    allDeliverers: async (_, __, { supabase }) => {
+      const { data, error } = await supabase
+        .from("deliverers")
+        .select("*");
+
+      if (error) throw new Error(error.message);
+
+      return data.map((d) => ({
+        ...d,
+        userId: d.user_id,
+        vehicleId: d.vehicle_id,
+        isAvailable: d.is_available,
+        currentLocation: d.current_location,
+        zone: d.zone,
+        profilePicture: d.profile_picture,
+        isActive: d.is_active,
+        isVerified: d.is_verified,
+      }));
+    },
+    
     restaurants: async (_, __, {supabase}) => {
       const {data, error} = await supabase.from("restaurants").select("*");
       if (error) throw new Error(error.message);
@@ -746,6 +787,26 @@ const resolvers = {
         ...parent.user,
         phoneNumber: parent.user.phone_number || "Not provided",
         createdAt: parent.user.created_at,
+      };
+    }
+  },
+  Deliverer: {
+    user: async (parent, _, { supabase }) => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", parent.user_id)
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      return {
+        ...data,
+        name: data.name,
+        phoneNumber: data.phone_number,
+        role: data.role,
+        isVerified: data.is_verified,
+        createdAt: data.created_at,
       };
     }
   },
