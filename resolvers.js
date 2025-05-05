@@ -20,7 +20,7 @@ async function sendPushNotification(userId, messageText, supabase) {
   const messages = tokens.map(({ token }) => ({
     to: token,                     // Expo push token
     sound: 'default',
-    title: 'Order Update',
+    title: 'Mise à jour de la commande',
     body: messageText,            // e.g. "Your order is now ready"
   }));
 
