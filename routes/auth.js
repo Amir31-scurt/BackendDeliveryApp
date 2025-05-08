@@ -215,4 +215,110 @@ router.post("/verify-otp", async (req, res) => {
   }
 });
 
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber) {
+      return res.status(400).json({ error: "Le numéro de téléphone est requis." });
+    }
+
+    // 1. Check if user exists
+    const { data: user, error } = await supabase
+      .from("users")
+      .select("id, name")
+      .eq("phone_number", phoneNumber)
+      .single();
+
+    if (error || !user) {
+      return res.status(404).json({ error: "Utilisateur introuvable." });
+    }
+
+    // 2. Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit
+    const expiresAt = addMinutes(new Date(), 5); // 5 mins
+
+    // 3. Store OTP
+    await supabase.from("otps").insert({
+      phone_number: phoneNumber,
+      otp,
+      expires_at: expiresAt,
+    });
+
+    const bodyMessage = `Votre code OTP est : ${otp}`;
+
+    // 4. Insert notification
+    await supabase.from("notifications").insert({
+      user_id: user.id,
+      title: "Code de réinitialisation",
+      body: bodyMessage,
+    });
+
+    // 5. Send push notification via Expo
+    await sendPushNotification(user.id, bodyMessage, supabase);
+
+    // 6. Return response (you can omit `otp` in production)
+    return res.status(200).json({
+      message: "Code OTP envoyé avec succès.",
+      otp, // ⚠️ Remove in production
+    });
+  } catch (error) {
+    console.error("Erreur dans /forgot-password:", error);
+    return res.status(500).json({ error: "Erreur interne du serveur." });
+  }
+});
+
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { phoneNumber, otp, newPassword } = req.body;
+
+    if (!phoneNumber || !otp || !newPassword) {
+      return res.status(400).json({ error: "Tous les champs sont requis." });
+    }
+
+    // Find valid OTP
+    const { data: otpRecord, error } = await supabase
+      .from("otps")
+      .select("*")
+      .eq("phone_number", phoneNumber)
+      .eq("otp", otp)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !otpRecord) {
+      return res.status(400).json({ error: "Code OTP invalide." });
+    }
+
+    if (new Date() > new Date(otpRecord.expires_at)) {
+      return res.status(400).json({ error: "Code OTP expiré." });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user password
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({ password: hashedPassword })
+      .eq("phone_number", phoneNumber);
+
+    if (updateError) {
+      return res.status(500).json({ error: "Erreur lors de la mise à jour du mot de passe." });
+    }
+
+    // Optionally delete used OTP
+    await supabase
+      .from("otps")
+      .delete()
+      .eq("id", otpRecord.id);
+
+    return res.status(200).json({ message: "Mot de passe réinitialisé avec succès." });
+  } catch (error) {
+    console.error("Erreur dans /reset-password:", error);
+    return res.status(500).json({ error: "Erreur interne du serveur." });
+  }
+});
+
+
 export default router;
