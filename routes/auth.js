@@ -4,6 +4,7 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { supabase } from "../supabaseClient.js";
 import { signIn } from "../utils/auth.js";
+import { sendPushNotification } from "../utils/sendNotifications.js";
 
 const userStore = {};
 
