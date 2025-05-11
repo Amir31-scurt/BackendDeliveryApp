@@ -347,10 +347,10 @@
                                 </td>
                                 <td>
                                     <div class="action-buttons">
-                                        <a href="/admin/deliverers/<%= deliverer.userId %>" class="action-btn view-btn"
-                                            title="Voir les détails">
+                                        <button class="action-btn view-btn"
+                                            onclick="viewDeliverer('<%= deliverer.userId %>')" title="Voir les détails">
                                             <i class="fas fa-eye"></i>
-                                        </a>
+                                        </button>
                                         <button class="action-btn edit-btn"
                                             onclick="editDeliverer('<%= deliverer.userId %>')" title="Modifier">
                                             <i class="fas fa-edit"></i>
@@ -462,13 +462,19 @@
                 const response = await fetch(`/admin/deliverers/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
                     }
                 });
 
                 if (!response.ok) {
                     if (response.status === 401) {
                         alert("Session expirée. Veuillez vous reconnecter.");
+                        window.location.href = '/admin/login';
+                        return;
+                    }
+                    if (response.status === 403) {
+                        alert("Accès refusé. Vous n'avez pas les permissions nécessaires.");
                         window.location.href = '/admin/login';
                         return;
                     }
@@ -638,6 +644,47 @@
                 window.location.reload();
             } catch (error) {
                 console.error("Error:", error);
+                alert(`Une erreur s'est produite: ${error.message}`);
+            }
+        }
+
+        // Add this new function for viewing deliverer details
+        async function viewDeliverer(id) {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    alert("Vous devez être connecté pour voir les détails du livreur");
+                    window.location.href = '/admin/login';
+                    return;
+                }
+
+                // First fetch the data to verify access
+                const response = await fetch(`/admin/deliverers/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        alert("Session expirée. Veuillez vous reconnecter.");
+                        window.location.href = '/admin/login';
+                        return;
+                    }
+                    if (response.status === 403) {
+                        alert("Accès refusé. Vous n'avez pas les permissions nécessaires.");
+                        window.location.href = '/admin/login';
+                        return;
+                    }
+                    const error = await response.json();
+                    throw new Error(error.error || `HTTP error! status: ${response.status}`);
+                }
+
+                // If successful, redirect to the details page
+                window.location.href = `/admin/deliverers/${id}`;
+            } catch (error) {
+                console.error("Error viewing deliverer:", error);
                 alert(`Une erreur s'est produite: ${error.message}`);
             }
         }

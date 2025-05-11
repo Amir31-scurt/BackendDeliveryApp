@@ -641,7 +641,93 @@ router.get("/deliverers", async (req, res) => {
 // Get single deliverer details
 router.get("/deliverers/:id", async (req, res) => {
   const { id } = req.params;
+  const token = req.headers.authorization?.split(" ")[1];
+
+  // If no token in header, check if this is a page view request
+  if (!token) {
+    // For page view requests, we'll render the template
+    try {
+      // Fetch deliverer with user information
+      const { data: deliverer, error: delivererError } = await supabase
+        .from("deliverers")
+        .select(`
+          *,
+          users (
+            id,
+            name,
+            phone_number,
+            profile_picture
+          )
+        `)
+        .eq("user_id", id)
+        .single();
+
+      if (delivererError) {
+        console.error("Error fetching deliverer:", delivererError);
+        return res.status(404).render("error", {
+          message: "Livreur non trouvé."
+        });
+      }
+
+      // Fetch deliverer's orders
+      const { data: orders, error: ordersError } = await supabase
+        .from("orders")
+        .select(`
+          id,
+          total_amount,
+          status,
+          created_at,
+          delivery_address,
+          users (
+            name,
+            phone_number
+          )
+        `)
+        .eq("deliverer_id", id)
+        .order('created_at', { ascending: false });
+
+      if (ordersError) {
+        console.error("Error fetching orders:", ordersError);
+        // Continue without orders
+      }
+
+      // Transform the data to match the template structure
+      const formattedDeliverer = {
+        userId: deliverer.user_id,
+        user: deliverer.users,
+        vehicleId: deliverer.vehicle_id,
+        isAvailable: deliverer.is_available,
+        currentLocation: deliverer.current_location,
+        zone: deliverer.zone,
+        profilePicture: deliverer.profile_picture,
+        isActive: deliverer.is_active,
+        isVerified: deliverer.is_verified,
+        completedDeliveries: deliverer.completed_deliveries || 0,
+        orders: orders || []
+      };
+
+      // Render the template
+      return res.render("admin/delivererDetails", {
+        layout: "admin/layout",
+        title: `Détails du Livreur - ${formattedDeliverer.user.name}`,
+        deliverer: formattedDeliverer
+      });
+    } catch (error) {
+      console.error("Error fetching deliverer details:", error.message);
+      return res.status(500).render("error", {
+        message: "Une erreur s'est produite lors du chargement des détails du livreur."
+      });
+    }
+  }
+
+  // For API requests (with token)
   try {
+    // Verify the token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ error: "Access denied. Admins only." });
+    }
+
     // Fetch deliverer with user information
     const { data: deliverer, error: delivererError } = await supabase
       .from("deliverers")
@@ -662,28 +748,6 @@ router.get("/deliverers/:id", async (req, res) => {
       return res.status(404).json({ error: "Deliverer not found." });
     }
 
-    // Fetch deliverer's orders
-    const { data: orders, error: ordersError } = await supabase
-      .from("orders")
-      .select(`
-        id,
-        total_amount,
-        status,
-        created_at,
-        delivery_address,
-        users (
-          name,
-          phone_number
-        )
-      `)
-      .eq("deliverer_id", id)
-      .order('created_at', { ascending: false });
-
-    if (ordersError) {
-      console.error("Error fetching orders:", ordersError);
-      // Continue without orders
-    }
-
     // Transform the data to match the template structure
     const formattedDeliverer = {
       userId: deliverer.user_id,
@@ -695,21 +759,16 @@ router.get("/deliverers/:id", async (req, res) => {
       profilePicture: deliverer.profile_picture,
       isActive: deliverer.is_active,
       isVerified: deliverer.is_verified,
-      completedDeliveries: deliverer.completed_deliveries || 0,
-      orders: orders || []
+      completedDeliveries: deliverer.completed_deliveries || 0
     };
 
-    // Render the template with the formatted data
-    res.render("admin/delivererDetails", {
-      layout: "admin/layout",
-      title: `Détails du Livreur - ${formattedDeliverer.user.name}`,
-      deliverer: formattedDeliverer
-    });
+    return res.json(formattedDeliverer);
   } catch (error) {
     console.error("Error fetching deliverer details:", error.message);
-    res.status(500).render("error", {
-      message: "Une erreur s'est produite lors du chargement des détails du livreur."
-    });
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: "Invalid token." });
+    }
+    return res.status(500).json({ error: "Une erreur s'est produite lors du chargement des détails du livreur." });
   }
 });
 
