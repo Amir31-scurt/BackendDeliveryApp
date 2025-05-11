@@ -110,6 +110,8 @@
       border-radius: 15px;
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
       margin-top: 2rem;
+      height: 400px;
+      position: relative;
     }
 
     .chart-title {
@@ -277,12 +279,15 @@
               borderColor: "rgba(219, 96, 126, 1)",
               borderWidth: 1,
               borderRadius: 5,
-              barThickness: 30,
+              barThickness: 40,
+              maxBarThickness: 50,
+              minBarLength: 5
             }],
           },
           options: {
             responsive: true,
-            maintainAspectRatio: false,
+            maintainAspectRatio: true,
+            aspectRatio: 2,
             plugins: {
               legend: {
                 display: false,
@@ -299,7 +304,12 @@
                 },
                 padding: 12,
                 cornerRadius: 8,
-                displayColors: false
+                displayColors: false,
+                callbacks: {
+                  label: function (context) {
+                    return `${context.parsed.y} commandes`;
+                  }
+                }
               }
             },
             scales: {
@@ -346,10 +356,19 @@
                     family: "'Poppins', sans-serif",
                     size: 12
                   },
-                  precision: 0
+                  precision: 0,
+                  stepSize: 1
                 }
               },
             },
+            layout: {
+              padding: {
+                top: 20,
+                right: 20,
+                bottom: 20,
+                left: 20
+              }
+            }
           },
         });
       } catch (error) {
