@@ -1,209 +1,485 @@
+<!DOCTYPE html>
+<html lang="fr">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Panel - Restaurants</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+  <title>Restaurants - Gourmet d'amour</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    :root {
+      --primary-color: #DB607E;
+      --secondary-color: #ABD27E;
+      --accent-color: #b22222;
+      --background-color: #f9f5f0;
+      --dark-color: #2c2c2c;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--background-color);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1601628828688-632f38a5a7d0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      padding: 2rem;
+      text-align: center;
+      color: white;
+      margin-bottom: 2rem;
+      border-radius: 15px;
+    }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--primary-color);
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .add-restaurant-btn {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 2rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .add-restaurant-btn:hover {
+      background-color: #c44d68;
+      transform: translateY(-2px);
+    }
+
+    .restaurants-section {
+      background: white;
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .restaurants-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .restaurants-table th {
+      background-color: var(--background-color);
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--dark-color);
+      border-bottom: 2px solid var(--primary-color);
+    }
+
+    .restaurants-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #eee;
+      color: var(--dark-color);
+    }
+
+    .restaurants-table tr:hover {
+      background-color: var(--background-color);
+      cursor: pointer;
+    }
+
+    .restaurant-image {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 5px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: color 0.3s ease;
+    }
+
+    .view-btn {
+      color: var(--primary-color);
+    }
+
+    .edit-btn {
+      color: var(--secondary-color);
+    }
+
+    .delete-btn {
+      color: var(--accent-color);
+    }
+
+    .action-btn:hover {
+      opacity: 0.8;
+    }
+
+    /* Modal Styles */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .modal-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      color: var(--dark-color);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--dark-color);
+      font-weight: 500;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #eee;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .opening-hours-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .time-inputs {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .time-inputs input {
+      flex: 1;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .submit-btn {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .cancel-btn {
+      background-color: #eee;
+      color: var(--dark-color);
+    }
+
+    .modal-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: var(--dark-color);
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .close-modal:hover {
+      color: var(--primary-color);
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
+
+      .restaurants-table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      .opening-hours-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 
 <body>
-  <h2 class="text-2xl font-bold my-6 text-center">Restaurants</h2>
-  <button onclick="openModal()"
-    class="m-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-    Add Restaurant
-  </button>
-  <div class="bg-white p-6 rounded-lg shadow">
-    <table class="min-w-full">
-      <thead>
-        <tr>
-          <th
-            class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-            Image
-          </th>
-          <th
-            class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-            Name
-          </th>
-          <th
-            class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-            Address
-          </th>
-          <th
-            class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-            type
-          </th>
-          <th
-            class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-            Status
-          </th>
-          <th
-            class="px-6 py-3 border-b-2 border-gray-300 text-left text-xs leading-4 font-medium text-gray-500 uppercase tracking-wider">
-            Actions
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <% if (restaurants && restaurants.length> 0) { %> <% restaurants.forEach((restaurant)=> { %>
-            <tr class="cursor-pointer hover:bg-gray-100">
-              <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-                <img src="<%= restaurant.imageUrl %>" alt="" class="h-12" />
-              </td>
-              <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-                <%= restaurant.name %>
-              </td>
-              <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-                <%= restaurant.address %>
-              </td>
-              <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-                <%= restaurant.type %>
-              </td>
-              <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-                <%= restaurant.isActive ? "Active" : "Inactive" %>
-              </td>
-              <td class="px-6 py-4 whitespace-no-wrap border-b border-gray-300">
-                <div class="flex space-x-4">
-                  <a href="/admin/restaurants/<%= restaurant.id %>/details" onclick="event.stopPropagation();"
-                    class="text-blue-600 hover:text-blue-900" title="View Details">
-                    <i class="fas fa-eye"></i>
-                  </a>
-                  <!-- <a href="#" onclick="event.stopPropagation(); editRestaurant('<%= restaurant.id %>')"
-                    class="text-indigo-600 hover:text-indigo-900" title="Edit Restaurant">
-                  </a> -->
-                  <i class="fas fa-edit text-indigo-600 hover:text-indigo-900"
-                    onclick="event.stopPropagation(); editRestaurant('<%= restaurant.id %>')"></i>
+  <div class="container">
+    <header>
+      <h1>Gourmet d'amour</h1>
+      <p>Gestion des Restaurants</p>
+      <div class="nav-links">
+        <a href="/admin/dashboard" class="nav-link">Tableau de Bord</a>
+        <a href="/admin/restaurants" class="nav-link">Restaurants</a>
+        <a href="/" class="nav-link">Accueil</a>
+      </div>
+    </header>
 
-                  <i class="fas fa-trash text-red-600 hover:text-red-900"
-                    onclick="event.stopPropagation(); confirmDelete('<%= restaurant.id %>', '<%= restaurant.name %>')"></i>
+    <button onclick="openModal()" class="add-restaurant-btn">
+      <i class="fas fa-plus"></i> Ajouter un Restaurant
+    </button>
 
-                </div>
-              </td>
-            </tr>
-            <% }); %>
-              <% } else { %>
-                <tr>
-                  <td colspan="5" class="text-center py-4 text-gray-500">
-                    No restaurants found.
-                  </td>
-                </tr>
-                <% } %>
-      </tbody>
-    </table>
-  </div>
-
-  <div id="restaurantModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
-    <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl absolute top-12 h-5/6 overflow-y-scroll">
-      <h2 id="modalTitle" class="text-2xl font-bold mb-6">Add New Restaurant</h2>
-      <form id="restaurantForm" class="space-y-4">
-        <input type="hidden" id="restaurantId" name="restaurantId" />
-        <!-- Restaurant Name -->
-        <div>
-          <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
-          <input type="text" id="name" name="name"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            placeholder="Enter restaurant name" required />
-        </div>
-
-        <!-- Description -->
-        <div>
-          <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-          <textarea id="description" name="description"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            placeholder="Enter restaurant description" rows="3" required></textarea>
-        </div>
-
-        <!-- Address -->
-        <div>
-          <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
-          <input type="text" id="address" name="address"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            placeholder="Enter restaurant address" required />
-        </div>
-
-        <!-- Cuisine -->
-        <div>
-          <label for="cuisine" class="block text-sm font-medium text-gray-700">type</label>
-          <select id="type" name="type"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            required>
-            <option value="restaurant">Restaurant</option>
-            <option value="boulangerie">Boulangerie</option>
-            <option value="express">Express</option>
-          </select>
-        </div>
-
-        <!-- Phone Number -->
-        <div>
-          <label for="phoneNumber" class="block text-sm font-medium text-gray-700">Phone Number</label>
-          <input type="text" id="phoneNumber" name="phoneNumber"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            placeholder="Enter phone number" required />
-        </div>
-
-        <!-- Email -->
-        <div>
-          <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
-          <input type="email" id="email" name="email"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            placeholder="Enter email address" required />
-        </div>
-
-        <!-- Image URL -->
-        <!-- Image Upload -->
-        <div>
-          <label for="image" class="block text-sm font-medium text-gray-700">Upload Image</label>
-          <input type="file" id="image" name="image" accept="image/*"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            required />
-        </div>
-
-        <!-- Status -->
-        <div>
-          <label for="isActive" class="block text-sm font-medium text-gray-700">Status</label>
-          <select id="isActive" name="isActive"
-            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            required>
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
-          </select>
-        </div>
-
-        <!-- Opening Hours -->
-        <div>
-          <label for="openingHours" class="block text-sm font-medium text-gray-700">Opening Hours</label>
-          <div class="grid grid-cols-2 gap-4">
-            <% ['monday', 'tuesday' , 'wednesday' , 'thursday' , 'friday' , 'saturday' , 'sunday' ].forEach(day=> { %>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 capitalize">
-                  <%= day %>
-                </label>
-                <div class="flex space-x-2">
-                  <input type="time" name="openingHours[<%= day %>][open]"
-                    class="mt-1 block w-1/2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    required />
-                  <input type="time" name="openingHours[<%= day %>][close]"
-                    class="mt-1 block w-1/2 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    required />
-                </div>
-              </div>
+    <div class="restaurants-section">
+      <table class="restaurants-table">
+        <thead>
+          <tr>
+            <th>Image</th>
+            <th>Nom</th>
+            <th>Adresse</th>
+            <th>Type</th>
+            <th>Statut</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (restaurants && restaurants.length> 0) { %>
+            <% restaurants.forEach((restaurant)=> { %>
+              <tr onclick="redirectToDetails('<%= restaurant.id %>')">
+                <td>
+                  <img src="<%= restaurant.imageUrl %>" alt="<%= restaurant.name %>" class="restaurant-image" />
+                </td>
+                <td>
+                  <%= restaurant.name %>
+                </td>
+                <td>
+                  <%= restaurant.address %>
+                </td>
+                <td>
+                  <%= restaurant.type %>
+                </td>
+                <td>
+                  <%= restaurant.isActive ? "Actif" : "Inactif" %>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <a href="/admin/restaurants/<%= restaurant.id %>/details" onclick="event.stopPropagation();"
+                      class="action-btn view-btn" title="Voir les détails">
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    <button class="action-btn edit-btn"
+                      onclick="event.stopPropagation(); editRestaurant('<%= restaurant.id %>')" title="Modifier">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="action-btn delete-btn"
+                      onclick="event.stopPropagation(); confirmDelete('<%= restaurant.id %>', '<%= restaurant.name %>')"
+                      title="Supprimer">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
               <% }); %>
-          </div>
-        </div>
+                <% } else { %>
+                  <tr>
+                    <td colspan="6" class="text-center py-4 text-gray-500">
+                      Aucun restaurant trouvé.
+                    </td>
+                  </tr>
+                  <% } %>
+        </tbody>
+      </table>
+    </div>
 
-        <!-- Submit Button -->
-        <div class="flex space-x-4 mt-10">
-          <button type="button" id="submitButton" onclick="submitRestaurant()"
-            class="w-full inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-            Add Restaurant
-          </button>
-          <button type="button" onclick="closeModal()"
-            class="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-            Cancel
-          </button>
+    <!-- Add/Edit Restaurant Modal -->
+    <div id="restaurantModal" class="modal">
+      <div class="modal-content">
+        <button class="close-modal" onclick="closeModal()">&times;</button>
+        <div class="modal-header">
+          <h2 id="modalTitle">Ajouter un Restaurant</h2>
         </div>
-      </form>
-      <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800">
-        &times;
-      </button>
+        <form id="restaurantForm">
+          <input type="hidden" id="restaurantId" name="restaurantId" />
+
+          <div class="form-group">
+            <label for="name">Nom</label>
+            <input type="text" id="name" name="name" class="form-control" placeholder="Entrer le nom du restaurant"
+              required />
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" class="form-control"
+              placeholder="Entrer la description du restaurant" rows="3" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="address">Adresse</label>
+            <input type="text" id="address" name="address" class="form-control"
+              placeholder="Entrer l'adresse du restaurant" required />
+          </div>
+
+          <div class="form-group">
+            <label for="type">Type</label>
+            <select id="type" name="type" class="form-control" required>
+              <option value="RESTAURANT">Restaurant</option>
+              <option value="BOULANGERIE">Boulangerie</option>
+              <option value="EXPRESS">Express</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="phoneNumber">Numéro de téléphone</label>
+            <input type="text" id="phoneNumber" name="phoneNumber" class="form-control"
+              placeholder="Entrer le numéro de téléphone" required />
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" class="form-control" placeholder="Entrer l'adresse email"
+              required />
+          </div>
+
+          <div class="form-group">
+            <label for="image">Image</label>
+            <input type="file" id="image" name="image" accept="image/*" class="form-control" required />
+          </div>
+
+          <div class="form-group">
+            <label for="isActive">Statut</label>
+            <select id="isActive" name="isActive" class="form-control" required>
+              <option value="true">Actif</option>
+              <option value="false">Inactif</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Heures d'ouverture</label>
+            <div class="opening-hours-grid">
+              <% ['monday', 'tuesday' , 'wednesday' , 'thursday' , 'friday' , 'saturday' , 'sunday' ].forEach(day=> {
+                const frenchDays = {
+                monday: "Lundi",
+                tuesday: "Mardi",
+                wednesday: "Mercredi",
+                thursday: "Jeudi",
+                friday: "Vendredi",
+                saturday: "Samedi",
+                sunday: "Dimanche"
+                };
+                %>
+                <div>
+                  <label class="form-group-label">
+                    <%= frenchDays[day] %>
+                  </label>
+                  <div class="time-inputs">
+                    <input type="time" name="openingHours[<%= day %>][open]" class="form-control" required />
+                    <input type="time" name="openingHours[<%= day %>][close]" class="form-control" required />
+                  </div>
+                </div>
+                <% }); %>
+            </div>
+          </div>
+
+          <div class="modal-buttons">
+            <button type="button" id="submitButton" onclick="submitRestaurant()" class="modal-btn submit-btn">
+              Ajouter
+            </button>
+            <button type="button" onclick="closeModal()" class="modal-btn cancel-btn">
+              Annuler
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
@@ -213,11 +489,11 @@
     // Open Modal for adding
     function openModal() {
       isEditMode = false;
-      document.getElementById("modalTitle").textContent = "Add New Restaurant";
-      document.getElementById("submitButton").textContent = "Add Restaurant";
+      document.getElementById("modalTitle").textContent = "Ajouter un Restaurant";
+      document.getElementById("submitButton").textContent = "Ajouter";
       document.getElementById("restaurantForm").reset();
       document.getElementById("restaurantId").value = "";
-      document.getElementById("restaurantModal").classList.remove("hidden");
+      document.getElementById("restaurantModal").classList.add("show");
     }
 
     // Fetch restaurant data and open edit modal
@@ -277,8 +553,8 @@
         isEditMode = true;
         console.log("Restaurant data:", restaurant);
 
-        document.getElementById("modalTitle").textContent = "Edit Restaurant";
-        document.getElementById("submitButton").textContent = "Update Restaurant";
+        document.getElementById("modalTitle").textContent = "Modifier le Restaurant";
+        document.getElementById("submitButton").textContent = "Mettre à jour";
 
         // Fill form with restaurant data
         document.getElementById("restaurantId").value = restaurant.id;
@@ -305,7 +581,7 @@
         }
 
         // Show the modal
-        document.getElementById("restaurantModal").classList.remove("hidden");
+        document.getElementById("restaurantModal").classList.add("show");
       } catch (error) {
         console.error("Error in openEditModal:", error);
         alert("Error opening edit modal. Please try again.");
@@ -314,7 +590,7 @@
 
     // Close Modal
     function closeModal() {
-      document.getElementById("restaurantModal").classList.add("hidden");
+      document.getElementById("restaurantModal").classList.remove("show");
     }
 
     // Redirect to Restaurant Details
@@ -519,3 +795,5 @@
     }
   </script>
 </body>
+
+</html>

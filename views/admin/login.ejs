@@ -1,11 +1,134 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Login</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <title>Connexion Admin - Gourmet d'amour</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #DB607E;
+      --secondary-color: #ABD27E;
+      --accent-color: #b22222;
+      --background-color: #f9f5f0;
+      --dark-color: #2c2c2c;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--background-color);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-container {
+      background: white;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 450px;
+      animation: fadeIn 1s ease-out;
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .login-header h1 {
+      font-family: 'Playfair Display', serif;
+      color: var(--primary-color);
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .login-header p {
+      color: var(--dark-color);
+      font-size: 1rem;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    .form-group label {
+      display: block;
+      color: var(--dark-color);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #eee;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .login-button {
+      width: 100%;
+      padding: 15px;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .login-button:hover {
+      background-color: #c44d68;
+      transform: translateY(-2px);
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      color: var(--dark-color);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    .back-link:hover {
+      color: var(--primary-color);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
   <script>
     async function handleLogin(event) {
       event.preventDefault();
@@ -25,57 +148,48 @@
         const result = await response.json();
 
         if (response.ok) {
-          // Store token in localStorage
-          console.log("result", result.token);
-
           const { user } = result;
           console.log("Logged-in user:", user);
           localStorage.setItem("authToken", result.token);
 
-          // Redirect admin users to the dashboard
           if (user.role === "admin") {
             window.location.href = "/admin/dashboard";
           } else {
-            alert("Unauthorized access. Only admins can log in.");
+            alert("Accès non autorisé. Seuls les administrateurs peuvent se connecter.");
           }
         } else {
           alert(
             result.error ||
-            "Invalid phone number or password. Please try again."
+            "Numéro de téléphone ou mot de passe invalide. Veuillez réessayer."
           );
         }
       } catch (error) {
         console.error("Login error:", error);
-        alert("An error occurred while logging in. Please try again.");
+        alert("Une erreur s'est produite lors de la connexion. Veuillez réessayer.");
       }
     }
   </script>
 </head>
 
-<body class="bg-gray-100">
-  <div class="max-w-md mx-auto bg-white p-8 rounded shadow mt-20">
-    <h2 class="text-2xl font-bold mb-6 text-center">Admin Login</h2>
+<body>
+  <div class="login-container">
+    <div class="login-header">
+      <h1>Gourmet d'amour</h1>
+      <p>Administration</p>
+    </div>
     <form onsubmit="handleLogin(event)">
-      <div class="mb-4">
-        <label class="block text-gray-700 text-sm font-bold mb-2" for="phoneNumber">
-          Phone Number
-        </label>
-        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" id="phoneNumber"
-          name="phoneNumber" type="text" placeholder="Enter your phone number" required />
+      <div class="form-group">
+        <label for="phoneNumber">Numéro de téléphone</label>
+        <input type="text" id="phoneNumber" name="phoneNumber" placeholder="Entrez votre numéro de téléphone"
+          required />
       </div>
-      <div class="mb-4">
-        <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
-          Password
-        </label>
-        <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" id="password"
-          name="password" type="password" placeholder="Enter your password" required />
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" name="password" placeholder="Entrez votre mot de passe" required />
       </div>
-      <div class="flex items-center justify-between">
-        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">
-          Login
-        </button>
-      </div>
+      <button type="submit" class="login-button">Se connecter</button>
     </form>
+    <a href="/" class="back-link">Retour à l'accueil</a>
   </div>
 </body>
 

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Livreurs - Gourmet d'amour</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #DB607E;
+            --secondary-color: #ABD27E;
+            --accent-color: #b22222;
+            --background-color: #f9f5f0;
+            --dark-color: #2c2c2c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1601628828688-632f38a5a7d0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            padding: 2rem;
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+            border-radius: 15px;
+        }
+
+        header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .add-deliverer-btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .add-deliverer-btn:hover {
+            background-color: #c44d68;
+            transform: translateY(-2px);
+        }
+
+        .deliverers-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .deliverers-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .deliverers-table th {
+            background-color: var(--background-color);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--dark-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .deliverers-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            color: var(--dark-color);
+        }
+
+        .deliverers-table tr:hover {
+            background-color: var(--background-color);
+        }
+
+        .deliverer-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: color 0.3s ease;
+        }
+
+        .view-btn {
+            color: var(--primary-color);
+        }
+
+        .edit-btn {
+            color: var(--secondary-color);
+        }
+
+        .delete-btn {
+            color: var(--accent-color);
+        }
+
+        .action-btn:hover {
+            opacity: 0.8;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .status-inactive {
+            background-color: #e0e0e0;
+            color: var(--dark-color);
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .modal-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--dark-color);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--dark-color);
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .cancel-btn {
+            background-color: #eee;
+            color: var(--dark-color);
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--dark-color);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-modal:hover {
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .deliverers-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Gourmet d'amour</h1>
+            <p>Gestion des Livreurs</p>
+            <div class="nav-links">
+                <a href="/admin/dashboard" class="nav-link">Tableau de Bord</a>
+                <a href="/admin/restaurants" class="nav-link">Restaurants</a>
+                <a href="/" class="nav-link">Accueil</a>
+            </div>
+        </header>
+
+        <button onclick="openModal()" class="add-deliverer-btn">
+            <i class="fas fa-plus"></i> Ajouter un Livreur
+        </button>
+
+        <div class="deliverers-section">
+            <table class="deliverers-table">
+                <thead>
+                    <tr>
+                        <th>Photo</th>
+                        <th>Nom</th>
+                        <th>Téléphone</th>
+                        <th>Commandes Livrées</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (deliverers && deliverers.length> 0) { %>
+                        <% deliverers.forEach(deliverer=> { %>
+                            <tr>
+                                <td>
+                                    <img src="<%= deliverer.profilePicture || deliverer.user.profile_picture || '/images/default-deliverer.png' %>"
+                                        alt="<%= deliverer.user.name %>" class="deliverer-image" />
+                                </td>
+                                <td>
+                                    <%= deliverer.user.name %>
+                                </td>
+                                <td>
+                                    <%= deliverer.user.phone_number %>
+                                </td>
+                                <td>
+                                    <%= deliverer.completedDeliveries || 0 %>
+                                </td>
+                                <td>
+                                    <span
+                                        class="status-badge status-<%= deliverer.isAvailable ? 'active' : 'inactive' %>">
+                                        <%= deliverer.isAvailable ? 'Disponible' : 'Occupé' %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a href="/admin/deliverers/<%= deliverer.userId %>" class="action-btn view-btn"
+                                            title="Voir les détails">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <button class="action-btn edit-btn"
+                                            onclick="editDeliverer('<%= deliverer.userId %>')" title="Modifier">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="action-btn delete-btn"
+                                            onclick="confirmDelete('<%= deliverer.userId %>', '<%= deliverer.user.name %>')"
+                                            title="Supprimer">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% }); %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="6" class="text-center">Aucun livreur trouvé</td>
+                                    </tr>
+                                    <% } %>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Add/Edit Deliverer Modal -->
+        <div id="delivererModal" class="modal">
+            <div class="modal-content">
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+                <div class="modal-header">
+                    <h2 id="modalTitle">Ajouter un Livreur</h2>
+                </div>
+                <form id="delivererForm">
+                    <input type="hidden" id="delivererId" name="delivererId" />
+
+                    <div class="form-group">
+                        <label for="name">Nom</label>
+                        <input type="text" id="name" name="name" class="form-control"
+                            placeholder="Entrer le nom du livreur" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phoneNumber">Numéro de téléphone</label>
+                        <input type="tel" id="phoneNumber" name="phoneNumber" class="form-control"
+                            placeholder="Entrer le numéro de téléphone" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="vehicleId">ID du Véhicule</label>
+                        <input type="text" id="vehicleId" name="vehicleId" class="form-control"
+                            placeholder="Entrer l'ID du véhicule" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="zone">Zone de Livraison</label>
+                        <input type="text" id="zone" name="zone" class="form-control"
+                            placeholder="Entrer la zone de livraison" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="image">Photo</label>
+                        <input type="file" id="image" name="image" accept="image/*" class="form-control" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="isAvailable">Statut</label>
+                        <select id="isAvailable" name="isAvailable" class="form-control" required>
+                            <option value="true">Disponible</option>
+                            <option value="false">Occupé</option>
+                        </select>
+                    </div>
+
+                    <div class="modal-buttons">
+                        <button type="button" id="submitButton" onclick="submitDeliverer()"
+                            class="modal-btn submit-btn">
+                            Ajouter
+                        </button>
+                        <button type="button" onclick="closeModal()" class="modal-btn cancel-btn">
+                            Annuler
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isEditMode = false;
+
+        function openModal() {
+            isEditMode = false;
+            document.getElementById("modalTitle").textContent = "Ajouter un Livreur";
+            document.getElementById("submitButton").textContent = "Ajouter";
+            document.getElementById("delivererForm").reset();
+            document.getElementById("delivererId").value = "";
+            document.getElementById("delivererModal").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("delivererModal").style.display = "none";
+        }
+
+        async function editDeliverer(id) {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    alert("Vous devez être connecté pour modifier un livreur");
+                    window.location.href = '/admin/login';
+                    return;
+                }
+
+                const response = await fetch(`/admin/deliverers/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        alert("Session expirée. Veuillez vous reconnecter.");
+                        window.location.href = '/admin/login';
+                        return;
+                    }
+                    const error = await response.json();
+                    throw new Error(error.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const deliverer = await response.json();
+                if (!deliverer) {
+                    throw new Error("Livreur non trouvé");
+                }
+
+                openEditModal(deliverer);
+            } catch (error) {
+                console.error("Error fetching deliverer:", error);
+                alert(`Une erreur s'est produite: ${error.message}`);
+            }
+        }
+
+        function openEditModal(deliverer) {
+            isEditMode = true;
+            document.getElementById("modalTitle").textContent = "Modifier le Livreur";
+            document.getElementById("submitButton").textContent = "Mettre à jour";
+
+            document.getElementById("delivererId").value = deliverer.userId;
+            document.getElementById("name").value = deliverer.user.name || "";
+            document.getElementById("phoneNumber").value = deliverer.user.phone_number || "";
+            document.getElementById("zone").value = deliverer.zone || "";
+            document.getElementById("vehicleId").value = deliverer.vehicleId || "";
+            document.getElementById("isAvailable").value = deliverer.isAvailable.toString();
+
+            // Make image upload not required in edit mode
+            document.getElementById("image").removeAttribute("required");
+
+            document.getElementById("delivererModal").style.display = "flex";
+        }
+
+        function confirmDelete(id, name) {
+            if (confirm(`Êtes-vous sûr de vouloir supprimer le livreur "${name}"?`)) {
+                deleteDeliverer(id);
+            }
+        }
+
+        async function deleteDeliverer(id) {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    alert("Vous devez être connecté pour supprimer un livreur");
+                    window.location.href = '/admin/login';
+                    return;
+                }
+
+                const response = await fetch(`/admin/deliverers/${id}/delete`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                alert(result.message || "Livreur supprimé avec succès!");
+                window.location.reload();
+            } catch (error) {
+                console.error("Error:", error);
+                alert(`Une erreur s'est produite: ${error.message}`);
+            }
+        }
+
+        async function submitDeliverer() {
+            const form = document.getElementById("delivererForm");
+            const formData = new FormData(form);
+            const delivererId = formData.get("delivererId");
+
+            // Get the auth token from localStorage
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                alert("Vous devez être connecté pour modifier un livreur");
+                window.location.href = '/admin/login';
+                return;
+            }
+
+            // Validate required fields
+            const name = formData.get("name");
+            const phoneNumber = formData.get("phoneNumber");
+            const zone = formData.get("zone");
+
+            if (!name || !phoneNumber || !zone) {
+                alert("Veuillez remplir tous les champs obligatoires");
+                return;
+            }
+
+            // Extract file input
+            const imageFile = formData.get("image");
+            let imageUrl = null;
+
+            // Only attempt image upload if a file was selected
+            if (imageFile && imageFile.size > 0) {
+                try {
+                    const fileName = `deliverer-${Date.now()}-${imageFile.name}`;
+                    const uploadFormData = new FormData();
+                    uploadFormData.append('image', imageFile);
+                    uploadFormData.append('fileName', fileName);
+
+                    const uploadResponse = await fetch('/admin/upload', {
+                        method: "POST",
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: uploadFormData,
+                    });
+
+                    if (!uploadResponse.ok) {
+                        console.warn("Image upload failed, proceeding without image");
+                    } else {
+                        const uploadResult = await uploadResponse.json();
+                        if (uploadResult.publicUrl) {
+                            imageUrl = uploadResult.publicUrl;
+                        }
+                    }
+                } catch (error) {
+                    console.warn("Image upload error:", error);
+                    // Continue without the image
+                }
+            }
+
+            const input = {
+                name: name,
+                phoneNumber: phoneNumber,
+                vehicleId: formData.get("vehicleId") || null,
+                zone: zone,
+                isAvailable: formData.get("isAvailable") === "true",
+                profilePicture: imageUrl
+            };
+
+            try {
+                const url = isEditMode
+                    ? `/admin/deliverers/${delivererId}/update`
+                    : '/admin/deliverers/add';
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(input)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (isEditMode) {
+                    alert("Livreur modifié avec succès!");
+                } else {
+                    alert(`Livreur ajouté avec succès! Mot de passe par défaut: ${result.defaultPassword}`);
+                }
+                window.location.reload();
+            } catch (error) {
+                console.error("Error:", error);
+                alert(`Une erreur s'est produite: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+
+</html>

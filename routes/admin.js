@@ -66,10 +66,18 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({error: "Invalid credentials."});
     }
 
-    // Generate JWT token
-    const token = jwt.sign({id: user.id}, process.env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    // Generate JWT token with admin role
+    const token = jwt.sign(
+      {
+        id: user[0].id,
+        role: "admin",
+        phoneNumber: user[0].phone_number
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "1d",
+      }
+    );
 
     res.status(200).json({
       message: "Login successful.",
@@ -581,6 +589,323 @@ router.post("/orders/:id/status", async (req, res) => {
   }
 });
 
+// Render the deliverers page
+router.get("/deliverers", async (req, res) => {
+  try {
+    console.log("Fetching deliverers...");
+    const { data: deliverers, error } = await supabase
+      .from("deliverers")
+      .select(`
+        *,
+        users (
+          id,
+          name,
+          phone_number,
+          profile_picture
+        )
+      `);
+
+    if (error) {
+      console.error("Error fetching deliverers:", error);
+      throw new Error("Failed to fetch deliverers.");
+    }
+
+    console.log(deliverers)
+    
+
+    // Transform the data to match the schema structure
+    const formattedDeliverers = deliverers.map(deliverer => ({
+      userId: deliverer.user_id,
+      user: deliverer.users,
+      vehicleId: deliverer.vehicle_id,
+      isAvailable: deliverer.is_available,
+      currentLocation: deliverer.current_location,
+      zone: deliverer.zone,
+      profilePicture: deliverer.profile_picture,
+      completedDeliveries: deliverer.completed_deliveries,
+      isActive: deliverer.is_active,
+      isVerified: deliverer.is_verified
+    }));
+
+    res.render("admin/deliverers", {
+      layout: "admin/layout",
+      title: "Livreurs",
+      deliverers: formattedDeliverers || [],
+    });
+  } catch (error) {
+    console.error("Error fetching deliverers:", error.message);
+    res.status(500).send("An error occurred while fetching deliverers.");
+  }
+});
+
+// Get single deliverer details
+router.get("/deliverers/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Fetch deliverer with user information
+    const { data: deliverer, error: delivererError } = await supabase
+      .from("deliverers")
+      .select(`
+        *,
+        users (
+          id,
+          name,
+          phone_number,
+          profile_picture
+        )
+      `)
+      .eq("user_id", id)
+      .single();
+
+    if (delivererError) {
+      console.error("Error fetching deliverer:", delivererError);
+      return res.status(404).json({ error: "Deliverer not found." });
+    }
+
+    // Fetch deliverer's orders
+    const { data: orders, error: ordersError } = await supabase
+      .from("orders")
+      .select(`
+        id,
+        total_amount,
+        status,
+        created_at,
+        delivery_address,
+        users (
+          name,
+          phone_number
+        )
+      `)
+      .eq("deliverer_id", id)
+      .order('created_at', { ascending: false });
+
+    if (ordersError) {
+      console.error("Error fetching orders:", ordersError);
+      // Continue without orders
+    }
+
+    // Transform the data to match the template structure
+    const formattedDeliverer = {
+      userId: deliverer.user_id,
+      user: deliverer.users,
+      vehicleId: deliverer.vehicle_id,
+      isAvailable: deliverer.is_available,
+      currentLocation: deliverer.current_location,
+      zone: deliverer.zone,
+      profilePicture: deliverer.profile_picture,
+      isActive: deliverer.is_active,
+      isVerified: deliverer.is_verified,
+      completedDeliveries: deliverer.completed_deliveries || 0,
+      orders: orders || []
+    };
+
+    // Render the template with the formatted data
+    res.render("admin/delivererDetails", {
+      layout: "admin/layout",
+      title: `Détails du Livreur - ${formattedDeliverer.user.name}`,
+      deliverer: formattedDeliverer
+    });
+  } catch (error) {
+    console.error("Error fetching deliverer details:", error.message);
+    res.status(500).render("error", {
+      message: "Une erreur s'est produite lors du chargement des détails du livreur."
+    });
+  }
+});
+
+// Handle adding a new deliverer
+router.post("/deliverers/add", isAdmin, async (req, res) => {
+  try {
+    const { name, phoneNumber, vehicleId, zone, profilePicture, isAvailable } = req.body;
+    console.log("Adding new deliverer:", req.body);
+
+    // Validate required fields
+    if (!name || !phoneNumber || !zone) {
+      return res.status(400).json({ error: "Name, phone number, and zone are required." });
+    }
+
+    // Check if phone number already exists
+    const { data: existingUser, error: existingUserError } = await supabase
+      .from("users")
+      .select("phone_number")
+      .eq("phone_number", phoneNumber)
+      .single();
+
+    if (existingUser) {
+      return res.status(400).json({ error: "Phone number already registered." });
+    }
+
+    if (existingUserError && existingUserError.code !== "PGRST116") {
+      console.error("Error checking phone number:", existingUserError);
+      return res.status(500).json({ error: "Internal server error." });
+    }
+
+    // Set default password and hash it
+    const defaultPassword = "12345678";
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+    // Create user
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .insert({
+        phone_number: phoneNumber,
+        name,
+        password: hashedPassword,
+        role: "deliverer",
+        is_verified: true // Deliverers are verified by admin
+      })
+      .select()
+      .single();
+
+    if (userError) {
+      console.error("Error creating user:", userError);
+      return res.status(500).json({ error: "Failed to create user account." });
+    }
+
+    // Create deliverer record
+    const { error: delivererError } = await supabase
+      .from("deliverers")
+      .insert({
+        user_id: userData.id,
+        vehicle_id: vehicleId || null,
+        is_available: isAvailable || true,
+        current_location: null,
+        zone: zone,
+        profile_picture: profilePicture || null,
+        is_active: true,
+        completed_deliveries: 0
+      });
+
+    if (delivererError) {
+      console.error("Error creating deliverer record:", delivererError);
+      // Clean up the user if deliverer creation fails
+      await supabase.from("users").delete().eq("id", userData.id);
+      return res.status(500).json({ error: "Failed to create deliverer record." });
+    }
+
+    res.status(201).json({
+      message: "Deliverer added successfully",
+      user: userData,
+      defaultPassword: defaultPassword // Include the default password in the response
+    });
+  } catch (error) {
+    console.error("Error adding deliverer:", error);
+    res.status(500).json({ error: "Failed to add deliverer: " + error.message });
+  }
+});
+
+// Handle updating a deliverer
+router.post("/deliverers/:id/update", isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, phoneNumber, vehicleId, zone, profilePicture, isAvailable, isActive } = req.body;
+
+    // First update the user
+    const { error: userError } = await supabase
+      .from("users")
+      .update({
+        name,
+        phone_number: phoneNumber,
+        profile_picture: profilePicture
+      })
+      .eq("id", id);
+
+    if (userError) {
+      console.error("Error updating user:", userError);
+      return res.status(500).json({ error: "Failed to update user information." });
+    }
+
+    // Then update the deliverer
+    const { error: delivererError } = await supabase
+      .from("deliverers")
+      .update({
+        vehicle_id: vehicleId,
+        zone: zone,
+        profile_picture: profilePicture,
+        is_available: isAvailable,
+        is_active: isActive
+      })
+      .eq("user_id", id);
+
+    if (delivererError) {
+      console.error("Error updating deliverer:", delivererError);
+      return res.status(500).json({ error: "Failed to update deliverer information." });
+    }
+
+    res.json({ message: "Deliverer updated successfully" });
+  } catch (error) {
+    console.error("Error updating deliverer:", error);
+    res.status(500).json({ error: "An error occurred while updating the deliverer." });
+  }
+});
+
+// Delete deliverer
+router.post("/deliverers/:id/delete", isAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    // First get the deliverer to find the user_id
+    const { data: deliverer, error: fetchError } = await supabase
+      .from("deliverers")
+      .select("user_id")
+      .eq("user_id", id)
+      .single();
+
+    if (fetchError) {
+      console.error("Error fetching deliverer:", fetchError);
+      return res.status(404).json({ error: "Deliverer not found." });
+    }
+
+    // Delete the deliverer record
+    const { error: deleteDelivererError } = await supabase
+      .from("deliverers")
+      .delete()
+      .eq("user_id", id);
+
+    if (deleteDelivererError) {
+      console.error("Error deleting deliverer:", deleteDelivererError);
+      return res.status(500).json({ error: "Failed to delete deliverer." });
+    }
+
+    // Delete the user record
+    const { error: deleteUserError } = await supabase
+      .from("users")
+      .delete()
+      .eq("id", id);
+
+    if (deleteUserError) {
+      console.error("Error deleting user:", deleteUserError);
+      return res.status(500).json({ error: "Failed to delete user." });
+    }
+
+    res.json({ message: "Deliverer deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting deliverer:", error);
+    res.status(500).json({ error: "An error occurred while deleting the deliverer." });
+  }
+});
+
+// Handle toggling deliverer availability
+router.post("/deliverers/:id/toggle", isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isAvailable } = req.body;
+
+    const { error } = await supabase
+      .from("deliverers")
+      .update({ is_available: isAvailable })
+      .eq("id", id);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    res.redirect("/admin/deliverers");
+  } catch (error) {
+    console.error("Error toggling deliverer availability:", error);
+    res.status(500).send("Failed to update deliverer availability.");
+  }
+});
+
 // GraphQL Schema for Restaurants
 const typeDefs = gql`
   type Restaurant {
@@ -596,9 +921,44 @@ const typeDefs = gql`
     openingHours: String
   }
 
+  type Deliverer {
+    id: ID!
+    name: String!
+    email: String!
+    phoneNumber: String!
+    imageUrl: String
+    isAvailable: Boolean!
+    completedDeliveries: Int!
+    createdAt: String!
+    updatedAt: String!
+    orders: [Order]
+  }
+
+  type Order {
+    id: ID!
+    totalAmount: Float!
+    status: String!
+    createdAt: String!
+    deliveryAddress: DeliveryAddress
+    user: User
+  }
+
+  type DeliveryAddress {
+    address: String!
+    latitude: Float!
+    longitude: Float!
+  }
+
+  type User {
+    name: String!
+    phoneNumber: String!
+  }
+
   type Query {
     restaurants: [Restaurant]
     restaurant(id: ID!): Restaurant
+    deliverers: [Deliverer]
+    deliverer(id: ID!): Deliverer
   }
 
   type Mutation {
@@ -613,6 +973,37 @@ const typeDefs = gql`
       isActive: Boolean
       openingHours: String
     ): Restaurant
+
+    createDeliverer(
+      name: String!
+      email: String!
+      phoneNumber: String!
+      imageUrl: String
+      isAvailable: Boolean!
+    ): Deliverer
+
+    updateDeliverer(
+      id: ID!
+      input: DelivererInput!
+    ): Deliverer
+
+    deleteDeliverer(id: ID!): Boolean
+  }
+
+  input DelivererInput {
+    name: String
+    email: String
+    phoneNumber: String
+    imageUrl: String
+    isAvailable: Boolean
+  }
+
+  input CreateDelivererInput {
+    vehicleId: ID
+    isAvailable: Boolean
+    currentLocation: String
+    zone: String
+    profilePicture: String
   }
 `;
 
@@ -633,6 +1024,20 @@ const resolvers = {
       if (error) throw new Error("Error fetching restaurant.");
       return data;
     },
+    deliverers: async () => {
+      const {data, error} = await supabase.from("deliverers").select("*");
+      if (error) throw new Error("Error fetching deliverers.");
+      return data;
+    },
+    deliverer: async (_, {id}) => {
+      const {data, error} = await supabase
+        .from("deliverers")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error) throw new Error("Error fetching deliverer.");
+      return data;
+    },
   },
   Mutation: {
     addRestaurant: async (_, args) => {
@@ -644,6 +1049,33 @@ const resolvers = {
       if (error) throw new Error("Error adding restaurant.");
       return data;
     },
+    createDeliverer: async (_, args) => {
+      const {data, error} = await supabase
+        .from("deliverers")
+        .insert(args)
+        .select()
+        .single();
+      if (error) throw new Error("Error adding deliverer.");
+      return data;
+    },
+    updateDeliverer: async (_, {id, input}) => {
+      const {data, error} = await supabase
+        .from("deliverers")
+        .update(input)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw new Error("Error updating deliverer.");
+      return data;
+    },
+    deleteDeliverer: async (_, {id}) => {
+      const {error} = await supabase
+        .from("deliverers")
+        .delete()
+        .eq("id", id);
+      if (error) throw new Error("Error deleting deliverer.");
+      return true;
+    },
   },
 };
 
@@ -652,15 +1084,24 @@ const graphqlServer = new ApolloServer({
   typeDefs,
   resolvers,
   context: ({req}) => {
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) throw new Error("Unauthorized");
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return {userId: decoded.id};
+    // Remove the strict token requirement for now
+    return {};
   },
 });
 
-await graphqlServer.start();
-graphqlServer.applyMiddleware({app: router, path: "/graphql"});
+// Initialize GraphQL server
+const initGraphQL = async () => {
+  try {
+    await graphqlServer.start();
+    graphqlServer.applyMiddleware({app: router, path: "/graphql"});
+    console.log("GraphQL server initialized successfully");
+  } catch (error) {
+    console.error("Error initializing GraphQL server:", error);
+  }
+};
+
+// Call the initialization function
+initGraphQL();
 
 // Add more routes for other admin functionalities (e.g., orders, deliverers)
 

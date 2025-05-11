@@ -1,17 +1,142 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Login</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <title>Admin Login - Gourmet d'amour</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #DB607E;
+            --secondary-color: #ABD27E;
+            --accent-color: #b22222;
+            --background-color: #f9f5f0;
+            --dark-color: #2c2c2c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: var(--dark-color);
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--dark-color);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .login-button:hover {
+            background-color: #c44d68;
+            transform: translateY(-2px);
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: var(--dark-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .back-link:hover {
+            color: var(--primary-color);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
     <script>
         async function handleAdminLogin(event) {
             event.preventDefault();
 
             const phoneNumber = document.getElementById("phoneNumber").value;
             const password = document.getElementById("password").value;
+
+            console.log("Attempting login with phone:", phoneNumber);
 
             try {
                 const response = await fetch("/admin/login", {
@@ -22,46 +147,82 @@
                     body: JSON.stringify({ phoneNumber, password }),
                 });
 
+                console.log("Login response status:", response.status);
+
                 const result = await response.json();
+                console.log("Login response:", result);
 
                 if (response.ok) {
+                    console.log("Login successful, received token");
+                    // Store the token
                     localStorage.setItem("authToken", result.token);
-                    window.location.href = "/admin/dashboard";
+
+                    // Verify the token contains admin role
+                    try {
+                        const tokenParts = result.token.split('.');
+                        if (tokenParts.length !== 3) {
+                            console.error("Invalid token format");
+                            throw new Error('Invalid token format');
+                        }
+                        const payload = JSON.parse(atob(tokenParts[1]));
+                        console.log("Token payload:", payload);
+
+                        if (!payload.role || payload.role !== 'admin') {
+                            console.error("Invalid role in token:", payload.role);
+                            throw new Error('Invalid role');
+                        }
+                        // If we get here, token is valid and has admin role
+                        console.log("Token validation successful, redirecting to dashboard");
+                        window.location.href = "/admin/dashboard";
+                    } catch (error) {
+                        console.error('Token validation error:', error);
+                        localStorage.removeItem("authToken");
+                        alert("Erreur d'authentification. Veuillez réessayer.");
+                    }
                 } else {
-                    alert(result.error || "Invalid credentials. Please try again.");
+                    // Handle specific error cases
+                    if (response.status === 401) {
+                        console.error("Authentication failed: Invalid credentials");
+                        alert("Numéro de téléphone ou mot de passe incorrect.");
+                    } else if (response.status === 403) {
+                        console.error("Authentication failed: Access denied");
+                        alert("Accès refusé. Droits d'administrateur requis.");
+                    } else {
+                        console.error("Server error:", result.error);
+                        alert(result.error || "Une erreur s'est produite. Veuillez réessayer.");
+                    }
                 }
             } catch (error) {
-                console.error("Login error:", error);
-                alert("An error occurred while logging in. Please try again.");
+                console.error("Login error details:", error);
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    alert("Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet.");
+                } else {
+                    alert("Une erreur s'est produite lors de la connexion. Veuillez réessayer.");
+                }
             }
         }
     </script>
 </head>
 
-<body class="bg-gray-100">
-    <div class="max-w-md mx-auto bg-white p-8 rounded shadow mt-20">
-        <h2 class="text-2xl font-bold mb-6 text-center">Admin Login</h2>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>Gourmet d'amour</h1>
+            <p>Administration</p>
+        </div>
         <form onsubmit="handleAdminLogin(event)">
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="phoneNumber">
-                    Phone Number
-                </label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" id="phoneNumber"
-                    name="phoneNumber" type="text" placeholder="Enter your phone number" required />
+            <div class="form-group">
+                <label for="phoneNumber">Numéro de téléphone</label>
+                <input type="text" id="phoneNumber" name="phoneNumber" placeholder="Entrez votre numéro de téléphone"
+                    required />
             </div>
-            <div class="mb-4">
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="password">
-                    Password
-                </label>
-                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" id="password"
-                    name="password" type="password" placeholder="Enter your password" required />
+            <div class="form-group">
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" name="password" placeholder="Entrez votre mot de passe" required />
             </div>
-            <div class="flex items-center justify-between">
-                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" type="submit">
-                    Login
-                </button>
-            </div>
+            <button type="submit" class="login-button">Se connecter</button>
         </form>
+        <a href="/" class="back-link">Retour à l'accueil</a>
     </div>
 </body>
 

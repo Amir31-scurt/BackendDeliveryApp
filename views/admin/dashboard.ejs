@@ -1,61 +1,204 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <title>Tableau de Bord - Gourmet d'amour</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #DB607E;
+      --secondary-color: #ABD27E;
+      --accent-color: #b22222;
+      --background-color: #f9f5f0;
+      --dark-color: #2c2c2c;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--background-color);
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1601628828688-632f38a5a7d0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      padding: 2rem;
+      text-align: center;
+      color: white;
+    }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--primary-color);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: var(--dark-color);
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .section-title::after {
+      content: "";
+      position: absolute;
+      width: 60px;
+      height: 3px;
+      background-color: var(--primary-color);
+      bottom: -10px;
+      left: 0;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card h3 {
+      font-size: 1.1rem;
+      color: var(--dark-color);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card p {
+      font-size: 2.5rem;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .chart-container {
+      background: white;
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      margin-top: 2rem;
+    }
+
+    .chart-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      color: var(--dark-color);
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      header h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
 </head>
 
-<body class="bg-gray-100 min-h-screen">
-  <header class="bg-blue-600 p-4 text-white text-center">
-    <h1 class="text-3xl font-bold">Admin Dashboard</h1>
+<body>
+  <header>
+    <h1>Gourmet d'amour</h1>
+    <p>Tableau de Bord Administrateur</p>
+    <div class="nav-links">
+      <a href="/admin/restaurants" class="nav-link">Restaurants</a>
+      <a href="/admin/deliverers" class="nav-link">Livreurs</a>
+      <a href="/" class="nav-link">Accueil</a>
+    </div>
   </header>
 
-  <main class="container mx-auto p-6">
-    <!-- Stats Section -->
-    <h2 class="text-2xl font-semibold text-gray-700 mb-6">Overview</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-      <!-- Total Orders -->
-      <div class="bg-blue-50 p-6 rounded-lg shadow-lg flex flex-col items-center">
-        <h3 class="text-lg font-semibold text-blue-700 mb-2">Total Orders</h3>
-        <p class="text-4xl font-extrabold text-blue-700">
+  <main class="container">
+    <h2 class="section-title">Aperçu</h2>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Commandes Totales</h3>
+        <p>
           <%= totalOrders || 0 %>
         </p>
       </div>
 
-      <!-- Active Restaurants -->
-      <div class="bg-green-50 p-6 rounded-lg shadow-lg flex flex-col items-center cursor-pointer"
-        onclick="window.location.href='/admin/restaurants'">
-        <h3 class="text-lg font-semibold text-green-700 mb-2">Restaurants</h3>
-        <p class="text-4xl font-extrabold text-green-700">
+      <div class="stat-card" onclick="window.location.href='/admin/restaurants'">
+        <h3>Restaurants</h3>
+        <p>
           <%= totalRestaurants || 0 %>
         </p>
       </div>
-      <div class="bg-red-50 p-6 rounded-lg shadow-lg flex flex-col items-center">
-        <h3 class="text-lg font-semibold text-red-700 mb-2">
-          Active Restaurants
-        </h3>
-        <p class="text-4xl font-extrabold text-red-700">
+
+      <div class="stat-card">
+        <h3>Restaurants Actifs</h3>
+        <p>
           <%= totalActiveRestaurants || 0 %>
         </p>
       </div>
 
-      <!-- Active Deliverers -->
-      <div class="bg-yellow-50 p-6 rounded-lg shadow-lg flex flex-col items-center">
-        <h3 class="text-lg font-semibold text-yellow-700 mb-2">
-          Active Deliverers
-        </h3>
-        <p class="text-4xl font-extrabold text-yellow-700">
+      <div class="stat-card" onclick="window.location.href='/admin/deliverers'">
+        <h3>Livreurs Actifs</h3>
+        <p>
           <%= totalDeliverers || 0 %>
         </p>
       </div>
     </div>
 
-    <!-- Monthly Orders Chart -->
-    <div class="bg-white p-8 rounded-lg shadow-lg">
-      <h3 class="text-xl font-semibold text-gray-800 mb-4">Monthly Orders</h3>
+    <div class="chart-container">
+      <h3 class="chart-title">Commandes Mensuelles</h3>
       <canvas id="monthlyOrdersChart"></canvas>
     </div>
   </main>
@@ -66,86 +209,161 @@
       try {
         const token = localStorage.getItem("authToken");
         if (!token) {
-          alert("Please log in.");
+          console.log("No token found, redirecting to login");
           window.location.href = "/admin/login";
           return;
         }
 
+        console.log("Fetching dashboard data...");
         const response = await fetch("/admin/dashboard", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
-          },
+            "Accept": "application/json"
+          }
         });
 
-        const data = await response.json();
+        console.log("Response status:", response.status);
+
         if (!response.ok) {
-          console.error("Error fetching dashboard data:", data.error);
-          alert(data.error || "Failed to fetch dashboard data.");
-          return;
+          if (response.status === 401) {
+            console.log("Session expired, redirecting to login");
+            localStorage.removeItem("authToken");
+            window.location.href = "/admin/login";
+            return;
+          }
+          if (response.status === 403) {
+            console.log("Access denied, redirecting to login");
+            localStorage.removeItem("authToken");
+            window.location.href = "/admin/login";
+            return;
+          }
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        // Populate the dashboard stats
-        document.getElementById("totalOrders").textContent =
-          data.totalOrders || 0;
-        document.getElementById("activeRestaurants").textContent =
-          data.totalRestaurants || 0;
-        document.getElementById("activeDeliverers").textContent =
-          data.totalDeliverers || 0;
+        // Since the server is rendering the page directly, we don't need to parse JSON
+        // The data is already available in the EJS template variables
+        const data = {
+          monthlyOrders: JSON.parse('<%- JSON.stringify(monthlyOrders || []) %>'),
+          totalOrders: parseInt('<%- totalOrders || 0 %>'),
+          totalRestaurants: parseInt('<%- totalRestaurants || 0 %>'),
+          totalActiveRestaurants: parseInt('<%- totalActiveRestaurants || 0 %>'),
+          totalDeliverers: parseInt('<%- totalDeliverers || 0 %>')
+        };
+
+        console.log("Dashboard data received:", data);
 
         // Render the chart
-        const ctx = document
-          .getElementById("monthlyOrdersChart")
-          .getContext("2d");
+        const ctx = document.getElementById("monthlyOrdersChart").getContext("2d");
+        if (!ctx) {
+          console.error("Could not get chart context");
+          throw new Error("Chart context not found");
+        }
+
         new Chart(ctx, {
           type: "bar",
           data: {
-            labels: data.monthlyOrders.map((item) => item.month),
-            datasets: [
-              {
-                label: "Orders",
-                data: data.monthlyOrders.map((item) => item.orders),
-                backgroundColor: "rgba(75, 192, 192, 0.5)",
-                borderColor: "rgba(75, 192, 192, 1)",
-                borderWidth: 1,
-              },
-            ],
+            labels: data.monthlyOrders.map((item) => {
+              // Convert month number to month name
+              const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+                'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+              return months[parseInt(item.month) - 1] || item.month;
+            }),
+            datasets: [{
+              label: "Commandes",
+              data: data.monthlyOrders.map((item) => item.orders),
+              backgroundColor: "rgba(219, 96, 126, 0.5)",
+              borderColor: "rgba(219, 96, 126, 1)",
+              borderWidth: 1,
+              borderRadius: 5,
+              barThickness: 30,
+            }],
           },
           options: {
+            responsive: true,
+            maintainAspectRatio: false,
             plugins: {
               legend: {
                 display: false,
               },
+              tooltip: {
+                backgroundColor: 'rgba(44, 44, 44, 0.9)',
+                titleFont: {
+                  family: "'Poppins', sans-serif",
+                  size: 14
+                },
+                bodyFont: {
+                  family: "'Poppins', sans-serif",
+                  size: 13
+                },
+                padding: 12,
+                cornerRadius: 8,
+                displayColors: false
+              }
             },
             scales: {
               x: {
+                grid: {
+                  display: false
+                },
                 title: {
                   display: true,
-                  text: "Month",
-                  color: "#333",
+                  text: "Mois",
+                  color: "#2c2c2c",
                   font: {
                     size: 14,
+                    family: "'Poppins', sans-serif",
+                    weight: '600'
                   },
+                  padding: { top: 10 }
                 },
+                ticks: {
+                  font: {
+                    family: "'Poppins', sans-serif",
+                    size: 12
+                  }
+                }
               },
               y: {
                 beginAtZero: true,
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.05)'
+                },
                 title: {
                   display: true,
-                  text: "Number of Orders",
-                  color: "#333",
+                  text: "Nombre de Commandes",
+                  color: "#2c2c2c",
                   font: {
                     size: 14,
+                    family: "'Poppins', sans-serif",
+                    weight: '600'
                   },
+                  padding: { bottom: 10 }
                 },
+                ticks: {
+                  font: {
+                    family: "'Poppins', sans-serif",
+                    size: 12
+                  },
+                  precision: 0
+                }
               },
             },
           },
         });
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        alert("An error occurred. Please try again.");
+        console.error("Dashboard error details:", {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        });
+
+        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+          alert("Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet.");
+        } else {
+          alert(`Une erreur s'est produite lors du chargement du tableau de bord: ${error.message}`);
+        }
       }
     };
 

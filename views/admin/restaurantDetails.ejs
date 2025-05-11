@@ -1,116 +1,471 @@
+<!DOCTYPE html>
+<html lang="fr">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Panel - Restaurants</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" />
+  <title>Détails du Restaurant - Gourmet d'amour</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    :root {
+      --primary-color: #DB607E;
+      --secondary-color: #ABD27E;
+      --accent-color: #b22222;
+      --background-color: #f9f5f0;
+      --dark-color: #2c2c2c;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--background-color);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1601628828688-632f38a5a7d0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      padding: 2rem;
+      text-align: center;
+      color: white;
+      margin-bottom: 2rem;
+      border-radius: 15px;
+    }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--primary-color);
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    .nav-link:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .restaurant-details {
+      background: white;
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 2rem;
+    }
+
+    .restaurant-image {
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+
+    .restaurant-info {
+      flex: 1;
+    }
+
+    .restaurant-info h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      color: var(--dark-color);
+      margin-bottom: 1rem;
+    }
+
+    .info-item {
+      margin-bottom: 0.5rem;
+      color: var(--dark-color);
+    }
+
+    .info-item strong {
+      color: var(--primary-color);
+    }
+
+    .opening-hours {
+      margin-top: 1rem;
+    }
+
+    .opening-hours ul {
+      list-style: none;
+      margin-top: 0.5rem;
+    }
+
+    .opening-hours li {
+      margin-bottom: 0.25rem;
+      color: var(--dark-color);
+    }
+
+    .add-item-btn {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 2rem;
+    }
+
+    .add-item-btn:hover {
+      background-color: #c44d68;
+      transform: translateY(-2px);
+    }
+
+    .menu-section {
+      background: white;
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .menu-section h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      color: var(--dark-color);
+      margin-bottom: 1.5rem;
+    }
+
+    .menu-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    .menu-table th {
+      background-color: var(--background-color);
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--dark-color);
+      border-bottom: 2px solid var(--primary-color);
+    }
+
+    .menu-table td {
+      padding: 1rem;
+      border-bottom: 1px solid #eee;
+      color: var(--dark-color);
+    }
+
+    .menu-table tr:hover {
+      background-color: var(--background-color);
+    }
+
+    .menu-item-image {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 5px;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .action-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      transition: color 0.3s ease;
+    }
+
+    .edit-btn {
+      color: var(--primary-color);
+    }
+
+    .delete-btn {
+      color: var(--accent-color);
+    }
+
+    .action-btn:hover {
+      opacity: 0.8;
+    }
+
+    /* Modal Styles */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+    }
+
+    .modal-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      color: var(--dark-color);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: var(--dark-color);
+      font-weight: 500;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem;
+      border: 2px solid #eee;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .submit-btn {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .cancel-btn {
+      background-color: #eee;
+      color: var(--dark-color);
+    }
+
+    .modal-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: var(--dark-color);
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .close-modal:hover {
+      color: var(--primary-color);
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
+
+      .restaurant-details {
+        flex-direction: column;
+      }
+
+      .restaurant-image {
+        width: 100%;
+        height: 200px;
+      }
+
+      .menu-table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
 </head>
 
 <body>
-  <div class="container mx-auto p-6">
+  <div class="container">
+    <header>
+      <h1>Gourmet d'amour</h1>
+      <p>Gestion des Restaurants</p>
+      <div class="nav-links">
+        <a href="/admin/dashboard" class="nav-link">Tableau de Bord</a>
+        <a href="/admin/restaurants" class="nav-link">Restaurants</a>
+        <a href="/" class="nav-link">Accueil</a>
+      </div>
+    </header>
+
     <!-- Restaurant Details -->
-    <div class="bg-white p-6 rounded-lg shadow mb-8">
-      <img src="<%= restaurant.imageUrl %>" alt="" class="w-36" />
-      <h2 class="text-2xl font-bold mb-6">
-        <%= restaurant.name %>
-      </h2>
-      <p><strong>Description:</strong>
-        <%= restaurant.description %>
-      </p>
-      <p><strong>Adresse:</strong>
-        <%= restaurant.address %>
-      </p>
-      <p><strong>Type:</strong>
-        <%= restaurant.type %>
-      </p>
-      <p><strong>Téléphone:</strong>
-        <%= restaurant.phoneNumber %>
-      </p>
-      <p><strong>Email:</strong>
-        <%= restaurant.email %>
-      </p>
-      <p>
-        <strong>Statut:</strong>
-        <%= restaurant.isActive ? "Actif" : "Inactif" %>
-      </p>
-      <p><strong>Heures d'ouverture:</strong></p>
-      <ul class="list-disc pl-5">
-        <% Object.entries(restaurant.openingHours).forEach(([day, hours])=> {
-          const frenchDays = {
-          monday: "Lundi",
-          tuesday: "Mardi",
-          wednesday: "Mercredi",
-          thursday: "Jeudi",
-          friday: "Vendredi",
-          saturday: "Samedi",
-          sunday: "Dimanche"
-          };
-          const frenchDay = frenchDays[day] || day.charAt(0).toUpperCase() + day.slice(1);
-          %>
-          <li>
-            <%= frenchDay %>: <%= hours.open %> -
-                <%= hours.close %>
-          </li>
-          <% }); %>
-      </ul>
+    <div class="restaurant-details">
+      <img src="<%= restaurant.imageUrl %>" alt="<%= restaurant.name %>" class="restaurant-image" />
+      <div class="restaurant-info">
+        <h2>
+          <%= restaurant.name %>
+        </h2>
+        <div class="info-item">
+          <strong>Description:</strong>
+          <p>
+            <%= restaurant.description %>
+          </p>
+        </div>
+        <div class="info-item">
+          <strong>Adresse:</strong>
+          <p>
+            <%= restaurant.address %>
+          </p>
+        </div>
+        <div class="info-item">
+          <strong>Type:</strong>
+          <p>
+            <%= restaurant.type %>
+          </p>
+        </div>
+        <div class="info-item">
+          <strong>Téléphone:</strong>
+          <p>
+            <%= restaurant.phoneNumber %>
+          </p>
+        </div>
+        <div class="info-item">
+          <strong>Email:</strong>
+          <p>
+            <%= restaurant.email %>
+          </p>
+        </div>
+        <div class="info-item">
+          <strong>Statut:</strong>
+          <p>
+            <%= restaurant.isActive ? "Actif" : "Inactif" %>
+          </p>
+        </div>
+        <div class="opening-hours">
+          <strong>Heures d'ouverture:</strong>
+          <ul>
+            <% Object.entries(restaurant.openingHours).forEach(([day, hours])=> {
+              const frenchDays = {
+              monday: "Lundi",
+              tuesday: "Mardi",
+              wednesday: "Mercredi",
+              thursday: "Jeudi",
+              friday: "Vendredi",
+              saturday: "Samedi",
+              sunday: "Dimanche"
+              };
+              const frenchDay = frenchDays[day] || day.charAt(0).toUpperCase() + day.slice(1);
+              %>
+              <li>
+                <%= frenchDay %>: <%= hours.open %> - <%= hours.close %>
+              </li>
+              <% }); %>
+          </ul>
+        </div>
+      </div>
     </div>
 
-    <button onclick="openModal()"
-      class="m-4 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-      Ajouter un Article
+    <button onclick="openModal()" class="add-item-btn">
+      <i class="fas fa-plus"></i> Ajouter un Article
     </button>
+
     <!-- Menu Items Section -->
-    <div class="bg-white p-6 rounded-lg shadow mb-8">
-      <h2 class="text-xl font-bold mb-4">Articles du Menu</h2>
+    <div class="menu-section">
+      <h2>Articles du Menu</h2>
       <% if (menuItems.length> 0) { %>
-        <table class="min-w-full border-collapse border border-gray-200">
+        <table class="menu-table">
           <thead>
-            <tr class="bg-gray-100">
-              <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
-                Image
-              </th>
-              <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
-                Nom
-              </th>
-              <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
-                Description
-              </th>
-              <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
-                Prix
-              </th>
-              <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
-                Créé le
-              </th>
-              <th class="border border-gray-200 px-4 py-2 text-left text-sm font-medium text-gray-700">
-                Actions
-              </th>
+            <tr>
+              <th>Image</th>
+              <th>Nom</th>
+              <th>Description</th>
+              <th>Prix</th>
+              <th>Créé le</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             <% menuItems.forEach((item)=> { %>
               <tr>
-                <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
-                  <img src="<%= item.imageUrl %>" alt="<%= item.name %>" class="h-12" />
+                <td>
+                  <img src="<%= item.imageUrl %>" alt="<%= item.name %>" class="menu-item-image" />
                 </td>
-                <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
+                <td>
                   <%= item.name %>
                 </td>
-                <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
+                <td>
                   <%= item.description %>
                 </td>
-                <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
+                <td>
                   <%= item.price.toFixed(2) %> Fcfa
                 </td>
-                <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
+                <td>
                   <%= item.createdAt %>
                 </td>
-                <td class="border border-gray-200 px-4 py-2 text-sm text-gray-700">
-                  <div class="flex space-x-4">
-                    <i class="fas fa-edit text-indigo-600 hover:text-indigo-900 cursor-pointer"
-                      onclick="event.stopPropagation(); editMenuItem('<%= item.id %>')"></i>
-
-                    <i class="fas fa-trash text-red-600 hover:text-red-900 cursor-pointer"
-                      onclick="event.stopPropagation(); confirmDeleteMenuItem('<%= item.id %>', '<%= item.name %>')"></i>
+                <td>
+                  <div class="action-buttons">
+                    <button class="action-btn edit-btn" onclick="editMenuItem('<%= item.id %>')">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="action-btn delete-btn"
+                      onclick="confirmDeleteMenuItem('<%= item.id %>', '<%= item.name %>')">
+                      <i class="fas fa-trash"></i>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -122,66 +477,57 @@
           <% } %>
     </div>
 
-    <!-- Add Menu Item Form -->
-    <div id="menuItemModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
-      <div class="bg-white p-6 rounded-lg shadow w-96">
-        <h2 class="text-xl font-bold mb-4">Ajouter un Article</h2>
-        <form action="/admin/restaurants/<%= restaurant.id %>/menu/add" method="POST" class="space-y-4"
-          id="menuItemForm">
-          <div>
-            <label for="name" class="block text-sm font-medium text-gray-700">Nom</label>
-            <input type="text" id="name" name="name"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Entrer le nom de l'article" required />
+    <!-- Add/Edit Menu Item Modal -->
+    <div id="menuItemModal" class="modal">
+      <div class="modal-content">
+        <button class="close-modal" onclick="closeModal()">&times;</button>
+        <div class="modal-header">
+          <h2>Ajouter un Article</h2>
+        </div>
+        <form id="menuItemForm" class="space-y-4">
+          <div class="form-group">
+            <label for="name">Nom</label>
+            <input type="text" id="name" name="name" class="form-control" placeholder="Entrer le nom de l'article"
+              required />
           </div>
-          <div>
-            <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-            <textarea id="description" name="description"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" class="form-control"
               placeholder="Entrer la description de l'article" rows="3" required></textarea>
           </div>
-          <div>
-            <label for="price" class="block text-sm font-medium text-gray-700">Prix</label>
-            <input type="number" id="price" name="price" step="0.01"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          <div class="form-group">
+            <label for="price">Prix</label>
+            <input type="number" id="price" name="price" step="0.01" class="form-control"
               placeholder="Entrer le prix de l'article" required />
           </div>
-          <div>
-            <label for="isActive" class="block text-sm font-medium text-gray-700">Catégorie</label>
-            <select id="category" name="category"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              required>
+          <div class="form-group">
+            <label for="category">Catégorie</label>
+            <select id="category" name="category" class="form-control" required>
               <!-- Categories will be populated based on restaurant type -->
             </select>
           </div>
-          <div>
-            <label for="image" class="block text-sm font-medium text-gray-700">Télécharger une Image</label>
-            <input type="file" id="image" name="image" accept="image/*"
-              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              required />
+          <div class="form-group">
+            <label for="image">Image</label>
+            <input type="file" id="image" name="image" accept="image/*" class="form-control" required />
           </div>
-          <div class="flex space-x-4 mt-10">
-            <button type="button" onclick="submitMenuItem()"
-              class="flex-1 inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+          <div class="modal-buttons">
+            <button type="button" onclick="submitMenuItem()" class="modal-btn submit-btn">
               Ajouter
             </button>
-            <button type="button" onclick="closeModal()"
-              class="flex-1 inline-flex justify-center rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+            <button type="button" onclick="closeModal()" class="modal-btn cancel-btn">
               Annuler
             </button>
           </div>
         </form>
-        <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800">
-          &times;
-        </button>
       </div>
     </div>
   </div>
+
   <script>
     const restaurantType = "<%= restaurant.type %>";
 
     function openModal() {
-      document.getElementById("menuItemModal").classList.remove("hidden");
+      document.getElementById("menuItemModal").classList.add("show");
       populateCategoriesByType();
     }
 
@@ -209,7 +555,7 @@
 
     // Close Modal
     function closeModal() {
-      document.getElementById("menuItemModal").classList.add("hidden");
+      document.getElementById("menuItemModal").classList.remove("show");
       document.getElementById("menuItemForm").reset();
       document.getElementById("menuItemForm").removeAttribute("data-mode");
       document.getElementById("menuItemForm").removeAttribute("data-id");
@@ -308,7 +654,7 @@
         document.getElementById("image").removeAttribute("required");
 
         // Show the modal
-        document.getElementById("menuItemModal").classList.remove("hidden");
+        document.getElementById("menuItemModal").classList.add("show");
       } catch (error) {
         console.error("Error in openEditMenuItemModal:", error);
         alert("Error opening edit modal. Please try again.");
@@ -423,7 +769,7 @@
             description: "${input.description}",
             price: ${input.price},
             category: "${input.category}"
-            ${imageUrl ? `, imageUrl: "${input.imageUrl}"` : ''}
+                            ${imageUrl ? `, imageUrl: "${imageUrl}"` : ''}
           }) {
             id
             name
@@ -440,7 +786,7 @@
             price: ${input.price},
             restaurantId: "${input.restaurantId}",
             category: "${input.category}"
-            ${imageUrl ? `, imageUrl: "${input.imageUrl}"` : ''}
+                            ${imageUrl ? `, imageUrl: "${imageUrl}"` : ''}
           }) {
             id
             name
@@ -480,3 +826,5 @@
     }
   </script>
 </body>
+
+</html>
