@@ -978,6 +978,19 @@ const typeDefs = gql`
     imageUrl: String
     isActive: Boolean
     openingHours: String
+    menuItems: [MenuItem]
+  }
+
+  type MenuItem {
+    id: ID!
+    name: String!
+    description: String
+    price: Float!
+    category: String!
+    imageUrl: String
+    restaurantId: ID!
+    createdAt: String
+    updatedAt: String
   }
 
   type Deliverer {
@@ -1018,6 +1031,8 @@ const typeDefs = gql`
     restaurant(id: ID!): Restaurant
     deliverers: [Deliverer]
     deliverer(id: ID!): Deliverer
+    menuItems(restaurantId: ID!): [MenuItem]
+    menuItem(id: ID!): MenuItem
   }
 
   type Mutation {
@@ -1047,6 +1062,26 @@ const typeDefs = gql`
     ): Deliverer
 
     deleteDeliverer(id: ID!): Boolean
+
+    addMenuItem(
+      input: MenuItemInput!
+    ): MenuItem
+
+    updateMenuItem(
+      id: ID!
+      input: MenuItemInput!
+    ): MenuItem
+
+    deleteMenuItem(id: ID!): Boolean
+  }
+
+  input MenuItemInput {
+    name: String!
+    description: String
+    price: Float!
+    category: String!
+    imageUrl: String
+    restaurantId: ID
   }
 
   input DelivererInput {
@@ -1097,6 +1132,23 @@ const resolvers = {
       if (error) throw new Error("Error fetching deliverer.");
       return data;
     },
+    menuItems: async (_, {restaurantId}) => {
+      const {data, error} = await supabase
+        .from("menu_items")
+        .select("*")
+        .eq("restaurant_id", restaurantId);
+      if (error) throw new Error("Error fetching menu items.");
+      return data;
+    },
+    menuItem: async (_, {id}) => {
+      const {data, error} = await supabase
+        .from("menu_items")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (error) throw new Error("Error fetching menu item.");
+      return data;
+    }
   },
   Mutation: {
     addRestaurant: async (_, args) => {
@@ -1135,7 +1187,70 @@ const resolvers = {
       if (error) throw new Error("Error deleting deliverer.");
       return true;
     },
-  },
+    addMenuItem: async (_, {input}) => {
+      const {data, error} = await supabase
+        .from("menu_items")
+        .insert({
+          name: input.name,
+          description: input.description,
+          price: input.price,
+          category: input.category,
+          image_url: input.imageUrl,
+          restaurant_id: input.restaurantId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      if (error) throw new Error("Error adding menu item.");
+      return {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        category: data.category,
+        imageUrl: data.image_url,
+        restaurantId: data.restaurant_id,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    },
+    updateMenuItem: async (_, {id, input}) => {
+      const {data, error} = await supabase
+        .from("menu_items")
+        .update({
+          name: input.name,
+          description: input.description,
+          price: input.price,
+          category: input.category,
+          image_url: input.imageUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw new Error("Error updating menu item.");
+      return {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        price: data.price,
+        category: data.category,
+        imageUrl: data.image_url,
+        restaurantId: data.restaurant_id,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at
+      };
+    },
+    deleteMenuItem: async (_, {id}) => {
+      const {error} = await supabase
+        .from("menu_items")
+        .delete()
+        .eq("id", id);
+      if (error) throw new Error("Error deleting menu item.");
+      return true;
+    }
+  }
 };
 
 // Setup ApolloServer for GraphQL
@@ -1172,6 +1287,52 @@ router.get("/admin/login", (req, res) => {
 // Render the restaurant login page
 router.get("/restaurant/login", (req, res) => {
   res.render("admin/restaurantLogin");
+});
+
+// Add route for restaurant menu page
+router.get("/restaurant/menu", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ error: "Access denied. No token provided." });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== "restaurant") {
+      return res.status(403).json({ error: "Access denied. Restaurant only." });
+    }
+
+    const restaurantId = decoded.id;
+
+    // Fetch restaurant details
+    const { data: restaurant, error: restaurantError } = await supabase
+      .from("restaurants")
+      .select("*")
+      .eq("id", restaurantId)
+      .single();
+
+    if (restaurantError) {
+      throw new Error("Error fetching restaurant details");
+    }
+
+    // Fetch menu items
+    const { data: menuItems, error: menuError } = await supabase
+      .from("menu_items")
+      .select("*")
+      .eq("restaurant_id", restaurantId);
+
+    if (menuError) {
+      throw new Error("Error fetching menu items");
+    }
+
+    res.render("restaurant/menu", {
+      restaurant,
+      menuItems: menuItems || []
+    });
+  } catch (error) {
+    console.error("Error in menu page:", error);
+    res.status(500).send("An error occurred while loading the menu page.");
+  }
 });
 
 export default router;

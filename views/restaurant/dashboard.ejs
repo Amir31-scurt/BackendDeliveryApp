@@ -1,301 +1,738 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Restaurant Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/antd/4.16.13/antd.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/antd/4.16.13/antd.min.js"></script>
-    <script>
-        async function updateOrderStatus(id, status) {
-            try {
-                const response = await fetch(`/admin/orders/${id}/status`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ status }),
-                });
+    <title>Tableau de Bord Restaurant - Gourmet d'amour</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #DB607E;
+            --secondary-color: #ABD27E;
+            --accent-color: #b22222;
+            --background-color: #f9f5f0;
+            --dark-color: #2c2c2c;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
 
-                if (response.ok) {
-                    alert("Order status updated successfully!");
-                    window.location.reload();
-                } else {
-                    alert("Failed to update order status.");
-                }
-            } catch (error) {
-                console.error("Error updating order status:", error);
-                alert("An error occurred. Please try again.");
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            min-height: 100vh;
+            color: var(--dark-color);
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: white;
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .sidebar-header h1 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: var(--dark-color);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .nav-link i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--primary-color);
+        }
+
+        .stat-card h3 {
+            font-size: 1.1rem;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .stat-card h3 i {
+            margin-right: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .stat-card p {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .chart-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 2rem;
+            height: 400px;
+            position: relative;
+        }
+
+        .chart-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark-color);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .chart-title i {
+            margin-right: 0.75rem;
+            color: var(--primary-color);
+        }
+
+        .orders-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .orders-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .orders-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .orders-title i {
+            margin-right: 0.75rem;
+            color: var(--primary-color);
+        }
+
+        .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .orders-table th {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 2px solid var(--primary-color);
+            color: var(--dark-color);
+            font-weight: 600;
+        }
+
+        .orders-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .orders-table tr:hover {
+            background-color: var(--background-color);
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .status-pending {
+            background-color: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .status-preparing {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-delivering {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-completed {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-cancelled {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .action-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .action-button {
+            background-color: #f3f4f6;
+            color: var(--dark-color);
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-button:hover {
+            background-color: #e5e7eb;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: white;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            min-width: 200px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1rem;
+            color: var(--dark-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .dropdown-item:hover {
+            background-color: var(--background-color);
+        }
+
+        .dropdown-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+                padding: 1rem;
+            }
+
+            .sidebar-header h1 {
+                display: none;
+            }
+
+            .nav-link span {
+                display: none;
+            }
+
+            .nav-link i {
+                margin-right: 0;
+                font-size: 1.2rem;
+            }
+
+            .main-content {
+                margin-left: 70px;
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .orders-table {
+                display: block;
+                overflow-x: auto;
             }
         }
-    </script>
+    </style>
 </head>
 
-<body class="bg-gray-100">
-    <!-- Sidebar -->
-    <div class="w-20 fixed left-0 bg-black text-white h-screen flex flex-col items-center py-4">
-
-        <ul class="space-y-6">
-            <li><a href="#" class="flex items-center"><i class="anticon anticon-dashboard"></i></a></li>
-            <li><a href="#" class="flex items-center"><i class="anticon anticon-appstore"></i></a></li>
-            <li><a href="#" class="flex items-center"><i class="anticon anticon-file-text"></i></a></li>
-            <li><a href="#" class="flex items-center"><i class="anticon anticon-setting"></i></a></li>
-        </ul>
-    </div>
-
-    <div class="flex">
-        <!-- Navbar -->
-        <div class="bg-white fixed top-0 left-20 right-0 z-50 shadow p-4 flex justify-between items-center">
-            <div class="flex items-center">
-                <i class="anticon anticon-menu"></i>
-                <h1 class="text-xl font-bold ml-4">Dashboard</h1>
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>Gourmet d'amour</h1>
+                <p>Restaurant</p>
             </div>
-            <div class="flex items-center">
-                <i class="anticon anticon-moon mr-4"></i>
-                <div class="flex gap-5 items-center">
-                    <span class="mr-4 text-xl font-bold">
-                        <%= restaurant.name %>
-                    </span>
-                    <div>
-                        <img src="<%= restaurant.imageUrl %>" alt="Logo" class="w-10 h-10 rounded-full">
-                    </div>
-                    <div class="relative">
-                        <button
-                            class="flex items-center justify-center p-2 rounded-full bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                            onclick="toggleDropdown(this)">
-                            <span class="sr-only">Open dropdown</span>
-                        </button>
-                        <div class="absolute right-0 w-48 mt-1 py-2 bg-white divide-y divide-gray-100 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 hidden"
-                            role="menu" aria-orientation="vertical" aria-labelledby="user-menu-button" tabindex="-1">
-                            <div class="px-4 py-2">
-                                <a href="/admin/logout" class="text-sm">Déconnexion</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="/admin/dashboard" class="nav-link active">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Tableau de Bord</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/admin/menu" class="nav-link">
+                            <i class="fas fa-utensils"></i>
+                            <span>Menu</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/" class="nav-link">
+                            <i class="fas fa-home"></i>
+                            <span>Accueil</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h2 class="page-title">Tableau de Bord</h2>
+                <p>Bienvenue, <%= restaurant.name %>
+                </p>
             </div>
-        </div>
-        <!-- Main Content -->
-        <div class="flex-1 p-8 ml-20 mt-16">
-            <div class="grid grid-cols-4 gap-4 mb-6">
-                <div class="bg-gray-800 text-white p-4 rounded shadow">
-                    <p class="text-3xl p-0 m-0 mb-4">
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3><i class="fas fa-shopping-cart"></i> Commandes Totales</h3>
+                    <p>
                         <%= orders.length %>
                     </p>
-                    <h3 class="text-lg text-white font-semibold">Total Commandes</h3>
                 </div>
-                <div class="bg-white p-4 rounded shadow">
-                    <p class="text-3xl p-0 m-0 mb-4">
+
+                <div class="stat-card">
+                    <h3><i class="fas fa-calendar-day"></i> Commandes Aujourd'hui</h3>
+                    <p>
                         <%= orders.filter(order=> new Date(order.createdAt).toLocaleDateString() === new
                             Date().toLocaleDateString()).length %>
                     </p>
-                    <h3 class="text-lg font-semibold">Total Commandes aujourd'hui</h3>
                 </div>
-                <div class="bg-white p-4 rounded shadow">
-                    <p class="text-3xl p-0 m-0 mb-4">
+
+                <div class="stat-card">
+                    <h3><i class="fas fa-users"></i> Clients Aujourd'hui</h3>
+                    <p>
                         <%= orders.filter(order=> new Date(order.createdAt).toLocaleDateString() === new
                             Date().toLocaleDateString()).length %>
                     </p>
-                    <h3 class="text-lg font-semibold">Total Clients aujourd'hui</h3>
                 </div>
-                <div class="bg-white p-4 rounded shadow">
-                    <p class="text-3xl p-0 m-0 mb-4">
+
+                <div class="stat-card">
+                    <h3><i class="fas fa-money-bill-wave"></i> Revenus Aujourd'hui</h3>
+                    <p>
                         <%= orders.filter(order=> new Date(order.createdAt).toLocaleDateString() === new
-                            Date().toLocaleDateString()).reduce((total, order) => total + order.totalAmount, 0) %>
+                            Date().toLocaleDateString()).reduce((total, order) => total + order.totalAmount, 0) %> Fcfa
                     </p>
-                    <h3 class="text-lg font-semibold">Ratio de revenu aujourd'hui</h3>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="bg-white p-4 rounded shadow">
-                    <h3 class="text-lg font-semibold">Revenue</h3>
-                    <canvas id="revenueChart"></canvas>
-                    <script>
-                        const revenueChart = new Chart(document.getElementById('revenueChart'), {
-                            type: 'line',
-                            data: {
-                                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                                datasets: [{
-                                    label: 'Revenue',
-                                    data: [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000],
-                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                                    borderColor: 'rgba(255, 99, 132, 1)',
-                                    borderWidth: 1
-                                }]
-                            },
-                            options: {
-                                scales: {
-                                    y: {
-                                        beginAtZero: true
-                                    }
-                                }
-                            }
-                        });
-                    </script>
-                    <!-- Add chart here -->
-                </div>
-                <div class="bg-white p-4 rounded shadow">
-                    <h3 class="text-lg font-semibold">Résumé des commandes</h3>
-                    <canvas id="ordersChart"></canvas>
-                    <script>
-                        const ordersChart = new Chart(document.getElementById('ordersChart'), {
-                            type: 'bar',
-                            data: {
-                                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                                datasets: [{
-                                    label: 'Nombre de commandes',
-                                    data: [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200],
-                                    backgroundColor: [
-                                        'rgba(255, 99, 132, 0.2)',
-                                        'rgba(54, 162, 235, 0.2)',
-                                        'rgba(255, 206, 86, 0.2)',
-                                        'rgba(75, 192, 192, 0.2)',
-                                        'rgba(153, 102, 255, 0.2)',
-                                        'rgba(255, 159, 64, 0.2)'
-                                    ],
-                                    borderColor: [
-                                        'rgba(255, 99, 132, 1)',
-                                        'rgba(54, 162, 235, 1)',
-                                        'rgba(255, 206, 86, 1)',
-                                        'rgba(75, 192, 192, 1)',
-                                        'rgba(153, 102, 255, 1)',
-                                        'rgba(255, 159, 64, 1)'
-                                    ],
-                                    borderWidth: 1
-                                }]
-                            },
-                            options: {
-                                scales: {
-                                    y: {
-                                        beginAtZero: true
-                                    }
-                                }
-                            }
-                        });
-                    </script>
-                    <!-- Add chart here -->
-                </div>
+            <div class="chart-container">
+                <h3 class="chart-title">
+                    <i class="fas fa-chart-bar"></i>
+                    Revenus Mensuels
+                </h3>
+                <canvas id="revenueChart"></canvas>
             </div>
 
-            <h3 class="text-xl font-semibold mb-4">Liste des commandes</h3>
-            <table class="min-w-full bg-white rounded shadow">
-                <thead>
-                    <tr>
-                        <th class="py-2">N°</th>
-                        <th class="py-2">Date</th>
-                        <th class="py-2">Nom du client</th>
-                        <th class="py-2">Numéro du client</th>
-                        <th class="py-2">Addresse</th>
-                        <th class="py-2">Montant</th>
-                        <th class="py-2">Statut</th>
-                        <th class="py-2">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% if (orders && orders.length> 0) { %>
-                        <% orders.forEach((order, index)=> { %>
-                            <tr class="text-center">
-                                <td class="p-4">
-                                    <%= index + 1 %>
-                                </td>
-                                <td class="py-2">
-                                    <%= new Date(order.createdAt).toLocaleString() %>
-                                </td>
-                                <td class="py-2">
-                                    <%= order.user.name %>
-                                </td>
-                                <td class="py-2">
-                                    <%= order.user.phoneNumber %>
-                                </td>
-                                <td class="py-2">
-                                    <%= order.deliveryAddress.address %>
-                                </td>
-                                <td class="py-2">
-                                    <%= order.totalAmount %> Fcfa
-                                </td>
-                                <td class="py-2">
-                                    <% if (order.status==='Pending' ) { %>
-                                        <span class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded">En
-                                            attente</span>
-                                        <% } else if (order.status==='PREPARING' ) { %>
-                                            <span class="bg-blue-200 text-blue-700 font-semibold py-2 px-4 rounded">En
-                                                cours de préparation</span>
-                                            <% } else if (order.status==='DELIVERING' ) { %>
-                                                <span
-                                                    class="bg-yellow-200 text-yellow-700 font-semibold py-2 px-4 rounded">En
-                                                    cours de livraison</span>
-                                                <% } else if (order.status==='COMPLETED' ) { %>
-                                                    <span
-                                                        class="bg-green-200 text-green-700 font-semibold py-2 px-4 rounded">Livrée</span>
-                                                    <% } else if (order.status==='CANCELLED' ) { %>
-                                                        <span
-                                                            class="bg-red-200 text-red-700 font-semibold py-2 px-4 rounded">Annulée</span>
-                                                        <% } %>
-                                </td>
-                                <td class="py-2 relative">
-                                    <div class="dropdown inline-block relative">
-                                        <button
-                                            class="bg-gray-300 text-gray-700 font-semibold py-2 mx-4 px-4 rounded inline-flex items-center">
-                                            <span class="mr-1">Actions</span>
-                                            <i class="anticon anticon-down"></i>
-                                        </button>
-                                        <ul class="dropdown-menu absolute hidden text-gray-700 pt-1 z-50">
-                                            <li><a class="rounded-t bg-gray-200 hover:bg-gray-700 py-2 px-4 block whitespace-no-wrap"
-                                                    href="#"
-                                                    onclick="updateOrderStatus('<%= order.id %>', 'PREPARING')"><i
-                                                        class="anticon anticon-sync"></i> En cours de préparation</a>
-                                            </li>
-                                            <li><a class="bg-gray-200 hover:bg-gray-700 py-2 px-4 block whitespace-no-wrap"
-                                                    href="#"
-                                                    onclick="updateOrderStatus('<%= order.id %>', 'DELIVERING')"><i
-                                                        class="anticon anticon-car"></i> En cours de livraison</a></li>
-                                            <li><a class="bg-gray-200 hover:bg-gray-700 py-2 px-4 block whitespace-no-wrap"
-                                                    href="#"
-                                                    onclick="updateOrderStatus('<%= order.id %>', 'COMPLETED')"><i
-                                                        class="anticon anticon-check"></i> Livrée</a></li>
-                                            <li><a class="rounded-b bg-gray-200 hover:bg-gray-700 py-2 px-4 block whitespace-no-wrap text-red-500"
-                                                    href="#"
-                                                    onclick="updateOrderStatus('<%= order.id %>', 'CANCELLED')"><i
-                                                        class="anticon anticon-close"></i> Annulée</a></li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-                            <% }); %>
-                                <% } else { %>
-                                    <tr>
-                                        <td colspan="7" class="py-4 text-center text-gray-500">Aucune commande trouvée.
-                                        </td>
-                                    </tr>
-                                    <% } %>
-                </tbody>
-            </table>
-        </div>
+            <div class="orders-section">
+                <div class="orders-header">
+                    <h3 class="orders-title">
+                        <i class="fas fa-list"></i>
+                        Liste des Commandes
+                    </h3>
+                </div>
+
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Téléphone</th>
+                            <th>Adresse</th>
+                            <th>Montant</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (orders && orders.length> 0) { %>
+                            <% orders.forEach((order, index)=> { %>
+                                <tr>
+                                    <td>
+                                        <%= index + 1 %>
+                                    </td>
+                                    <td>
+                                        <%= new Date(order.createdAt).toLocaleString() %>
+                                    </td>
+                                    <td>
+                                        <%= order.user.name %>
+                                    </td>
+                                    <td>
+                                        <%= order.user.phoneNumber %>
+                                    </td>
+                                    <td>
+                                        <%= order.deliveryAddress.address %>
+                                    </td>
+                                    <td>
+                                        <%= order.totalAmount %> Fcfa
+                                    </td>
+                                    <td>
+                                        <span class="status-badge status-<%= order.status.toLowerCase() %>">
+                                            <%= order.status==='PENDING' ? 'En attente' : order.status==='PREPARING'
+                                                ? 'En préparation' : order.status==='DELIVERING' ? 'En livraison' :
+                                                order.status==='COMPLETED' ? 'Livrée' : 'Annulée' %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="action-dropdown">
+                                            <button class="action-button" onclick="toggleDropdown(this)">
+                                                <span>Actions</span>
+                                                <i class="fas fa-chevron-down"></i>
+                                            </button>
+                                            <div class="dropdown-menu">
+                                                <a href="#" class="dropdown-item"
+                                                    onclick="updateOrderStatus('<%= order.id %>', 'PREPARING')">
+                                                    <i class="fas fa-sync"></i>
+                                                    En préparation
+                                                </a>
+                                                <a href="#" class="dropdown-item"
+                                                    onclick="updateOrderStatus('<%= order.id %>', 'DELIVERING')">
+                                                    <i class="fas fa-truck"></i>
+                                                    En livraison
+                                                </a>
+                                                <a href="#" class="dropdown-item"
+                                                    onclick="updateOrderStatus('<%= order.id %>', 'COMPLETED')">
+                                                    <i class="fas fa-check"></i>
+                                                    Livrée
+                                                </a>
+                                                <a href="#" class="dropdown-item"
+                                                    onclick="updateOrderStatus('<%= order.id %>', 'CANCELLED')">
+                                                    <i class="fas fa-times"></i>
+                                                    Annuler
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <% }); %>
+                                    <% } else { %>
+                                        <tr>
+                                            <td colspan="8" style="text-align: center; padding: 2rem;">
+                                                Aucune commande trouvée
+                                            </td>
+                                        </tr>
+                                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        document.querySelectorAll('.dropdown').forEach(dropdown => {
-            dropdown.addEventListener('click', function () {
-                this.querySelector('.dropdown-menu').classList.toggle('hidden');
-            });
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+                datasets: [{
+                    label: 'Revenus',
+                    data: [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000],
+                    backgroundColor: 'rgba(219, 96, 126, 0.1)',
+                    borderColor: 'rgba(219, 96, 126, 1)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(44, 44, 44, 0.9)',
+                        titleFont: {
+                            family: "'Poppins', sans-serif",
+                            size: 14
+                        },
+                        bodyFont: {
+                            family: "'Poppins', sans-serif",
+                            size: 13
+                        },
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: function (context) {
+                                return `${context.parsed.y} Fcfa`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: "Mois",
+                            color: "#2c2c2c",
+                            font: {
+                                size: 14,
+                                family: "'Poppins', sans-serif",
+                                weight: '600'
+                            },
+                            padding: { top: 10 }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        title: {
+                            display: true,
+                            text: "Revenus (Fcfa)",
+                            color: "#2c2c2c",
+                            font: {
+                                size: 14,
+                                family: "'Poppins', sans-serif",
+                                weight: '600'
+                            },
+                            padding: { bottom: 10 }
+                        }
+                    }
+                }
+            }
         });
+
+        // Orders Chart
+        const ordersCtx = document.getElementById('ordersChart').getContext('2d');
+        new Chart(ordersCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+                datasets: [{
+                    label: 'Commandes',
+                    data: [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200],
+                    backgroundColor: 'rgba(171, 210, 126, 0.5)',
+                    borderColor: 'rgba(171, 210, 126, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5,
+                    barThickness: 40,
+                    maxBarThickness: 50
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(44, 44, 44, 0.9)',
+                        titleFont: {
+                            family: "'Poppins', sans-serif",
+                            size: 14
+                        },
+                        bodyFont: {
+                            family: "'Poppins', sans-serif",
+                            size: 13
+                        },
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: false,
+                        callbacks: {
+                            label: function (context) {
+                                return `${context.parsed.y} commandes`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: "Mois",
+                            color: "#2c2c2c",
+                            font: {
+                                size: 14,
+                                family: "'Poppins', sans-serif",
+                                weight: '600'
+                            },
+                            padding: { top: 10 }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        title: {
+                            display: true,
+                            text: "Nombre de Commandes",
+                            color: "#2c2c2c",
+                            font: {
+                                size: 14,
+                                family: "'Poppins', sans-serif",
+                                weight: '600'
+                            },
+                            padding: { bottom: 10 }
+                        },
+                        ticks: {
+                            precision: 0,
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+
+        // Dropdown functionality
         function toggleDropdown(button) {
             const dropdown = button.nextElementSibling;
-            dropdown.classList.toggle('hidden');
+            dropdown.classList.toggle('show');
         }
 
         // Close dropdowns when clicking outside
         document.addEventListener('click', function (event) {
             const dropdowns = document.querySelectorAll('.dropdown-menu');
             dropdowns.forEach(dropdown => {
-                if (!dropdown.contains(event.target) && !dropdown.previousElementSibling.contains(event.target)) {
-                    dropdown.classList.add('hidden');
+                if (!dropdown.contains(event.target) && !event.target.matches('.action-button')) {
+                    dropdown.classList.remove('show');
                 }
             });
         });
+
+        // Update order status
+        async function updateOrderStatus(id, status) {
+            try {
+                const response = await fetch(`/admin/orders/${id}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status }),
+                });
+
+                if (response.ok) {
+                    alert('Statut de la commande mis à jour avec succès!');
+                    window.location.reload();
+                } else {
+                    throw new Error('Échec de la mise à jour du statut');
+                }
+            } catch (error) {
+                console.error('Error updating order status:', error);
+                alert('Une erreur est survenue lors de la mise à jour du statut');
+            }
+        }
     </script>
 </body>
 

@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestion du Menu - Gourmet d'amour</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #DB607E;
+            --secondary-color: #ABD27E;
+            --accent-color: #b22222;
+            --background-color: #f9f5f0;
+            --dark-color: #2c2c2c;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            min-height: 100vh;
+            color: var(--dark-color);
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: white;
+            padding: 2rem;
+            box-shadow: var(--card-shadow);
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .sidebar-header h1 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 0.5rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            color: var(--dark-color);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .nav-link i {
+            margin-right: 0.75rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .menu-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .menu-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .menu-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: var(--dark-color);
+            display: flex;
+            align-items: center;
+        }
+
+        .menu-title i {
+            margin-right: 0.75rem;
+            color: var(--primary-color);
+        }
+
+        .add-item-btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .add-item-btn:hover {
+            background-color: #c44d68;
+            transform: translateY(-2px);
+        }
+
+        .menu-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .menu-table th {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 2px solid var(--primary-color);
+            color: var(--dark-color);
+            font-weight: 600;
+        }
+
+        .menu-table td {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            color: var(--dark-color);
+        }
+
+        .menu-table tr:hover {
+            background-color: var(--background-color);
+        }
+
+        .menu-item-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: color 0.3s ease;
+        }
+
+        .edit-btn {
+            color: var(--primary-color);
+        }
+
+        .delete-btn {
+            color: var(--accent-color);
+        }
+
+        .action-btn:hover {
+            opacity: 0.8;
+        }
+
+        .no-items {
+            text-align: center;
+            color: var(--dark-color);
+            padding: 2rem;
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .modal-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--dark-color);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--dark-color);
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .cancel-btn {
+            background-color: #eee;
+            color: var(--dark-color);
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--dark-color);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-modal:hover {
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 70px;
+                padding: 1rem;
+            }
+
+            .sidebar-header h1 {
+                display: none;
+            }
+
+            .nav-link span {
+                display: none;
+            }
+
+            .nav-link i {
+                margin-right: 0;
+                font-size: 1.2rem;
+            }
+
+            .main-content {
+                margin-left: 70px;
+                padding: 1rem;
+            }
+
+            .menu-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>Gourmet d'amour</h1>
+                <p>Restaurant</p>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="/restaurant/dashboard" class="nav-link">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Tableau de Bord</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/restaurant/menu" class="nav-link active">
+                            <i class="fas fa-utensils"></i>
+                            <span>Menu</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/" class="nav-link">
+                            <i class="fas fa-home"></i>
+                            <span>Accueil</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h2 class="page-title">Gestion du Menu</h2>
+                <p>Bienvenue, <%= restaurant.name %>
+                </p>
+            </div>
+
+            <div class="menu-section">
+                <div class="menu-header">
+                    <h3 class="menu-title">
+                        <i class="fas fa-utensils"></i>
+                        Articles du Menu
+                    </h3>
+                    <button onclick="openModal()" class="add-item-btn">
+                        <i class="fas fa-plus"></i> Ajouter un Article
+                    </button>
+                </div>
+
+                <% if (menuItems && menuItems.length> 0) { %>
+                    <table class="menu-table">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Nom</th>
+                                <th>Description</th>
+                                <th>Prix</th>
+                                <th>Catégorie</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% menuItems.forEach((item)=> { %>
+                                <tr>
+                                    <td>
+                                        <img src="<%= item.imageUrl %>" alt="<%= item.name %>"
+                                            class="menu-item-image" />
+                                    </td>
+                                    <td>
+                                        <%= item.name %>
+                                    </td>
+                                    <td>
+                                        <%= item.description %>
+                                    </td>
+                                    <td>
+                                        <%= item.price.toFixed(2) %> Fcfa
+                                    </td>
+                                    <td>
+                                        <%= item.category %>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-btn edit-btn"
+                                                onclick="editMenuItem('<%= item.id %>')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="action-btn delete-btn"
+                                                onclick="confirmDeleteMenuItem('<%= item.id %>', '<%= item.name %>')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <% }); %>
+                        </tbody>
+                    </table>
+                    <% } else { %>
+                        <p class="no-items">Aucun article de menu disponible.</p>
+                        <% } %>
+            </div>
+
+            <!-- Add/Edit Menu Item Modal -->
+            <div id="menuItemModal" class="modal">
+                <div class="modal-content">
+                    <button class="close-modal" onclick="closeModal()">&times;</button>
+                    <div class="modal-header">
+                        <h2>Ajouter un Article</h2>
+                    </div>
+                    <form id="menuItemForm" class="space-y-4">
+                        <div class="form-group">
+                            <label for="name">Nom</label>
+                            <input type="text" id="name" name="name" class="form-control"
+                                placeholder="Entrer le nom de l'article" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea id="description" name="description" class="form-control"
+                                placeholder="Entrer la description de l'article" rows="3" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="price">Prix</label>
+                            <input type="number" id="price" name="price" step="0.01" class="form-control"
+                                placeholder="Entrer le prix de l'article" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="category">Catégorie</label>
+                            <select id="category" name="category" class="form-control" required>
+                                <!-- Categories will be populated based on restaurant type -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="image">Image</label>
+                            <input type="file" id="image" name="image" accept="image/*" class="form-control" required />
+                        </div>
+                        <div class="modal-buttons">
+                            <button type="button" onclick="submitMenuItem()" class="modal-btn submit-btn">
+                                Ajouter
+                            </button>
+                            <button type="button" onclick="closeModal()" class="modal-btn cancel-btn">
+                                Annuler
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const restaurantType = "<%= restaurant.type %>";
+
+        function openModal() {
+            document.getElementById("menuItemModal").classList.add("show");
+            populateCategoriesByType();
+        }
+
+        function populateCategoriesByType() {
+            const categorySelect = document.getElementById("category");
+            categorySelect.innerHTML = ""; // Clear existing options
+
+            const categories = {
+                "RESTAURANT": ["PLAT", "FASTFOOD", "GRILLADE"],
+                "BOULANGERIE": ["PAINS", "VIENNOISERIES", "PATISSERIE"],
+                "EXPRESS": ["EXPRESS", "GOURMET", "DESSERT"]
+            };
+
+            // Get the appropriate categories based on restaurant type
+            const typeCategories = categories[restaurantType] || ["PLAT", "FASTFOOD", "GRILLADE"];
+
+            // Add options to select dropdown
+            typeCategories.forEach(category => {
+                const option = document.createElement("option");
+                option.value = category;
+                option.textContent = category.charAt(0) + category.slice(1).toLowerCase();
+                categorySelect.appendChild(option);
+            });
+        }
+
+        function closeModal() {
+            document.getElementById("menuItemModal").classList.remove("show");
+            document.getElementById("menuItemForm").reset();
+            document.getElementById("menuItemForm").removeAttribute("data-mode");
+            document.getElementById("menuItemForm").removeAttribute("data-id");
+            const modalTitle = document.querySelector("#menuItemModal h2");
+            modalTitle.textContent = "Ajouter un Article";
+            const submitButton = document.querySelector("#menuItemModal button[onclick='submitMenuItem()']");
+            submitButton.textContent = "Ajouter";
+        }
+
+        async function editMenuItem(id) {
+            try {
+                const query = `
+                    query {
+                        menuItem(id: "${id}") {
+                            id
+                            name
+                            description
+                            price
+                            category
+                            imageUrl
+                        }
+                    }
+                `;
+
+                const response = await fetch("/graphql", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ query }),
+                });
+
+                const result = await response.json();
+
+                if (result.errors) {
+                    throw new Error(result.errors[0].message);
+                }
+
+                if (!result.data || !result.data.menuItem) {
+                    throw new Error("No menu item data returned from server");
+                }
+
+                const menuItem = result.data.menuItem;
+                openEditMenuItemModal(menuItem);
+            } catch (error) {
+                console.error("Error fetching menu item:", error);
+                alert("Error loading menu item data. Please try again. Details: " + error.message);
+            }
+        }
+
+        function openEditMenuItemModal(menuItem) {
+            try {
+                document.getElementById("menuItemForm").setAttribute("data-mode", "edit");
+                document.getElementById("menuItemForm").setAttribute("data-id", menuItem.id);
+
+                const modalTitle = document.querySelector("#menuItemModal h2");
+                modalTitle.textContent = "Modifier l'Article";
+
+                const submitButton = document.querySelector("#menuItemModal button[onclick='submitMenuItem()']");
+                submitButton.textContent = "Mettre à jour";
+
+                document.getElementById("name").value = menuItem.name || "";
+                document.getElementById("description").value = menuItem.description || "";
+                document.getElementById("price").value = menuItem.price || "";
+
+                populateCategoriesByType();
+
+                if (menuItem.category) {
+                    const categorySelect = document.getElementById("category");
+                    for (let i = 0; i < categorySelect.options.length; i++) {
+                        if (categorySelect.options[i].value === menuItem.category) {
+                            categorySelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+
+                document.getElementById("image").removeAttribute("required");
+                document.getElementById("menuItemModal").classList.add("show");
+            } catch (error) {
+                console.error("Error in openEditMenuItemModal:", error);
+                alert("Error opening edit modal. Please try again.");
+            }
+        }
+
+        function confirmDeleteMenuItem(id, name) {
+            if (confirm(`Êtes-vous sûr de vouloir supprimer l'article "${name}"?`)) {
+                deleteMenuItem(id);
+            }
+        }
+
+        async function deleteMenuItem(id) {
+            const query = `
+                mutation {
+                    deleteMenuItem(id: "${id}")
+                }
+            `;
+
+            try {
+                const response = await fetch("/graphql", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ query }),
+                });
+
+                const result = await response.json();
+                if (result.errors) {
+                    alert("Erreur lors de la suppression de l'article: " + result.errors[0].message);
+                    return;
+                }
+
+                alert("Article supprimé avec succès!");
+                window.location.reload();
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Une erreur s'est produite lors de la suppression de l'article. Veuillez réessayer.");
+            }
+        }
+
+        async function submitMenuItem() {
+            const restaurantId = "<%= restaurant.id %>";
+            const form = document.getElementById("menuItemForm");
+            const formData = new FormData(form);
+
+            const mode = form.getAttribute("data-mode") || "add";
+            const menuItemId = form.getAttribute("data-id") || "";
+            const imageFile = formData.get("image");
+
+            let imageUrl = "";
+            if (imageFile && imageFile.size > 0) {
+                try {
+                    const fileName = `menu-${Date.now()}-${imageFile.name}`;
+                    const storageUrl = "/storage/upload";
+
+                    const uploadResponse = await fetch(storageUrl, {
+                        method: "POST",
+                        body: formData,
+                    });
+
+                    const uploadResult = await uploadResponse.json();
+
+                    if (uploadResponse.ok && uploadResult.publicUrl) {
+                        imageUrl = uploadResult.publicUrl;
+                    } else {
+                        throw new Error("Échec du téléchargement de l'image");
+                    }
+                } catch (error) {
+                    console.error("Échec du téléchargement de l'image:", error);
+                    alert("Échec du téléchargement de l'image. Veuillez réessayer.");
+                    return;
+                }
+            }
+
+            const input = {
+                name: formData.get("name"),
+                description: formData.get("description"),
+                price: parseFloat(formData.get("price")),
+                category: formData.get("category")
+            };
+
+            if (mode !== "edit") {
+                input.restaurantId = restaurantId;
+            }
+
+            if (imageUrl) {
+                input.imageUrl = imageUrl;
+            }
+
+            let query;
+
+            if (mode === "edit") {
+                query = `
+                    mutation {
+                        updateMenuItem(id: "${menuItemId}", input: {
+                            name: "${input.name}",
+                            description: "${input.description}",
+                            price: ${input.price},
+                            category: "${input.category}"
+                            ${imageUrl ? `, imageUrl: "${imageUrl}"` : ''}
+                        }) {
+                            id
+                            name
+                        }
+                    }
+                `;
+            } else {
+                query = `
+                    mutation {
+                        addMenuItem(input: {
+                            name: "${input.name}",
+                            description: "${input.description}",
+                            price: ${input.price},
+                            restaurantId: "${input.restaurantId}",
+                            category: "${input.category}"
+                            ${imageUrl ? `, imageUrl: "${imageUrl}"` : ''}
+                        }) {
+                            id
+                            name
+                            description
+                            price
+                            category
+                            imageUrl
+                            createdAt
+                        }
+                    }
+                `;
+            }
+
+            try {
+                const response = await fetch("/graphql", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ query }),
+                });
+
+                const result = await response.json();
+                if (result.errors) {
+                    alert(`Erreur lors de la ${mode === "edit" ? "modification" : "création"} de l'article: ` + result.errors[0].message);
+                    return;
+                }
+
+                alert(`Article ${mode === "edit" ? "modifié" : "ajouté"} avec succès!`);
+                window.location.reload();
+            } catch (error) {
+                console.error("Erreur:", error);
+                alert("Une erreur s'est produite. Veuillez réessayer.");
+            }
+        }
+    </script>
+</body>
+
+</html>
