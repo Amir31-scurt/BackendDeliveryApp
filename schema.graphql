@@ -114,7 +114,7 @@ type Deliverer {
   user: User
   vehicleId: ID
   isAvailable: Boolean!
-  currentLocation: String
+  currentLocation: Address
   zone: String
   profilePicture: String
   isActive: Boolean!

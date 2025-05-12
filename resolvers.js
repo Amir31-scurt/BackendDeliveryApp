@@ -85,7 +85,7 @@ const resolvers = {
         userId: data.user_id,
         vehicleId: data.vehicle_id,
         isAvailable: data.is_available,
-        currentLocation: data.current_location,
+        currentLocation: data.current_location ? JSON.parse(data.current_location) : null,
         zone: data.zone,
         profilePicture: data.profile_picture,
         isActive: data.is_active,
@@ -104,7 +104,7 @@ const resolvers = {
         userId: d.user_id,
         vehicleId: d.vehicle_id,
         isAvailable: d.is_available,
-        currentLocation: d.current_location,
+        currentLocation: d.current_location ? JSON.parse(d.current_location) : null,
         zone: d.zone,
         profilePicture: d.profile_picture,
         isActive: d.is_active,
@@ -876,6 +876,39 @@ const resolvers = {
       } catch (err) {
         console.error("Error marking all notifications as read:", err);
         throw new Error(err.message);
+      }
+    },
+    updateDelivererLocation: async (_, { id, location }, { supabase }) => {
+      try {
+        const locationData = {
+          address: location.address,
+          latitude: location.latitude,
+          longitude: location.longitude
+        };
+
+        const { data, error } = await supabase
+          .from("deliverers")
+          .update({ current_location: JSON.stringify(locationData) })
+          .eq("user_id", id)
+          .select()
+          .single();
+
+        if (error) throw new Error(error.message);
+
+        return {
+          ...data,
+          userId: data.user_id,
+          vehicleId: data.vehicle_id,
+          isAvailable: data.is_available,
+          currentLocation: data.current_location ? JSON.parse(data.current_location) : null,
+          zone: data.zone,
+          profilePicture: data.profile_picture,
+          isActive: data.is_active,
+          isVerified: data.is_verified,
+        };
+      } catch (error) {
+        console.error("Error updating deliverer location:", error);
+        throw new Error(error.message);
       }
     },
   },

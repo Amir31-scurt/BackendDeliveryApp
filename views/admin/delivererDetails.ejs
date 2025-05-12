@@ -286,6 +286,18 @@
                     </p>
                 </div>
                 <div class="detail-card">
+                    <h3>Position Actuelle</h3>
+                    <p>
+                        <% if (deliverer.currentLocation) { %>
+                            <%= deliverer.currentLocation.address %><br>
+                                <small>Lat: <%= deliverer.currentLocation.latitude %>, Lng: <%=
+                                            deliverer.currentLocation.longitude %></small>
+                                <% } else { %>
+                                    Non disponible
+                                    <% } %>
+                    </p>
+                </div>
+                <div class="detail-card">
                     <h3>Commandes Livrées</h3>
                     <p>
                         <%= deliverer.completedDeliveries || 0 %>

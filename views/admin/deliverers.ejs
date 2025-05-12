@@ -319,6 +319,7 @@
                         <th>Téléphone</th>
                         <th>Commandes Livrées</th>
                         <th>Statut</th>
+                        <th>Position Actuelle</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -344,6 +345,10 @@
                                         class="status-badge status-<%= deliverer.isAvailable ? 'active' : 'inactive' %>">
                                         <%= deliverer.isAvailable ? 'Disponible' : 'Occupé' %>
                                     </span>
+                                </td>
+                                <td>
+                                    <%= deliverer.currentLocation ? deliverer.currentLocation.address : 'Non disponible'
+                                        %>
                                 </td>
                                 <td>
                                     <div class="action-buttons">
