@@ -139,7 +139,7 @@ type Query {
   menuItems(restaurantId: ID!): [MenuItem!]!
   menuItem(id: ID!): MenuItem
   allMenuItems: [MenuItem!]!
-  orders(userId: ID, restaurantId: ID, status: String): [Order!]!
+  orders(userId: ID, restaurantId: ID, status: String, delivererId: ID): [Order!]!
   order(id: ID!): Order
   deliverer(id: ID!): Deliverer
   delivererByUserId(userId: ID!): Deliverer
@@ -166,6 +166,9 @@ type Mutation {
   deleteUser(id: ID!): Boolean!
   markNotificationAsRead(id: ID!): Notification!
   markAllNotificationsAsRead(userId: ID!): Boolean!
+  confirmOrderDelivery(orderId: ID!, token: String!, delivererId: ID!): Order!
+  manualConfirmDelivery(orderId: ID!, delivererId: ID!): Order!
+
 }
 
 input CreateUserInput {

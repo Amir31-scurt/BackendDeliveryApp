@@ -1073,6 +1073,11 @@ const typeDefs = gql`
     ): MenuItem
 
     deleteMenuItem(id: ID!): Boolean
+
+    updateDelivererLocation(
+      id: ID!
+      location: String!
+    ): Deliverer
   }
 
   input MenuItemInput {
@@ -1249,6 +1254,20 @@ const resolvers = {
         .eq("id", id);
       if (error) throw new Error("Error deleting menu item.");
       return true;
+    },
+    updateDelivererLocation: async (_, { id, location }) => {
+      const { data, error } = await supabase
+        .from("deliverers")
+        .update({
+          current_location: location,
+          updated_at: new Date().toISOString()
+        })
+        .eq("user_id", id)
+        .select()
+        .single();
+
+      if (error) throw new Error("Error updating deliverer location.");
+      return data;
     }
   }
 };

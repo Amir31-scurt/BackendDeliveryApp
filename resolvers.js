@@ -258,33 +258,40 @@ const resolvers = {
         throw new Error(`Error fetching menu item: ${error.message}`);
       }
     },
-    orders: async (_, {userId, restaurantId, status}, {supabase}) => {
+    orders: async (_, { userId, restaurantId, status, delivererId }, { supabase }) => {
       try {
         let query = supabase
           .from("orders")
           .select(
-            "*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), user:users(id, name, phone_number), restaurant:restaurants(id, name, description, address, type, opening_hours, phone_number, email, image_url, is_active, created_at, updated_at)"
+            `*, 
+            order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), 
+            user:users(id, name, phone_number), 
+            restaurant:restaurants(id, name, description, address, type, opening_hours, phone_number, email, image_url, is_active, created_at, updated_at)`
           );
 
         if (userId) query = query.eq("user_id", userId);
         if (restaurantId) query = query.eq("restaurant_id", restaurantId);
         if (status) query = query.eq("status", status);
+        if (delivererId) query = query.eq("deliverer_id", delivererId); // 👈 ADD THIS LINE
 
-        const {data: orders, error} = await query;
+        const { data: orders, error } = await query;
 
         if (error) throw new Error(`Failed to fetch orders: ${error.message}`);
+
         return (orders || []).map((order) => ({
           id: order.id,
           restaurantId: order.restaurant_id,
           userId: order.user_id,
           user: order.user,
-          restaurant: order.restaurant, // Added restaurant field
+          restaurant: order.restaurant,
           items: order.order_items.map((item) => ({
             menuItemId: item.menu_item_id,
-            menuItem: {
-              ...item.menu_item,
-              imageUrl: item.menu_item.image_url || null,
-            },
+            menuItem: item.menu_item
+              ? {
+                  ...item.menu_item,
+                  imageUrl: item.menu_item.image_url || null,
+                }
+              : null,
             quantity: item.quantity,
             price: item.price,
           })),
@@ -296,8 +303,8 @@ const resolvers = {
           paymentMethod: order.payment_method || "CASH",
           createdAt: order.created_at,
           updatedAt: order.updated_at,
-          delivererId: order.deliverer_id, // Added delivererId field
-          deliverer: order.deliverer, // Added deliverer field
+          delivererId: order.deliverer_id,
+          deliverer: order.deliverer,
         }));
       } catch (err) {
         console.error("Error fetching orders:", err.message);
@@ -704,6 +711,98 @@ const resolvers = {
       
       return order;
     },
+
+    confirmOrderDelivery: async (_, { orderId, token, delivererId }, { supabase }) => {
+      // Step 1: Fetch the order
+      const { data: order, error: fetchError } = await supabase
+        .from("orders")
+        .select("id, delivery_token, status, user_id")
+        .eq("id", orderId)
+        .single();
+
+      if (fetchError || !order) throw new Error("Commande introuvable.");
+
+      if (order.status === "COMPLETED") {
+        throw new Error("Commande déjà livrée.");
+      }
+
+      // Step 2: Validate token
+      if (order.delivery_token !== token) {
+        throw new Error("Code de confirmation invalide.");
+      }
+
+      // Step 3: Update order status
+      const { data: updated, error: updateError } = await supabase
+        .from("orders")
+        .update({
+          status: "COMPLETED",
+          delivered_by: delivererId,
+          delivered_at: new Date().toISOString(),
+          delivery_confirmation_method: "qr",
+        })
+        .eq("id", orderId)
+        .select()
+        .single();
+
+      if (updateError) throw new Error("Erreur de confirmation de livraison.");
+
+      // Step 4: Send notification to user
+      await supabase.from('notifications').insert({
+        user_id: order.user_id,
+        title: 'Commande livrée',
+        body: `Votre commande #${order.id} a été livrée avec succès.`,
+      });
+
+      await sendPushNotification(order.user_id, `Votre commande #${order.id} est livrée ✅`, supabase);
+
+      return updated;
+    },
+    manualConfirmDelivery: async (_, { orderId, delivererId }, { supabase }) => {
+      // Fetch the order
+      const { data: order, error: fetchError } = await supabase
+        .from("orders")
+        .select("id, status, user_id, deliverer_id")
+        .eq("id", orderId)
+        .single();
+
+      if (fetchError || !order) throw new Error("Commande introuvable.");
+
+      if (order.status === "COMPLETED") {
+        throw new Error("Commande déjà livrée.");
+      }
+
+      // Optional: Check if assigned deliverer is the one confirming
+      if (order.deliverer_id !== delivererId) {
+        throw new Error("Vous n'êtes pas assigné à cette commande.");
+      }
+
+      // Update order
+      const { data: updated, error: updateError } = await supabase
+        .from("orders")
+        .update({
+          status: "COMPLETED",
+          delivered_by: delivererId,
+          delivered_at: new Date().toISOString(),
+          delivery_confirmation_method: "manual",
+        })
+        .eq("id", orderId)
+        .select()
+        .single();
+
+      if (updateError) throw new Error("Échec de la confirmation manuelle.");
+
+      // Send notification
+      await supabase.from('notifications').insert({
+        user_id: order.user_id,
+        title: 'Commande livrée (confirmation manuelle)',
+        body: `Votre commande #${order.id} a été confirmée comme livrée.`,
+      });
+
+      await sendPushNotification(order.user_id, `Votre commande #${order.id} a été livrée ✅`, supabase);
+
+      return updated;
+    },
+
     updateUser: async (_, {id, input}, {supabase}) => {
       // Prepare the update input, excluding phone number and role
       const updateData = {};
