@@ -878,36 +878,63 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
-    updateDelivererLocation: async (_, { id, location }, { supabase }) => {
+    updateDelivererLocation: async (_, { userId, location }, { supabase }) => {
       try {
-        const locationData = {
-          address: location.address,
-          latitude: location.latitude,
-          longitude: location.longitude
-        };
-
-        const { data, error } = await supabase
+        const { data: deliverer, error } = await supabase
           .from("deliverers")
-          .update({ current_location: JSON.stringify(locationData) })
-          .eq("user_id", id)
+          .update({ 
+            current_location: {
+              address: location.address,
+              latitude: location.latitude,
+              longitude: location.longitude
+            }
+          })
+          .eq("user_id", userId)
           .select()
           .single();
 
         if (error) throw new Error(error.message);
 
         return {
-          ...data,
-          userId: data.user_id,
-          vehicleId: data.vehicle_id,
-          isAvailable: data.is_available,
-          currentLocation: data.current_location ? JSON.parse(data.current_location) : null,
-          zone: data.zone,
-          profilePicture: data.profile_picture,
-          isActive: data.is_active,
-          isVerified: data.is_verified,
+          ...deliverer,
+          userId: deliverer.user_id,
+          vehicleId: deliverer.vehicle_id,
+          isAvailable: deliverer.is_available,
+          currentLocation: deliverer.current_location,
+          zone: deliverer.zone,
+          profilePicture: deliverer.profile_picture,
+          isActive: deliverer.is_active,
+          isVerified: deliverer.is_verified
         };
       } catch (error) {
         console.error("Error updating deliverer location:", error);
+        throw new Error(error.message);
+      }
+    },
+    updateDelivererStatus: async (_, { userId, isAvailable }, { supabase }) => {
+      try {
+        const { data: deliverer, error } = await supabase
+          .from("deliverers")
+          .update({ is_available: isAvailable })
+          .eq("user_id", userId)
+          .select()
+          .single();
+
+        if (error) throw new Error(error.message);
+
+        return {
+          ...deliverer,
+          userId: deliverer.user_id,
+          vehicleId: deliverer.vehicle_id,
+          isAvailable: deliverer.is_available,
+          currentLocation: deliverer.current_location,
+          zone: deliverer.zone,
+          profilePicture: deliverer.profile_picture,
+          isActive: deliverer.is_active,
+          isVerified: deliverer.is_verified
+        };
+      } catch (error) {
+        console.error("Error updating deliverer status:", error);
         throw new Error(error.message);
       }
     },

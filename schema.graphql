@@ -161,20 +161,25 @@ type Mutation {
   createOrder(input: OrderInput!): Order!
   updateOrderStatus(id: ID!, status: OrderStatus!): Order!
   createDeliverer(input: CreateDelivererInput!): Deliverer!
-  updateDelivererStatus(id: ID!, isAvailable: Boolean!): Deliverer!
-  updateDelivererLocation(id: ID!, location: String!): Deliverer!
+  updateDelivererStatus(userId: ID!, isAvailable: Boolean!): Deliverer!
+  updateDelivererLocation(userId: ID!, location: LocationInput!): Deliverer!
   deleteUser(id: ID!): Boolean!
   markNotificationAsRead(id: ID!): Notification!
   markAllNotificationsAsRead(userId: ID!): Boolean!
   confirmOrderDelivery(orderId: ID!, token: String!, delivererId: ID!): Order!
   manualConfirmDelivery(orderId: ID!, delivererId: ID!): Order!
-
 }
 
 input CreateUserInput {
   name: String!
   phoneNumber: String!
   role: UserType!
+}
+
+input LocationInput {
+  address: String!
+  latitude: Float!
+  longitude: Float!
 }
 
 input UpdateUserInput {
