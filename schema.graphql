@@ -141,7 +141,7 @@ type Query {
   allMenuItems: [MenuItem!]!
   orders(userId: ID, restaurantId: ID, status: String, delivererId: ID): [Order!]!
   order(id: ID!): Order
-  deliverer(id: ID!): Deliverer
+  deliverer(userId: ID!): Deliverer
   delivererByUserId(userId: ID!): Deliverer
   allDeliverers: [Deliverer!]!
   availableDeliverers: [Deliverer!]!

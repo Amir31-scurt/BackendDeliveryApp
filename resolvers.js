@@ -71,11 +71,11 @@ const resolvers = {
         createdAt: data.created_at,
       };
     },
-    deliverer: async (_, { id }, { supabase }) => {
+    deliverer: async (_, { userId }, { supabase }) => {
       const { data, error } = await supabase
         .from("deliverers")
         .select("*")
-        .eq("user_id", id)
+        .eq("user_id", userId)
         .single();
 
       if (error) throw new Error(error.message);
@@ -85,7 +85,7 @@ const resolvers = {
         userId: data.user_id,
         vehicleId: data.vehicle_id,
         isAvailable: data.is_available,
-        currentLocation: data.current_location ? JSON.parse(data.current_location) : null,
+        currentLocation: typeof data.current_location === 'string' ? JSON.parse(data.current_location) : data.current_location,
         zone: data.zone,
         profilePicture: data.profile_picture,
         isActive: data.is_active,
