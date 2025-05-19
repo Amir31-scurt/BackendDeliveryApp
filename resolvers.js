@@ -104,7 +104,7 @@ const resolvers = {
         userId: d.user_id,
         vehicleId: d.vehicle_id,
         isAvailable: d.is_available,
-        currentLocation: d.current_location ? JSON.parse(d.current_location) : null,
+        currentLocation: typeof d.current_location === 'string' ? JSON.parse(d.current_location) : d.current_location,
         zone: d.zone,
         profilePicture: d.profile_picture,
         isActive: d.is_active,
