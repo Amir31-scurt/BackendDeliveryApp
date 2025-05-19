@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import {validateEmail} from "./utils/validators.js";
+import { validateEmail } from "./utils/validators.js";
 import { Expo } from 'expo-server-sdk';
 
 const expo = new Expo();
@@ -39,8 +39,8 @@ async function sendPushNotification(userId, messageText, supabase) {
 
 const resolvers = {
   Query: {
-    users: async (_, __, {supabase}) => {
-      const {data, error} = await supabase.from("users").select("*");
+    users: async (_, __, { supabase }) => {
+      const { data, error } = await supabase.from("users").select("*");
       if (error) throw new Error(error.message);
 
       // Handle null phone numbers
@@ -55,8 +55,8 @@ const resolvers = {
 
       return sanitizedData;
     },
-    user: async (_, {id}, {supabase}) => {
-      const {data, error} = await supabase
+    user: async (_, { id }, { supabase }) => {
+      const { data, error } = await supabase
         .from("users")
         .select("*")
         .eq("id", id)
@@ -111,9 +111,9 @@ const resolvers = {
         isVerified: d.is_verified,
       }));
     },
-    
-    restaurants: async (_, __, {supabase}) => {
-      const {data, error} = await supabase.from("restaurants").select("*");
+
+    restaurants: async (_, __, { supabase }) => {
+      const { data, error } = await supabase.from("restaurants").select("*");
       if (error) throw new Error(error.message);
 
       // Handle null phone numbers
@@ -158,8 +158,8 @@ const resolvers = {
 
       return sanitizedData || [];
     },
-    restaurant: async (_, {id}, {supabase}) => {
-      const {data, error} = await supabase
+    restaurant: async (_, { id }, { supabase }) => {
+      const { data, error } = await supabase
         .from("restaurants")
         .select("*")
         .eq("id", id)
@@ -169,13 +169,13 @@ const resolvers = {
       if (!data.opening_hours) {
         // Provide a default value for opening hours
         data.opening_hours = {
-          monday: {open: "09:00", close: "17:00"},
-          tuesday: {open: "09:00", close: "17:00"},
-          wednesday: {open: "09:00", close: "17:00"},
-          thursday: {open: "09:00", close: "17:00"},
-          friday: {open: "09:00", close: "17:00"},
-          saturday: {open: "10:00", close: "14:00"},
-          sunday: {open: "Closed", close: "Closed"},
+          monday: { open: "09:00", close: "17:00" },
+          tuesday: { open: "09:00", close: "17:00" },
+          wednesday: { open: "09:00", close: "17:00" },
+          thursday: { open: "09:00", close: "17:00" },
+          friday: { open: "09:00", close: "17:00" },
+          saturday: { open: "10:00", close: "14:00" },
+          sunday: { open: "Closed", close: "Closed" },
         };
       }
       return {
@@ -188,16 +188,16 @@ const resolvers = {
         updatedAt: data.updated_at,
       };
     },
-    searchRestaurants: async (_, {query}, {supabase}) => {
-      const {data, error} = await supabase
+    searchRestaurants: async (_, { query }, { supabase }) => {
+      const { data, error } = await supabase
         .from("restaurants")
         .select("*")
         .or(`name.ilike.%${query}%,address.ilike.%${query}%`);
       if (error) throw new Error(error.message);
       return data;
     },
-    menuItems: async (_, {restaurantId}, {supabase}) => {
-      const {data, error} = await supabase
+    menuItems: async (_, { restaurantId }, { supabase }) => {
+      const { data, error } = await supabase
         .from("menu_items")
         .select("*")
         .eq("restaurant_id", restaurantId);
@@ -210,8 +210,8 @@ const resolvers = {
         imageUrl: menuItem.image_url || null,
       }));
     },
-    allMenuItems: async (_, __, {supabase}) => {
-      const {data, error} = await supabase.from("menu_items").select("*");
+    allMenuItems: async (_, __, { supabase }) => {
+      const { data, error } = await supabase.from("menu_items").select("*");
       if (error) throw new Error(error.message);
 
       return data.map((menuItem) => ({
@@ -222,28 +222,28 @@ const resolvers = {
         imageUrl: menuItem.image_url || null,
       }));
     },
-    menuItem: async (_, {id}, {supabase}) => {
+    menuItem: async (_, { id }, { supabase }) => {
       try {
         console.log(`Fetching menu item with id: ${id}`);
-        
-        const {data, error} = await supabase
+
+        const { data, error } = await supabase
           .from("menu_items")
           .select("*")
           .eq("id", id)
           .single();
-          
+
         if (error) {
           console.error(`Error fetching menu item: ${error.message}`);
           throw new Error(error.message);
         }
-        
+
         if (!data) {
           console.error(`Menu item with id ${id} not found`);
           throw new Error(`Menu item with id ${id} not found`);
         }
-        
+
         console.log(`Found menu item: ${JSON.stringify(data)}`);
-        
+
         return {
           ...data,
           id: data.id,
@@ -288,9 +288,9 @@ const resolvers = {
             menuItemId: item.menu_item_id,
             menuItem: item.menu_item
               ? {
-                  ...item.menu_item,
-                  imageUrl: item.menu_item.image_url || null,
-                }
+                ...item.menu_item,
+                imageUrl: item.menu_item.image_url || null,
+              }
               : null,
             quantity: item.quantity,
             price: item.price,
@@ -311,13 +311,16 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
-    order: async (_, {id}, {supabase}) => {
+    order: async (_, { id }, { supabase }) => {
       try {
         // Fetch the order by ID
-        const {data: order, error} = await supabase
+        const { data: order, error } = await supabase
           .from("orders")
           .select(
-            "*, order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), user:users(id, name, phone_number), restaurant:restaurants(id, name, description, address, type, opening_hours, phone_number, email, image_url, is_active, created_at, updated_at)"
+            `*, 
+        order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), 
+        user:users(id, name, phone_number), 
+        restaurant:restaurants(id, name, description, address, type, opening_hours, phone_number, email, image_url, is_active, created_at, updated_at)`
           )
           .eq("id", id)
           .single();
@@ -325,22 +328,77 @@ const resolvers = {
         if (error) throw new Error(`Failed to fetch order: ${error.message}`);
         if (!order) throw new Error("Order not found");
 
+        // Prepare deliverer info
+        let deliverer = null;
+
+        if (order.deliverer_id) {
+          const { data: delivererData, error: delivererError } = await supabase
+            .from("deliverers")
+            .select("*")
+            .eq("user_id", order.deliverer_id)
+            .single();
+
+          let userData = null;
+          if (delivererData?.user_id) {
+            const { data: userRow, error: userError } = await supabase
+              .from("users")
+              .select("id, name, phone_number")
+              .eq("id", delivererData.user_id)
+              .single();
+
+            if (!userError && userRow) {
+              userData = {
+                name: userRow.name,
+                phoneNumber: userRow.phone_number
+              };
+            }
+          }
+
+          if (!delivererError && delivererData) {
+            deliverer = {
+              userId: delivererData.user_id,
+              user: userData,
+              vehicleId: delivererData.vehicle_id,
+              isAvailable: delivererData.is_available,
+              currentLocation: typeof delivererData.current_location === "string"
+                ? JSON.parse(delivererData.current_location)
+                : delivererData.current_location,
+              zone: delivererData.zone,
+              profilePicture: delivererData.profile_picture,
+              isActive: delivererData.is_active,
+              isVerified: delivererData.is_verified
+            };
+          }
+        }
+
         return {
           id: order.id,
           restaurantId: order.restaurant_id,
           userId: order.user_id,
-          user: order.user,
-          restaurant: order.restaurant, // Added restaurant field
+          user: {
+            id: order.user.id,
+            name: order.user.name,
+            phoneNumber: order.user.phone_number
+          },
+          restaurant: {
+            id: order.restaurant.id,
+            name: order.restaurant.name,
+            description: order.restaurant.description,
+            address: order.restaurant.address
+          },
           items: order.order_items.map((item) => ({
             menuItemId: item.menu_item_id,
             menuItem: item.menu_item
               ? {
-                  ...item.menu_item,
-                  imageUrl: item.menu_item.image_url || null,
-                }
-              : null, // Handle case where menu_item might be null
+                id: item.menu_item.id,
+                name: item.menu_item.name,
+                description: item.menu_item.description,
+                price: item.menu_item.price,
+                imageUrl: item.menu_item.image_url || null
+              }
+              : null,
             quantity: item.quantity,
-            price: item.price,
+            price: item.price
           })),
           totalAmount: order.total_amount,
           deliveryAddress: order.delivery_address,
@@ -348,18 +406,19 @@ const resolvers = {
           status: order.status,
           isPaid: order.is_paid || false,
           paymentMethod: order.payment_method || "CASH",
-          createdAt: order.created_at || null, // Ensure createdAt is mapped correctly
+          createdAt: order.created_at || null,
           updatedAt: order.updated_at || null,
-          delivererId: order.deliverer_id, // Added delivererId field
-          deliverer: order.deliverer, // Added deliverer field
+          delivererId: order.deliverer_id,
+          deliverer
         };
       } catch (err) {
         console.error("Error fetching order:", err.message);
         throw new Error(err.message);
       }
     },
-    restaurantByEmail: async (_, {email}, {supabase}) => {
-      const {data, error} = await supabase
+
+    restaurantByEmail: async (_, { email }, { supabase }) => {
+      const { data, error } = await supabase
         .from("restaurants")
         .select("*")
         .eq("email", email)
@@ -367,16 +426,16 @@ const resolvers = {
       if (error) throw new Error("Restaurant not found.");
       return data;
     },
-    notifications: async (_, {userId}, {supabase}) => {
+    notifications: async (_, { userId }, { supabase }) => {
       try {
-        const {data, error} = await supabase
+        const { data, error } = await supabase
           .from("notifications")
           .select("*")
           .eq("user_id", userId)
-          .order("created_at", {ascending: false});
-          
+          .order("created_at", { ascending: false });
+
         if (error) throw new Error(`Error fetching notifications: ${error.message}`);
-        
+
         // Transform data to match GraphQL schema
         return (data || []).map(notification => ({
           id: notification.id,
@@ -393,7 +452,7 @@ const resolvers = {
     },
   },
   Mutation: {
-    createUser: async (_, {input}, {supabase}) => {
+    createUser: async (_, { input }, { supabase }) => {
       const password = "123456789";
       const hashedPassword = await bcrypt.hash(password, 10);
       // Map GraphQL fields to Supabase fields
@@ -411,7 +470,7 @@ const resolvers = {
       console.log("DB Input:", dbInput);
 
       // Check if the phone number already exists in the users table
-      const {data: existingUser, error: existingUserError} = await supabase
+      const { data: existingUser, error: existingUserError } = await supabase
         .from("users")
         .select("phone_number")
         .eq("phone_number", input.phoneNumber)
@@ -426,7 +485,7 @@ const resolvers = {
         throw new Error("Erreur interne du serveur.");
       }
 
-      const {data, error} = await supabase
+      const { data, error } = await supabase
         .from("users")
         .insert([dbInput])
         .select()
@@ -438,7 +497,7 @@ const resolvers = {
         phoneNumber: data.phone_number, // Map phone_number back to phoneNumber
       };
     },
-    createRestaurant: async (_, {input}, {supabase}) => {
+    createRestaurant: async (_, { input }, { supabase }) => {
       if (!validateEmail(input.email)) {
         throw new Error(`${input.email} n'est pas un adresse mail valide!`);
       }
@@ -457,7 +516,7 @@ const resolvers = {
       delete dbInput.phoneNumber; // Remove GraphQL-only field
       delete dbInput.imageUrl; // Remove GraphQL-only field
 
-      const {data, error} = await supabase
+      const { data, error } = await supabase
         .from("restaurants")
         .insert([dbInput])
         .select()
@@ -467,43 +526,43 @@ const resolvers = {
       return data;
     },
 
-    updateRestaurant: async (_, {id, input}, {supabase}) => {
+    updateRestaurant: async (_, { id, input }, { supabase }) => {
       if (input.email && !validateEmail(input.email)) {
         throw new Error(`${input.email} n'est pas un adresse mail valide!`);
       }
-      
+
       // Map GraphQL fields to Supabase fields
       const dbInput = {};
-      
+
       // Only include fields that are provided in the input
       if (input.name) dbInput.name = input.name;
       if (input.description) dbInput.description = input.description;
       if (input.address) dbInput.address = input.address;
       if (input.type) dbInput.type = input.type;
       if (input.email) dbInput.email = input.email;
-      
+
       // Map camelCase to snake_case
       if (input.phoneNumber) dbInput.phone_number = input.phoneNumber;
       if (input.imageUrl) dbInput.image_url = input.imageUrl;
       if (input.isActive !== undefined) dbInput.is_active = input.isActive;
       if (input.openingHours) dbInput.opening_hours = input.openingHours;
-      
-      const {data, error} = await supabase
+
+      const { data, error } = await supabase
         .from("restaurants")
         .update(dbInput)
         .eq("id", id)
         .select()
         .single();
-      
+
       if (error) throw new Error(error.message);
       return data;
     },
-    deleteRestaurant: async (_, {id}, {supabase}) => {
-      const {error} = await supabase.from("restaurants").delete().eq("id", id);
+    deleteRestaurant: async (_, { id }, { supabase }) => {
+      const { error } = await supabase.from("restaurants").delete().eq("id", id);
       if (error) throw new Error(error.message);
       return true;
     },
-    addMenuItem: async (_, {input}, {supabase}) => {
+    addMenuItem: async (_, { input }, { supabase }) => {
       const dbInput = {
         ...input,
         restaurant_id: input.restaurantId, // Map restaurantId to restaurant_id
@@ -513,7 +572,7 @@ const resolvers = {
       delete dbInput.restaurantId; // Remove GraphQL-only field
       delete dbInput.imageUrl; // Remove GraphQL-only field
 
-      const {data, error} = await supabase
+      const { data, error } = await supabase
         .from("menu_items")
         .insert([dbInput])
         .select()
@@ -527,38 +586,38 @@ const resolvers = {
         updatedAt: data.updated_at,
       };
     },
-    updateMenuItem: async (_, {id, input}, {supabase}) => {
+    updateMenuItem: async (_, { id, input }, { supabase }) => {
       try {
         console.log(`Updating menu item with id: ${id}, input:`, input);
-        
+
         // Map GraphQL fields to database column names
         const dbInput = {};
-        
+
         if (input.name !== undefined) dbInput.name = input.name;
         if (input.description !== undefined) dbInput.description = input.description;
         if (input.price !== undefined) dbInput.price = input.price;
         if (input.category !== undefined) dbInput.category = input.category;
         if (input.isAvailable !== undefined) dbInput.is_available = input.isAvailable;
-        
+
         // Map imageUrl to image_url
         if (input.imageUrl !== undefined) dbInput.image_url = input.imageUrl;
-        
+
         console.log("Mapped database input:", dbInput);
-        
-        const {data, error} = await supabase
+
+        const { data, error } = await supabase
           .from("menu_items")
           .update(dbInput)
           .eq("id", id)
           .select()
           .single();
-          
+
         if (error) {
           console.error(`Error updating menu item: ${error.message}`);
           throw new Error(error.message);
         }
-        
+
         console.log("Updated menu item data:", data);
-        
+
         return {
           ...data,
           id: data.id,
@@ -573,17 +632,17 @@ const resolvers = {
         throw new Error(`Failed to update menu item: ${error.message}`);
       }
     },
-    deleteMenuItem: async (_, {id}, {supabase}) => {
+    deleteMenuItem: async (_, { id }, { supabase }) => {
       try {
         console.log(`Attempting to delete menu item with id: ${id}`);
-        
-        const {error} = await supabase.from("menu_items").delete().eq("id", id);
-        
+
+        const { error } = await supabase.from("menu_items").delete().eq("id", id);
+
         if (error) {
           console.error(`Error deleting menu item: ${error.message}`);
           throw new Error(error.message);
         }
-        
+
         console.log(`Successfully deleted menu item with id: ${id}`);
         return true;
       } catch (error) {
@@ -591,9 +650,9 @@ const resolvers = {
         throw new Error(`Failed to delete menu item: ${error.message}`);
       }
     },
-    createOrder: async (_, {input}, {supabase}) => {
+    createOrder: async (_, { input }, { supabase }) => {
       try {
-        const {data: menuItems, error: fetchError} = await supabase
+        const { data: menuItems, error: fetchError } = await supabase
           .from("menu_items")
           .select("id, price")
           .in(
@@ -614,7 +673,7 @@ const resolvers = {
           return total + itemPrice * item.quantity;
         }, 0);
 
-        const {data: newOrder, error: orderError} = await supabase
+        const { data: newOrder, error: orderError } = await supabase
           .from("orders")
           .insert([
             {
@@ -642,7 +701,7 @@ const resolvers = {
           price: priceMap[item.menuItemId],
         }));
 
-        const {error: itemsError} = await supabase
+        const { error: itemsError } = await supabase
           .from("order_items")
           .insert(orderItems);
         if (itemsError)
@@ -668,16 +727,16 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
-    updateOrderStatus: async (_, {id, status}, {supabase}) => {
-      const {data: order, error} = await supabase
+    updateOrderStatus: async (_, { id, status }, { supabase }) => {
+      const { data: order, error } = await supabase
         .from("orders")
-        .update({status: status})
+        .update({ status: status })
         .eq("id", id)
         .select()
         .single();
-        
+
       if (error) throw new Error(error.message);
-      
+
       // Create notification for the user
       if (order && order.user_id) {
         // Translate status to French
@@ -698,7 +757,7 @@ const resolvers = {
           default:
             statusFrench = 'mise à jour';
         }
-        
+
         // Insert notification in French
         await supabase.from('notifications').insert({
           user_id: order.user_id,
@@ -708,7 +767,7 @@ const resolvers = {
 
         await sendPushNotification(order.user_id, `Votre commande est maintenant ${statusFrench}`, supabase);
       }
-      
+
       return order;
     },
 
@@ -803,21 +862,21 @@ const resolvers = {
       return updated;
     },
 
-    updateUser: async (_, {id, input}, {supabase}) => {
+    updateUser: async (_, { id, input }, { supabase }) => {
       // Prepare the update input, excluding phone number and role
       const updateData = {};
-      
+
       // Only update fields that are provided in the input
       if (input.name) updateData.name = input.name;
       if (input.profilePicture) updateData.profile_picture = input.profilePicture;
-      
+
       // If password is provided, hash it
       if (input.password) {
         const hashedPassword = await bcrypt.hash(input.password, 10);
         updateData.password = hashedPassword;
       }
 
-      const {data, error} = await supabase
+      const { data, error } = await supabase
         .from("users")
         .update(updateData)
         .eq("id", id)
@@ -825,7 +884,7 @@ const resolvers = {
         .single();
 
       if (error) throw new Error(error.message);
-      
+
       return {
         ...data,
         phoneNumber: data.phone_number,
@@ -833,22 +892,22 @@ const resolvers = {
         profilePicture: data.profile_picture,
       };
     },
-    deleteUser: async (_, {id}, {supabase}) => {
-      const {error} = await supabase.from("users").delete().eq("id", id);
+    deleteUser: async (_, { id }, { supabase }) => {
+      const { error } = await supabase.from("users").delete().eq("id", id);
       if (error) throw new Error(error.message);
       return true;
     },
-    markNotificationAsRead: async (_, {id}, {supabase}) => {
+    markNotificationAsRead: async (_, { id }, { supabase }) => {
       try {
-        const {data, error} = await supabase
+        const { data, error } = await supabase
           .from("notifications")
-          .update({read: true})
+          .update({ read: true })
           .eq("id", id)
           .select()
           .single();
-          
+
         if (error) throw new Error(`Error updating notification: ${error.message}`);
-        
+
         return {
           id: data.id,
           userId: data.user_id,
@@ -862,16 +921,16 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
-    markAllNotificationsAsRead: async (_, {userId}, {supabase}) => {
+    markAllNotificationsAsRead: async (_, { userId }, { supabase }) => {
       try {
-        const {error} = await supabase
+        const { error } = await supabase
           .from("notifications")
-          .update({read: true})
+          .update({ read: true })
           .eq("user_id", userId)
           .eq("read", false);
-          
+
         if (error) throw new Error(`Error updating notifications: ${error.message}`);
-        
+
         return true;
       } catch (err) {
         console.error("Error marking all notifications as read:", err);
@@ -882,7 +941,7 @@ const resolvers = {
       try {
         const { data: deliverer, error } = await supabase
           .from("deliverers")
-          .update({ 
+          .update({
             current_location: {
               address: location.address,
               latitude: location.latitude,
