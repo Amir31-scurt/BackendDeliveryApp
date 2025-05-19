@@ -163,6 +163,7 @@ type Mutation {
   createDeliverer(input: CreateDelivererInput!): Deliverer!
   updateDelivererStatus(userId: ID!, isAvailable: Boolean!): Deliverer!
   updateDelivererLocation(userId: ID!, location: LocationInput!): Deliverer!
+  updateDeliverer(userId: ID!, input: UpdateDelivererInput!): Deliverer!
   deleteUser(id: ID!): Boolean!
   markNotificationAsRead(id: ID!): Notification!
   markAllNotificationsAsRead(userId: ID!): Boolean!
@@ -185,6 +186,12 @@ input LocationInput {
 input UpdateUserInput {
   name: String
   password: String
+  profilePicture: String
+}
+
+input UpdateDelivererInput {
+  vehicleId: ID
+  zone: String
   profilePicture: String
 }
 

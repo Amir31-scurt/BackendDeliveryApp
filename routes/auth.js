@@ -15,7 +15,7 @@ const otpStore = {};
 
 router.post("/signup", async (req, res) => {
   try {
-    const { phoneNumber, name, password, role } = req.body;
+    const { phoneNumber, name, password, role, profilePicture } = req.body;
 
     if (!phoneNumber || !name || !password || !role) {
       return res
@@ -71,7 +71,6 @@ router.post("/signup", async (req, res) => {
           is_available: true,
           current_location: null,
           zone: null,
-          profile_picture: null,
         });
 
       if (delivererError) {
@@ -102,6 +101,7 @@ router.post("/signup", async (req, res) => {
       expiresAt,
       role: "customer",
       isVerified: false,
+      profilePicture
     };
 
     // For production, store this in your database
@@ -143,6 +143,8 @@ router.post("/login", async (req, res) => {
         name: user.name,
         phoneNumber: phoneNumber,
         role: user.role,
+        profilePicture: user.profile_picture,
+        isVerified: user.is_verified,
       },
       token: token,
     });
@@ -171,7 +173,7 @@ router.post("/verify-otp", async (req, res) => {
       return res.status(400).json({ error: "Invalid or expired OTP." });
     }
 
-    const { otp: storedOtp, expiresAt, name, password } = userData;
+    const { otp: storedOtp, expiresAt, name, password, profilePicture } = userData;
 
     // Validate OTP
     if (otp !== storedOtp.toString()) {
@@ -196,6 +198,7 @@ router.post("/verify-otp", async (req, res) => {
       password: hashedPassword,
       role: "customer",
       is_verified: true,
+      profile_picture: profilePicture,
     });
 
     if (error) {
