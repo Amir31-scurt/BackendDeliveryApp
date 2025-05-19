@@ -997,6 +997,27 @@ const resolvers = {
         throw new Error(error.message);
       }
     },
+    updateDeliverer: async (_, { userId, input }, { supabase }) => {
+      const { data, error } = await supabase
+        .from("deliverers")
+        .update(input)
+        .eq("user_id", userId)
+        .select()
+        .single();
+
+      if (error) throw new Error(error.message);
+
+      return {
+        ...data,
+        userId: data.user_id,
+        vehicleId: data.vehicle_id,
+        isAvailable: data.is_available,
+        currentLocation: data.current_location,
+        zone: data.zone,
+        isActive: data.is_active,
+        isVerified: data.is_verified
+      };
+    },
   },
   Order: {
     user: (parent) => {
