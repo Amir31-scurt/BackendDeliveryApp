@@ -119,21 +119,23 @@ const resolvers = {
           .from("restaurants")
           .select(`
             *,
-            orders!inner(
+            orders(
               rating,
               status
             )
-          `)
-          .eq('orders.status', 'COMPLETED')
-          .not('orders.rating', 'is', null);
+          `);
 
         if (error) throw new Error(error.message);
 
         // Calculate average ratings for each restaurant
         const restaurantsWithRatings = restaurants.map(restaurant => {
-          const ratings = restaurant.orders.map(order => order.rating);
-          const averageRating = ratings.length > 0
-            ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
+          // Filter for completed orders with ratings
+          const validRatings = restaurant.orders
+            .filter(order => order.status === 'COMPLETED' && order.rating !== null)
+            .map(order => order.rating);
+
+          const averageRating = validRatings.length > 0
+            ? validRatings.reduce((sum, rating) => sum + rating, 0) / validRatings.length
             : null;
 
           return {
@@ -143,7 +145,7 @@ const resolvers = {
             updatedAt: restaurant.updated_at || "Not provided",
             isActive: restaurant.is_active,
             rating: averageRating,
-            totalRatings: ratings.length,
+            totalRatings: validRatings.length,
             openingHours: {
               monday: restaurant.opening_hours?.monday || {
                 open: "09:00",
