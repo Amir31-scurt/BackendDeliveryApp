@@ -17,6 +17,8 @@ type Restaurant {
   phoneNumber: String!
   email: String!
   rating: Float
+  totalRatings: Int!
+  ratings: [RestaurantRating!]
   imageUrl: String
   isActive: Boolean
   createdAt: String!
@@ -74,18 +76,20 @@ type Order {
   restaurantId: ID!
   userId: ID!
   user: User
-  restaurant: Restaurant # Added restaurant field
+  restaurant: Restaurant
   items: [OrderItem]!
   totalAmount: Float!
   deliveryAddress: Address
   instructions: String
+  note: String
+  rating: Float
   status: OrderStatus!
   isPaid: Boolean!
   paymentMethod: PaymentMethod!
   createdAt: String!
   updatedAt: String!
-  delivererId: ID # Added delivererId field
-  deliverer: Deliverer # Added deliverer field
+  delivererId: ID
+  deliverer: Deliverer
 }
 
 type OrderItem {
@@ -130,6 +134,17 @@ type Notification {
   createdAt: String!
 }
 
+type RestaurantRating {
+  id: ID!
+  restaurantId: ID!
+  userId: ID!
+  user: User
+  rating: Float!
+  comment: String
+  createdAt: String!
+  updatedAt: String!
+}
+
 type Query {
   users: [User!]!
   user(id: ID!): User
@@ -147,6 +162,8 @@ type Query {
   availableDeliverers: [Deliverer!]!
   restaurantByEmail(email: String!): Restaurant
   notifications(userId: ID!): [Notification!]!
+  restaurantRatings(restaurantId: ID!): [RestaurantRating!]!
+  userRestaurantRating(restaurantId: ID!, userId: ID!): RestaurantRating
 }
 
 type Mutation {
@@ -169,6 +186,12 @@ type Mutation {
   markAllNotificationsAsRead(userId: ID!): Boolean!
   confirmOrderDelivery(orderId: ID!, token: String!, delivererId: ID!): Order!
   manualConfirmDelivery(orderId: ID!, delivererId: ID!): Order!
+  addRestaurantRating(input: RestaurantRatingInput!): RestaurantRating!
+  updateRestaurantRating(id: ID!, input: UpdateRestaurantRatingInput!): RestaurantRating!
+  deleteRestaurantRating(id: ID!): Boolean!
+  updateOrderNote(orderId: ID!, note: String!): Order!
+  updateOrderRating(orderId: ID!, rating: Float!): Order!
+  updateOrderFeedback(orderId: ID!, rating: Float!, note: String!): Order!
 }
 
 input CreateUserInput {
@@ -259,10 +282,11 @@ input OrderInput {
   totalAmount: Float!
   deliveryAddress: AddressInput!
   instructions: String
+  note: String
   status: OrderStatus
   isPaid: Boolean
   paymentMethod: PaymentMethod
-  delivererId: ID! # Added delivererId field
+  delivererId: ID!
 }
 
 input AddressInput {
@@ -282,4 +306,16 @@ input CreateDelivererInput {
   currentLocation: String
   zone: String
   profilePicture: String
+}
+
+input RestaurantRatingInput {
+  restaurantId: ID!
+  userId: ID!
+  rating: Float!
+  comment: String
+}
+
+input UpdateRestaurantRatingInput {
+  rating: Float
+  comment: String
 }

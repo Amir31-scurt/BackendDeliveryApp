@@ -316,6 +316,61 @@
             text-align: center;
         }
 
+        .note-container {
+            position: relative;
+            cursor: pointer;
+        }
+
+        .note-text {
+            display: block;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .note-text:hover {
+            background-color: var(--background-color);
+        }
+
+        .note-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .note-modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .note-modal textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            font-family: inherit;
+        }
+
+        .note-modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 width: 70px;
@@ -448,6 +503,7 @@
                             <th>Téléphone</th>
                             <th>Adresse</th>
                             <th>Montant</th>
+                            <th>Note</th>
                             <th>Statut</th>
                             <th>Actions</th>
                         </tr>
@@ -473,6 +529,15 @@
                                     </td>
                                     <td>
                                         <%= order.totalAmount %> Fcfa
+                                    </td>
+                                    <td>
+                                        <div class="note-container">
+                                            <span class="note-text" data-order-id="<%= order.id %>"
+                                                data-note="<%= order.note || '' %>"
+                                                onclick="editNote(this.dataset.orderId, this.dataset.note)">
+                                                <%= order.note || 'Ajouter une note...' %>
+                                            </span>
+                                        </div>
                                     </td>
                                     <td>
                                         <span class="status-badge status-<%= order.status.toLowerCase() %>">
@@ -515,7 +580,7 @@
                                 <% }); %>
                                     <% } else { %>
                                         <tr>
-                                            <td colspan="8" style="text-align: center; padding: 2rem;">
+                                            <td colspan="9" style="text-align: center; padding: 2rem;">
                                                 Aucune commande trouvée
                                             </td>
                                         </tr>
@@ -524,6 +589,18 @@
                 </table>
             </div>
         </main>
+    </div>
+
+    <!-- Add Note Modal -->
+    <div id="noteModal" class="note-modal">
+        <div class="note-modal-content">
+            <h3>Modifier la note</h3>
+            <textarea id="noteText" placeholder="Entrez votre note ici..."></textarea>
+            <div class="note-modal-buttons">
+                <button onclick="closeNoteModal()" class="modal-btn cancel-btn">Annuler</button>
+                <button onclick="saveNote()" class="modal-btn submit-btn">Enregistrer</button>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -731,6 +808,58 @@
             } catch (error) {
                 console.error('Error updating order status:', error);
                 alert('Une erreur est survenue lors de la mise à jour du statut');
+            }
+        }
+
+        let currentOrderId = null;
+
+        function editNote(orderId, currentNote) {
+            currentOrderId = orderId;
+            const modal = document.getElementById('noteModal');
+            const textarea = document.getElementById('noteText');
+            textarea.value = currentNote;
+            modal.style.display = 'block';
+        }
+
+        function closeNoteModal() {
+            const modal = document.getElementById('noteModal');
+            modal.style.display = 'none';
+            currentOrderId = null;
+        }
+
+        async function saveNote() {
+            if (!currentOrderId) return;
+
+            const note = document.getElementById('noteText').value;
+
+            try {
+                const response = await fetch(`/admin/orders/${currentOrderId}/note`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ note }),
+                });
+
+                if (response.ok) {
+                    alert('Note mise à jour avec succès!');
+                    window.location.reload();
+                } else {
+                    throw new Error('Échec de la mise à jour de la note');
+                }
+            } catch (error) {
+                console.error('Error updating note:', error);
+                alert('Une erreur est survenue lors de la mise à jour de la note');
+            }
+
+            closeNoteModal();
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            const modal = document.getElementById('noteModal');
+            if (event.target === modal) {
+                closeNoteModal();
             }
         }
     </script>
