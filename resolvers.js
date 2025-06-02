@@ -113,50 +113,82 @@ const resolvers = {
     },
 
     restaurants: async (_, __, { supabase }) => {
-      const { data, error } = await supabase.from("restaurants").select("*");
-      if (error) throw new Error(error.message);
+      try {
+        // First get all restaurants
+        const { data: restaurants, error } = await supabase
+          .from("restaurants")
+          .select(`
+            *,
+            orders!inner(
+              rating,
+              status
+            )
+          `)
+          .eq('orders.status', 'COMPLETED')
+          .not('orders.rating', 'is', null);
 
-      // Handle null phone numbers
-      const sanitizedData = data.map((restaurant) => ({
-        ...restaurant,
-        phoneNumber: restaurant.phone_number || "Not provided", // Fallback value
-        createdAt: restaurant.created_at || "Not provided", // Fallback value
-        updatedAt: restaurant.updated_at || "Not provided", // Fallback value
-        isActive: restaurant.is_active,
-        openingHours: {
-          monday: restaurant.opening_hours?.monday || {
-            open: "09:00",
-            close: "22:00",
-          },
-          tuesday: restaurant.opening_hours?.tuesday || {
-            open: "09:00",
-            close: "22:00",
-          },
-          wednesday: restaurant.opening_hours?.wednesday || {
-            open: "09:00",
-            close: "22:00",
-          },
-          thursday: restaurant.opening_hours?.thursday || {
-            open: "09:00",
-            close: "22:00",
-          },
-          friday: restaurant.opening_hours?.friday || {
-            open: "09:00",
-            close: "22:00",
-          },
-          saturday: restaurant.opening_hours?.saturday || {
-            open: "09:00",
-            close: "22:00",
-          },
-          sunday: restaurant.opening_hours?.sunday || {
-            open: "09:00",
-            close: "22:00",
-          },
-        },
-        imageUrl: restaurant.image_url || "Not provided", // Fallback value
-      }));
+        if (error) throw new Error(error.message);
 
-      return sanitizedData || [];
+        // Calculate average ratings for each restaurant
+        const restaurantsWithRatings = restaurants.map(restaurant => {
+          const ratings = restaurant.orders.map(order => order.rating);
+          const averageRating = ratings.length > 0
+            ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length
+            : null;
+
+          return {
+            ...restaurant,
+            phoneNumber: restaurant.phone_number || "Not provided",
+            createdAt: restaurant.created_at || "Not provided",
+            updatedAt: restaurant.updated_at || "Not provided",
+            isActive: restaurant.is_active,
+            rating: averageRating,
+            totalRatings: ratings.length,
+            openingHours: {
+              monday: restaurant.opening_hours?.monday || {
+                open: "09:00",
+                close: "22:00",
+              },
+              tuesday: restaurant.opening_hours?.tuesday || {
+                open: "09:00",
+                close: "22:00",
+              },
+              wednesday: restaurant.opening_hours?.wednesday || {
+                open: "09:00",
+                close: "22:00",
+              },
+              thursday: restaurant.opening_hours?.thursday || {
+                open: "09:00",
+                close: "22:00",
+              },
+              friday: restaurant.opening_hours?.friday || {
+                open: "09:00",
+                close: "22:00",
+              },
+              saturday: restaurant.opening_hours?.saturday || {
+                open: "09:00",
+                close: "22:00",
+              },
+              sunday: restaurant.opening_hours?.sunday || {
+                open: "09:00",
+                close: "22:00",
+              },
+            },
+            imageUrl: restaurant.image_url || "Not provided",
+          };
+        });
+
+        // Sort restaurants by rating (null ratings will be at the end)
+        return restaurantsWithRatings.sort((a, b) => {
+          if (a.rating === null && b.rating === null) return 0;
+          if (a.rating === null) return 1;
+          if (b.rating === null) return -1;
+          return b.rating - a.rating;
+        });
+      } catch (err) {
+        console.error("Error in restaurants query:", err);
+        throw new Error(err.message);
+      }
     },
     restaurant: async (_, { id }, { supabase }) => {
       const { data, error } = await supabase
@@ -1299,6 +1331,48 @@ const resolvers = {
       };
     },
     rating: (parent) => parent.rating || null
+  },
+  Restaurant: {
+    rating: async (parent, _, { supabase }) => {
+      try {
+        // Get all completed orders with ratings for this restaurant
+        const { data: orders, error } = await supabase
+          .from('orders')
+          .select('rating')
+          .eq('restaurant_id', parent.id)
+          .eq('status', 'COMPLETED')
+          .not('rating', 'is', null);
+
+        if (error) throw new Error(`Error fetching order ratings: ${error.message}`);
+
+        if (!orders || orders.length === 0) return null;
+
+        // Calculate average rating
+        const totalRating = orders.reduce((sum, order) => sum + order.rating, 0);
+        return totalRating / orders.length;
+      } catch (err) {
+        console.error("Error calculating restaurant rating:", err);
+        return null;
+      }
+    },
+    totalRatings: async (parent, _, { supabase }) => {
+      try {
+        // Count completed orders with ratings for this restaurant
+        const { count, error } = await supabase
+          .from('orders')
+          .select('rating', { count: 'exact' })
+          .eq('restaurant_id', parent.id)
+          .eq('status', 'COMPLETED')
+          .not('rating', 'is', null);
+
+        if (error) throw new Error(`Error counting ratings: ${error.message}`);
+
+        return count || 0;
+      } catch (err) {
+        console.error("Error counting restaurant ratings:", err);
+        return 0;
+      }
+    }
   },
   Deliverer: {
     user: async (parent, _, { supabase }) => {
