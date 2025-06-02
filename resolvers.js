@@ -505,35 +505,6 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
-    orderRating: async (_, { orderId }, { supabase }) => {
-      try {
-        const { data, error } = await supabase
-          .from('order_ratings')
-          .select(`
-            *,
-            user:users(id, name, phone_number)
-          `)
-          .eq('order_id', orderId)
-          .single();
-
-        if (error && error.code !== 'PGRST116') throw new Error(`Error fetching order rating: ${error.message}`);
-        if (!data) return null;
-
-        return {
-          id: data.id,
-          orderId: data.order_id,
-          userId: data.user_id,
-          user: data.user,
-          rating: data.rating,
-          comment: data.comment,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at
-        };
-      } catch (err) {
-        console.error("Error in orderRating query:", err);
-        throw new Error(err.message);
-      }
-    },
   },
   Mutation: {
     createUser: async (_, { input }, { supabase }) => {
@@ -1222,57 +1193,6 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
-    addOrderRating: async (_, { input }, { supabase }) => {
-      try {
-        // Check if order exists and is completed
-        const { data: order, error: orderError } = await supabase
-          .from('orders')
-          .select('status')
-          .eq('id', input.orderId)
-          .single();
-
-        if (orderError) throw new Error('Order not found');
-        if (order.status !== 'COMPLETED') throw new Error('Can only rate completed orders');
-
-        // Check if user has already rated this order
-        const { data: existingRating } = await supabase
-          .from('order_ratings')
-          .select('id')
-          .eq('order_id', input.orderId)
-          .eq('user_id', input.userId)
-          .single();
-
-        if (existingRating) {
-          throw new Error('You have already rated this order');
-        }
-
-        const { data, error } = await supabase
-          .from('order_ratings')
-          .insert([{
-            order_id: input.orderId,
-            user_id: input.userId,
-            rating: input.rating,
-            comment: input.comment
-          }])
-          .select()
-          .single();
-
-        if (error) throw new Error(`Error adding order rating: ${error.message}`);
-
-        return {
-          id: data.id,
-          orderId: data.order_id,
-          userId: data.user_id,
-          rating: data.rating,
-          comment: data.comment,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at
-        };
-      } catch (err) {
-        console.error("Error in addOrderRating mutation:", err);
-        throw new Error(err.message);
-      }
-    },
 
     updateOrderRating: async (_, { orderId, rating }, { supabase }) => {
       try {
@@ -1317,22 +1237,6 @@ const resolvers = {
         };
       } catch (err) {
         console.error("Error in updateOrderRating mutation:", err);
-        throw new Error(err.message);
-      }
-    },
-
-    deleteOrderRating: async (_, { id }, { supabase }) => {
-      try {
-        const { error } = await supabase
-          .from('order_ratings')
-          .delete()
-          .eq('id', id);
-
-        if (error) throw new Error(`Error deleting order rating: ${error.message}`);
-
-        return true;
-      } catch (err) {
-        console.error("Error in deleteOrderRating mutation:", err);
         throw new Error(err.message);
       }
     },
@@ -1394,8 +1298,7 @@ const resolvers = {
         createdAt: parent.user.created_at,
       };
     },
-    rating: (parent) => parent.rating || null,
-    ratingComment: (parent) => parent.rating_comment || null
+    rating: (parent) => parent.rating || null
   },
   Deliverer: {
     user: async (parent, _, { supabase }) => {
