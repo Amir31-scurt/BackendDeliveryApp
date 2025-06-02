@@ -304,7 +304,7 @@ const resolvers = {
         if (userId) query = query.eq("user_id", userId);
         if (restaurantId) query = query.eq("restaurant_id", restaurantId);
         if (status) query = query.eq("status", status);
-        if (delivererId) query = query.eq("deliverer_id", delivererId); // 👈 ADD THIS LINE
+        if (delivererId) query = query.eq("deliverer_id", delivererId);
 
         const { data: orders, error } = await query;
 
@@ -315,7 +315,15 @@ const resolvers = {
           restaurantId: order.restaurant_id,
           userId: order.user_id,
           user: order.user,
-          restaurant: order.restaurant,
+          restaurant: {
+            ...order.restaurant,
+            phoneNumber: order.restaurant.phone_number || "Not provided",
+            openingHours: order.restaurant.opening_hours,
+            imageUrl: order.restaurant.image_url || null,
+            isActive: order.restaurant.is_active,
+            createdAt: order.restaurant.created_at,
+            updatedAt: order.restaurant.updated_at
+          },
           items: order.order_items.map((item) => ({
             menuItemId: item.menu_item_id,
             menuItem: item.menu_item
