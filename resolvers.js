@@ -55,12 +55,18 @@ const resolvers = {
 
       return sanitizedData;
     },
-    user: async (_, { id }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", id)
-        .single();
+    user: async (_, { id, phoneNumber }, { supabase }) => {
+      let query = supabase.from("users").select("*");
+
+      if (id) {
+        query = query.eq("id", id);
+      } else if (phoneNumber) {
+        query = query.eq("phone_number", phoneNumber);
+      } else {
+        throw new Error("Either id or phoneNumber must be provided");
+      }
+
+      const { data, error } = await query.single();
       if (error) throw new Error(error.message);
       return {
         ...data,

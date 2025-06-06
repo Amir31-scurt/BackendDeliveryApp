@@ -147,7 +147,7 @@ type RestaurantRating {
 
 type Query {
   users: [User!]!
-  user(id: ID!): User
+  user(id: ID, phoneNumber: String): User
   restaurants: [Restaurant!]!
   restaurant(id: ID!): Restaurant
   searchRestaurants(query: String!): [Restaurant!]!
