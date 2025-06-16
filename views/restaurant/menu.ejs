@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="<%= csrfToken %>" />
     <title>Gestion du Menu - Gourmet d'amour</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
@@ -134,6 +135,153 @@
             color: var(--primary-color);
         }
 
+        .menu-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .search-box {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            padding-right: 2.5rem;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #95a5a6;
+        }
+
+        .menu-filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-select {
+            padding: 0.5rem 1rem;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--dark-color);
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .menu-item-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .menu-item-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .menu-item-image-container {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+        }
+
+        .menu-item-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .menu-item-card:hover .menu-item-image {
+            transform: scale(1.05);
+        }
+
+        .menu-item-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .menu-item-card:hover .menu-item-overlay {
+            opacity: 1;
+        }
+
+        .menu-item-details {
+            padding: 1.5rem;
+        }
+
+        .menu-item-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .menu-item-description {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        .menu-item-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-item-price {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 1.1rem;
+        }
+
+        .menu-item-category {
+            background: #f0f0f0;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
         .add-item-btn {
             background-color: var(--primary-color);
             color: white;
@@ -178,13 +326,6 @@
             background-color: var(--background-color);
         }
 
-        .menu-item-image {
-            width: 60px;
-            height: 60px;
-            object-fit: cover;
-            border-radius: 5px;
-        }
-
         .action-buttons {
             display: flex;
             gap: 1rem;
@@ -212,23 +353,41 @@
 
         .no-items {
             text-align: center;
-            color: var(--dark-color);
-            padding: 2rem;
+            padding: 3rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .no-items i {
+            font-size: 3rem;
+            color: #ddd;
+            margin-bottom: 1rem;
+        }
+
+        .no-items p {
+            color: #666;
+            margin-bottom: 1.5rem;
         }
 
         /* Modal Styles */
         .modal {
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.5);
             display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
         }
 
         .modal.show {
-            display: flex;
+            opacity: 1;
         }
 
         .modal-content {
@@ -238,16 +397,43 @@
             width: 90%;
             max-width: 500px;
             position: relative;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+            margin: auto;
+        }
+
+        .modal.show .modal-content {
+            transform: translateY(0);
         }
 
         .modal-header {
             margin-bottom: 1.5rem;
+            padding-right: 2rem;
         }
 
         .modal-header h2 {
             font-family: 'Playfair Display', serif;
             font-size: 1.8rem;
             color: var(--dark-color);
+            margin: 0;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--dark-color);
+            cursor: pointer;
+            padding: 0.5rem;
+            line-height: 1;
+            transition: color 0.3s ease;
+        }
+
+        .close-modal:hover {
+            color: var(--primary-color);
         }
 
         .form-group {
@@ -306,20 +492,12 @@
             transform: translateY(-2px);
         }
 
-        .close-modal {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: var(--dark-color);
-            cursor: pointer;
-            transition: color 0.3s ease;
+        .modal-btn.submit-btn:hover {
+            background-color: #c44d68;
         }
 
-        .close-modal:hover {
-            color: var(--primary-color);
+        .modal-btn.cancel-btn:hover {
+            background-color: #ddd;
         }
 
         @media (max-width: 768px) {
@@ -346,9 +524,25 @@
                 padding: 1rem;
             }
 
-            .menu-table {
-                display: block;
-                overflow-x: auto;
+            .menu-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+
+            .menu-filters {
+                flex-direction: column;
+            }
+
+            .filter-select {
+                width: 100%;
+            }
+
+            .menu-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -364,21 +558,21 @@
             <nav>
                 <ul class="nav-menu">
                     <li class="nav-item">
-                        <a href="/restaurant/dashboard" class="nav-link">
+                        <a href="/admin/restaurant/<%= restaurant.id %>/dashboard" class="nav-link">
                             <i class="fas fa-chart-line"></i>
                             <span>Tableau de Bord</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="/restaurant/menu" class="nav-link active">
+                        <a href="/admin/restaurant/<%= restaurant.id %>/menu" class="nav-link active">
                             <i class="fas fa-utensils"></i>
                             <span>Menu</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="/" class="nav-link">
-                            <i class="fas fa-home"></i>
-                            <span>Accueil</span>
+                        <a href="/admin/logout" class="nav-link logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Déconnexion</span>
                         </a>
                     </li>
                 </ul>
@@ -398,67 +592,87 @@
                         <i class="fas fa-utensils"></i>
                         Articles du Menu
                     </h3>
-                    <button onclick="openModal()" class="add-item-btn">
-                        <i class="fas fa-plus"></i> Ajouter un Article
-                    </button>
+                    <div class="menu-actions">
+                        <div class="search-box">
+                            <input type="text" id="menuSearch" placeholder="Rechercher un article..."
+                                class="search-input">
+                            <i class="fas fa-search search-icon"></i>
+                        </div>
+                        <button id="addItemBtn" class="add-item-btn">
+                            <i class="fas fa-plus"></i> Ajouter un Article
+                        </button>
+                    </div>
                 </div>
 
                 <% if (menuItems && menuItems.length> 0) { %>
-                    <table class="menu-table">
-                        <thead>
-                            <tr>
-                                <th>Image</th>
-                                <th>Nom</th>
-                                <th>Description</th>
-                                <th>Prix</th>
-                                <th>Catégorie</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% menuItems.forEach((item)=> { %>
-                                <tr>
-                                    <td>
-                                        <img src="<%= item.imageUrl %>" alt="<%= item.name %>"
-                                            class="menu-item-image" />
-                                    </td>
-                                    <td>
-                                        <%= item.name %>
-                                    </td>
-                                    <td>
-                                        <%= item.description %>
-                                    </td>
-                                    <td>
-                                        <%= item.price.toFixed(2) %> Fcfa
-                                    </td>
-                                    <td>
-                                        <%= item.category %>
-                                    </td>
-                                    <td>
-                                        <div class="action-buttons">
-                                            <button class="action-btn edit-btn"
-                                                onclick="editMenuItem('<%= item.id %>')">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="action-btn delete-btn"
-                                                onclick="confirmDeleteMenuItem('<%= item.id %>', '<%= item.name %>')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
+                    <div class="menu-filters">
+                        <select id="categoryFilter" class="filter-select">
+                            <option value="">Toutes les catégories</option>
+                            <% const categories=[...new Set(menuItems.map(item=> item.category))];
+                                categories.forEach(category => {
+                                %>
+                                <option value="<%= category %>">
+                                    <%= category.charAt(0) + category.slice(1).toLowerCase() %>
+                                </option>
                                 <% }); %>
-                        </tbody>
-                    </table>
+                        </select>
+                        <select id="sortFilter" class="filter-select">
+                            <option value="name">Trier par nom</option>
+                            <option value="price-asc">Prix croissant</option>
+                            <option value="price-desc">Prix décroissant</option>
+                            <option value="category">Trier par catégorie</option>
+                        </select>
+                    </div>
+
+                    <div class="menu-grid">
+                        <% menuItems.forEach((item)=> { %>
+                            <div class="menu-item-card" data-category="<%= item.category %>" data-id="<%= item.id %>">
+                                <div class="menu-item-image-container">
+                                    <img src="<%= item.image_url %>" alt="<%= item.name %>" class="menu-item-image" />
+                                    <div class="menu-item-overlay">
+                                        <button class="action-btn edit-btn" data-id="<%= item.id %>">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="action-btn delete-btn" data-id="<%= item.id %>"
+                                            data-name="<%= item.name %>">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="menu-item-details">
+                                    <h4 class="menu-item-name">
+                                        <%= item.name %>
+                                    </h4>
+                                    <p class="menu-item-description">
+                                        <%= item.description %>
+                                    </p>
+                                    <div class="menu-item-footer">
+                                        <span class="menu-item-price">
+                                            <%= item.price.toFixed(2) %> Fcfa
+                                        </span>
+                                        <span class="menu-item-category">
+                                            <%= item.category %>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <% }); %>
+                    </div>
                     <% } else { %>
-                        <p class="no-items">Aucun article de menu disponible.</p>
+                        <div class="no-items">
+                            <i class="fas fa-utensils"></i>
+                            <p>Aucun article de menu disponible.</p>
+                            <button id="addFirstItemBtn" class="add-item-btn">
+                                <i class="fas fa-plus"></i> Ajouter votre premier article
+                            </button>
+                        </div>
                         <% } %>
             </div>
 
             <!-- Add/Edit Menu Item Modal -->
             <div id="menuItemModal" class="modal">
                 <div class="modal-content">
-                    <button class="close-modal" onclick="closeModal()">&times;</button>
+                    <button id="closeModalBtn" class="close-modal">&times;</button>
                     <div class="modal-header">
                         <h2>Ajouter un Article</h2>
                     </div>
@@ -489,10 +703,10 @@
                             <input type="file" id="image" name="image" accept="image/*" class="form-control" required />
                         </div>
                         <div class="modal-buttons">
-                            <button type="button" onclick="submitMenuItem()" class="modal-btn submit-btn">
+                            <button type="button" id="submitMenuItemBtn" class="modal-btn submit-btn">
                                 Ajouter
                             </button>
-                            <button type="button" onclick="closeModal()" class="modal-btn cancel-btn">
+                            <button type="button" id="cancelModalBtn" class="modal-btn cancel-btn">
                                 Annuler
                             </button>
                         </div>
@@ -506,7 +720,12 @@
         const restaurantType = "<%= restaurant.type %>";
 
         function openModal() {
-            document.getElementById("menuItemModal").classList.add("show");
+            const modal = document.getElementById('menuItemModal');
+            modal.style.display = 'flex';
+            requestAnimationFrame(() => {
+                modal.classList.add('show');
+            });
+            document.body.style.overflow = 'hidden';
             populateCategoriesByType();
         }
 
@@ -533,14 +752,143 @@
         }
 
         function closeModal() {
-            document.getElementById("menuItemModal").classList.remove("show");
-            document.getElementById("menuItemForm").reset();
-            document.getElementById("menuItemForm").removeAttribute("data-mode");
-            document.getElementById("menuItemForm").removeAttribute("data-id");
-            const modalTitle = document.querySelector("#menuItemModal h2");
-            modalTitle.textContent = "Ajouter un Article";
-            const submitButton = document.querySelector("#menuItemModal button[onclick='submitMenuItem()']");
-            submitButton.textContent = "Ajouter";
+            const modal = document.getElementById('menuItemModal');
+            const form = document.getElementById('menuItemForm');
+            const modalTitle = modal.querySelector('.modal-header h2');
+            const submitButton = modal.querySelector('#submitMenuItemBtn');
+            const imageInput = document.getElementById('image');
+
+            if (!modal || !form || !modalTitle || !submitButton) {
+                console.error('Required modal elements not found');
+                return;
+            }
+
+            // Hide modal
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+
+            // Reset form
+            form.reset();
+            form.removeAttribute('data-mode');
+            form.removeAttribute('data-id');
+
+            // Reset modal title and button
+            modalTitle.textContent = 'Ajouter un Article';
+            submitButton.textContent = 'Ajouter';
+
+            // Reset image requirement
+            if (imageInput) {
+                imageInput.setAttribute('required', '');
+            }
+
+            // Restore scrolling
+            document.body.style.overflow = '';
+        }
+
+        // Initialize all event listeners when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', function () {
+            // Modal buttons
+            const addItemBtn = document.getElementById('addItemBtn');
+            const addFirstItemBtn = document.getElementById('addFirstItemBtn');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const submitMenuItemBtn = document.getElementById('submitMenuItemBtn');
+            const cancelModalBtn = document.getElementById('cancelModalBtn');
+            const modal = document.getElementById('menuItemModal');
+            const menuItemForm = document.getElementById('menuItemForm');
+
+            // Add item buttons
+            if (addItemBtn) {
+                addItemBtn.addEventListener('click', openModal);
+            }
+            if (addFirstItemBtn) {
+                addFirstItemBtn.addEventListener('click', openModal);
+            }
+
+            // Modal buttons
+            if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', closeModal);
+            }
+            if (submitMenuItemBtn) {
+                submitMenuItemBtn.addEventListener('click', submitMenuItem);
+            }
+            if (cancelModalBtn) {
+                cancelModalBtn.addEventListener('click', closeModal);
+            }
+
+            // Modal outside click
+            if (modal) {
+                modal.addEventListener('click', function (e) {
+                    if (e.target === this) {
+                        closeModal();
+                    }
+                });
+            }
+
+            // Escape key
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                }
+            });
+
+            // Prevent form submission on Enter
+            if (menuItemForm) {
+                menuItemForm.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+                        e.preventDefault();
+                    }
+                });
+            }
+
+            // Menu item actions
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const itemId = this.dataset.id;
+                    if (itemId) {
+                        editMenuItem(itemId);
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const itemId = this.dataset.id;
+                    const itemName = this.dataset.name;
+                    if (itemId && itemName) {
+                        confirmDeleteMenuItem(itemId, itemName);
+                    }
+                });
+            });
+
+            // Search and filter functionality
+            const searchInput = document.getElementById('menuSearch');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const sortFilter = document.getElementById('sortFilter');
+
+            if (searchInput) {
+                searchInput.addEventListener('input', filterAndSortItems);
+            }
+            if (categoryFilter) {
+                categoryFilter.addEventListener('change', filterAndSortItems);
+            }
+            if (sortFilter) {
+                sortFilter.addEventListener('change', filterAndSortItems);
+            }
+        });
+
+        function initializeSearchAndFilter() {
+            const searchInput = document.getElementById('menuSearch');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const sortFilter = document.getElementById('sortFilter');
+            const menuItems = document.querySelectorAll('.menu-item-card');
+
+            if (searchInput && categoryFilter && sortFilter) {
+                searchInput.addEventListener('input', () => filterAndSortItems());
+                categoryFilter.addEventListener('change', () => filterAndSortItems());
+                sortFilter.addEventListener('change', () => filterAndSortItems());
+            }
         }
 
         async function editMenuItem(id) {
@@ -576,33 +924,43 @@
                     throw new Error("No menu item data returned from server");
                 }
 
-                const menuItem = result.data.menuItem;
-                openEditMenuItemModal(menuItem);
+                openEditMenuItemModal(result.data.menuItem);
             } catch (error) {
                 console.error("Error fetching menu item:", error);
-                alert("Error loading menu item data. Please try again. Details: " + error.message);
+                alert("Erreur lors du chargement des données de l'article. Veuillez réessayer.");
             }
         }
 
         function openEditMenuItemModal(menuItem) {
             try {
-                document.getElementById("menuItemForm").setAttribute("data-mode", "edit");
-                document.getElementById("menuItemForm").setAttribute("data-id", menuItem.id);
+                const modal = document.getElementById('menuItemModal');
+                const form = document.getElementById('menuItemForm');
+                const modalTitle = modal.querySelector('.modal-header h2');
+                const submitButton = modal.querySelector('#submitMenuItemBtn');
+                const imageInput = document.getElementById('image');
 
-                const modalTitle = document.querySelector("#menuItemModal h2");
-                modalTitle.textContent = "Modifier l'Article";
+                if (!modal || !form || !modalTitle || !submitButton) {
+                    console.error('Required modal elements not found');
+                    return;
+                }
 
-                const submitButton = document.querySelector("#menuItemModal button[onclick='submitMenuItem()']");
-                submitButton.textContent = "Mettre à jour";
+                // Set form mode and ID
+                form.setAttribute('data-mode', 'edit');
+                form.setAttribute('data-id', menuItem.id);
 
-                document.getElementById("name").value = menuItem.name || "";
-                document.getElementById("description").value = menuItem.description || "";
-                document.getElementById("price").value = menuItem.price || "";
+                // Update modal title and button
+                modalTitle.textContent = 'Modifier l\'Article';
+                submitButton.textContent = 'Mettre à jour';
 
+                // Fill form fields
+                document.getElementById('name').value = menuItem.name || '';
+                document.getElementById('description').value = menuItem.description || '';
+                document.getElementById('price').value = menuItem.price || '';
+
+                // Populate and select category
                 populateCategoriesByType();
-
-                if (menuItem.category) {
-                    const categorySelect = document.getElementById("category");
+                const categorySelect = document.getElementById('category');
+                if (categorySelect && menuItem.category) {
                     for (let i = 0; i < categorySelect.options.length; i++) {
                         if (categorySelect.options[i].value === menuItem.category) {
                             categorySelect.selectedIndex = i;
@@ -611,11 +969,20 @@
                     }
                 }
 
-                document.getElementById("image").removeAttribute("required");
-                document.getElementById("menuItemModal").classList.add("show");
+                // Make image optional for edits
+                if (imageInput) {
+                    imageInput.removeAttribute('required');
+                }
+
+                // Show modal
+                modal.style.display = 'flex';
+                requestAnimationFrame(() => {
+                    modal.classList.add('show');
+                });
+                document.body.style.overflow = 'hidden';
             } catch (error) {
-                console.error("Error in openEditMenuItemModal:", error);
-                alert("Error opening edit modal. Please try again.");
+                console.error('Error in openEditMenuItemModal:', error);
+                alert('Une erreur est survenue lors de l\'ouverture du formulaire de modification.');
             }
         }
 
@@ -668,81 +1035,39 @@
             if (imageFile && imageFile.size > 0) {
                 try {
                     const fileName = `menu-${Date.now()}-${imageFile.name}`;
-                    const storageUrl = "/storage/upload";
-
-                    const uploadResponse = await fetch(storageUrl, {
-                        method: "POST",
-                        body: formData,
-                    });
-
-                    const uploadResult = await uploadResponse.json();
-
-                    if (uploadResponse.ok && uploadResult.publicUrl) {
-                        imageUrl = uploadResult.publicUrl;
-                    } else {
-                        throw new Error("Échec du téléchargement de l'image");
-                    }
+                    imageUrl = URL.createObjectURL(imageFile);
                 } catch (error) {
-                    console.error("Échec du téléchargement de l'image:", error);
-                    alert("Échec du téléchargement de l'image. Veuillez réessayer.");
+                    console.error("Error creating object URL:", error);
+                    alert("Error loading image. Please try again.");
                     return;
                 }
             }
 
-            const input = {
+            const variables = {
+                mode,
+                menuItemId,
+                restaurantId,
                 name: formData.get("name"),
                 description: formData.get("description"),
                 price: parseFloat(formData.get("price")),
-                category: formData.get("category")
+                category: formData.get("category"),
+                imageUrl
             };
 
-            if (mode !== "edit") {
-                input.restaurantId = restaurantId;
-            }
-
-            if (imageUrl) {
-                input.imageUrl = imageUrl;
-            }
-
-            let query;
-
-            if (mode === "edit") {
-                query = `
-                    mutation {
-                        updateMenuItem(id: "${menuItemId}", input: {
-                            name: "${input.name}",
-                            description: "${input.description}",
-                            price: ${input.price},
-                            category: "${input.category}"
-                            ${imageUrl ? `, imageUrl: "${imageUrl}"` : ''}
-                        }) {
-                            id
-                            name
-                        }
-                    }
-                `;
-            } else {
-                query = `
-                    mutation {
-                        addMenuItem(input: {
-                            name: "${input.name}",
-                            description: "${input.description}",
-                            price: ${input.price},
-                            restaurantId: "${input.restaurantId}",
-                            category: "${input.category}"
-                            ${imageUrl ? `, imageUrl: "${imageUrl}"` : ''}
-                        }) {
-                            id
-                            name
-                            description
-                            price
-                            category
-                            imageUrl
-                            createdAt
-                        }
-                    }
-                `;
-            }
+            const query = `
+                mutation {
+                    ${mode === "add" ? "createMenuItem" : "updateMenuItem"}(
+                        mode: "${mode}",
+                        menuItemId: "${menuItemId}",
+                        restaurantId: "${restaurantId}",
+                        name: "${variables.name}",
+                        description: "${variables.description}",
+                        price: ${variables.price},
+                        category: "${variables.category}",
+                        imageUrl: "${variables.imageUrl}"
+                    )
+                }
+            `;
 
             try {
                 const response = await fetch("/graphql", {
@@ -755,15 +1080,18 @@
 
                 const result = await response.json();
                 if (result.errors) {
-                    alert(`Erreur lors de la ${mode === "edit" ? "modification" : "création"} de l'article: ` + result.errors[0].message);
-                    return;
+                    throw new Error(result.errors[0].message);
                 }
 
-                alert(`Article ${mode === "edit" ? "modifié" : "ajouté"} avec succès!`);
+                if (!result.data || !result.data.createMenuItem && !result.data.updateMenuItem) {
+                    throw new Error("No menu item data returned from server");
+                }
+
+                alert("Article " + (mode === "add" ? "ajouté" : "mis à jour") + " avec succès!");
                 window.location.reload();
             } catch (error) {
-                console.error("Erreur:", error);
-                alert("Une erreur s'est produite. Veuillez réessayer.");
+                console.error("Error submitting menu item:", error);
+                alert("Erreur lors de la soumission de l'article. Veuillez réessayer plus tard. Details: " + error.message);
             }
         }
     </script>

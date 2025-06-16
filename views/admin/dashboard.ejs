@@ -8,7 +8,10 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-MGUG9ddRSH+ibTLYq0rBoKLDnA3obEyqV4anVupI7ynQfBpDbyzrxIDZ1Gj04y8GVzoy0wJnmvMsyZK94c+1og=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
   <style>
     :root {
       --primary-color: #DB607E;
@@ -16,6 +19,8 @@
       --accent-color: #b22222;
       --background-color: #f9f5f0;
       --dark-color: #2c2c2c;
+      --card-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+      --transition-speed: 0.3s;
     }
 
     * {
@@ -28,121 +33,207 @@
       font-family: 'Poppins', sans-serif;
       background-color: var(--background-color);
       min-height: 100vh;
+      line-height: 1.6;
     }
 
     header {
-      background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1601628828688-632f38a5a7d0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
+      background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('https://images.unsplash.com/photo-1601628828688-632f38a5a7d0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
       background-size: cover;
       background-position: center;
-      padding: 2rem;
+      background-attachment: fixed;
+      padding: 3rem 2rem;
       text-align: center;
       color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, rgba(219, 96, 126, 0.2), rgba(171, 210, 126, 0.2));
+      z-index: 1;
     }
 
     header h1 {
       font-family: 'Playfair Display', serif;
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
+      font-size: 3rem;
+      margin-bottom: 1rem;
       color: var(--primary-color);
+      position: relative;
+      z-index: 2;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      animation: fadeInDown 1s ease-out;
+    }
+
+    header p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      position: relative;
+      z-index: 2;
+      animation: fadeInUp 1s ease-out;
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1400px;
       margin: 0 auto;
-      padding: 2rem;
+      padding: 3rem 2rem;
     }
 
     .section-title {
       font-family: 'Playfair Display', serif;
-      font-size: 2rem;
+      font-size: 2.5rem;
       color: var(--dark-color);
-      margin-bottom: 2rem;
+      margin-bottom: 3rem;
       position: relative;
+      text-align: center;
     }
 
     .section-title::after {
       content: "";
       position: absolute;
-      width: 60px;
-      height: 3px;
-      background-color: var(--primary-color);
-      bottom: -10px;
-      left: 0;
+      width: 100px;
+      height: 4px;
+      background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+      bottom: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 2px;
     }
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
     }
 
     .stat-card {
       background: white;
-      padding: 1.5rem;
-      border-radius: 15px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+      padding: 2rem;
+      border-radius: 20px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
       text-align: center;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
       cursor: pointer;
     }
 
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(45deg, rgba(219, 96, 126, 0.1), rgba(171, 210, 126, 0.1));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
     .stat-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      transform: translateY(-10px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card:hover::before {
+      opacity: 1;
     }
 
     .stat-card h3 {
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       color: var(--dark-color);
-      margin-bottom: 0.5rem;
+      margin-bottom: 1rem;
+      position: relative;
     }
 
     .stat-card p {
-      font-size: 2.5rem;
+      font-size: 3rem;
       font-weight: 600;
       color: var(--primary-color);
+      position: relative;
     }
 
     .chart-container {
       background: white;
-      padding: 2rem;
-      border-radius: 15px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-      margin-top: 2rem;
-      height: 400px;
+      padding: 2.5rem;
+      border-radius: 20px;
+      box-shadow: var(--card-shadow);
+      margin-top: 3rem;
+      height: 500px;
       position: relative;
+      transition: all var(--transition-speed) ease;
+    }
+
+    .chart-container:hover {
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
     }
 
     .chart-title {
       font-family: 'Playfair Display', serif;
-      font-size: 1.5rem;
+      font-size: 1.8rem;
       color: var(--dark-color);
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
+      text-align: center;
     }
 
     .nav-links {
       display: flex;
       justify-content: center;
-      gap: 1rem;
-      margin-top: 1rem;
+      gap: 1.5rem;
+      margin-top: 2rem;
+      position: relative;
+      z-index: 2;
     }
 
     .nav-link {
       color: white;
       text-decoration: none;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
-      transition: background-color 0.3s ease;
+      padding: 0.8rem 1.5rem;
+      border-radius: 30px;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .nav-link:hover {
-      background-color: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     @media (max-width: 768px) {
       .container {
-        padding: 1rem;
+        padding: 2rem 1rem;
       }
 
       .stats-grid {
@@ -150,7 +241,16 @@
       }
 
       header h1 {
+        font-size: 2.5rem;
+      }
+
+      .section-title {
         font-size: 2rem;
+      }
+
+      .chart-container {
+        height: 400px;
+        padding: 1.5rem;
       }
     }
   </style>
@@ -161,9 +261,15 @@
     <h1>Gourmet d'amour</h1>
     <p>Tableau de Bord Administrateur</p>
     <div class="nav-links">
-      <a href="/admin/restaurants" class="nav-link">Restaurants</a>
-      <a href="/admin/deliverers" class="nav-link">Livreurs</a>
-      <a href="/" class="nav-link">Accueil</a>
+      <a href="/admin/restaurants" class="nav-link">
+        <i class="fa-solid fa-utensils"></i> Restaurants
+      </a>
+      <a href="/admin/deliverers" class="nav-link">
+        <i class="fa-solid fa-truck"></i> Livreurs
+      </a>
+      <a href="/" class="nav-link">
+        <i class="fa-solid fa-house"></i> Accueil
+      </a>
     </div>
   </header>
 
@@ -171,29 +277,29 @@
     <h2 class="section-title">Aperçu</h2>
     <div class="stats-grid">
       <div class="stat-card">
-        <h3>Commandes Totales</h3>
-        <p>
+        <h3><i class="fa-solid fa-cart-shopping"></i> Commandes Totales</h3>
+        <p id="totalOrders">
           <%= totalOrders || 0 %>
         </p>
       </div>
 
       <div class="stat-card" onclick="window.location.href='/admin/restaurants'">
-        <h3>Restaurants</h3>
-        <p>
+        <h3><i class="fa-solid fa-store"></i> Restaurants</h3>
+        <p id="totalRestaurants">
           <%= totalRestaurants || 0 %>
         </p>
       </div>
 
       <div class="stat-card">
-        <h3>Restaurants Actifs</h3>
-        <p>
+        <h3><i class="fa-solid fa-circle-check"></i> Restaurants Actifs</h3>
+        <p id="activeRestaurants">
           <%= totalActiveRestaurants || 0 %>
         </p>
       </div>
 
       <div class="stat-card" onclick="window.location.href='/admin/deliverers'">
-        <h3>Livreurs Actifs</h3>
-        <p>
+        <h3><i class="fa-solid fa-motorcycle"></i> Livreurs Actifs</h3>
+        <p id="totalDeliverers">
           <%= totalDeliverers || 0 %>
         </p>
       </div>
@@ -207,187 +313,41 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    const fetchDashboardData = async () => {
-      try {
-        const token = localStorage.getItem("authToken");
-        if (!token) {
-          console.log("No token found, redirecting to login");
-          window.location.href = "/admin/login";
-          return;
-        }
-
-        console.log("Fetching dashboard data...");
-        const response = await fetch("/admin/dashboard", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          }
-        });
-
-        console.log("Response status:", response.status);
-
-        if (!response.ok) {
-          if (response.status === 401) {
-            console.log("Session expired, redirecting to login");
-            localStorage.removeItem("authToken");
-            window.location.href = "/admin/login";
-            return;
-          }
-          if (response.status === 403) {
-            console.log("Access denied, redirecting to login");
-            localStorage.removeItem("authToken");
-            window.location.href = "/admin/login";
-            return;
-          }
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        // Since the server is rendering the page directly, we don't need to parse JSON
-        // The data is already available in the EJS template variables
-        const data = {
-          monthlyOrders: JSON.parse('<%- JSON.stringify(monthlyOrders || []) %>'),
-          totalOrders: parseInt('<%- totalOrders || 0 %>'),
-          totalRestaurants: parseInt('<%- totalRestaurants || 0 %>'),
-          totalActiveRestaurants: parseInt('<%- totalActiveRestaurants || 0 %>'),
-          totalDeliverers: parseInt('<%- totalDeliverers || 0 %>')
-        };
-
-        console.log("Dashboard data received:", data);
-
-        // Render the chart
-        const ctx = document.getElementById("monthlyOrdersChart").getContext("2d");
-        if (!ctx) {
-          console.error("Could not get chart context");
-          throw new Error("Chart context not found");
-        }
-
-        new Chart(ctx, {
-          type: "bar",
-          data: {
-            labels: data.monthlyOrders.map((item) => {
-              // Convert month number to month name
-              const months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-                'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-              return months[parseInt(item.month) - 1] || item.month;
-            }),
-            datasets: [{
-              label: "Commandes",
-              data: data.monthlyOrders.map((item) => item.orders),
-              backgroundColor: "rgba(219, 96, 126, 0.5)",
-              borderColor: "rgba(219, 96, 126, 1)",
-              borderWidth: 1,
-              borderRadius: 5,
-              barThickness: 40,
-              maxBarThickness: 50,
-              minBarLength: 5
-            }],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            aspectRatio: 2,
-            plugins: {
-              legend: {
-                display: false,
-              },
-              tooltip: {
-                backgroundColor: 'rgba(44, 44, 44, 0.9)',
-                titleFont: {
-                  family: "'Poppins', sans-serif",
-                  size: 14
-                },
-                bodyFont: {
-                  family: "'Poppins', sans-serif",
-                  size: 13
-                },
-                padding: 12,
-                cornerRadius: 8,
-                displayColors: false,
-                callbacks: {
-                  label: function (context) {
-                    return `${context.parsed.y} commandes`;
-                  }
-                }
-              }
-            },
-            scales: {
-              x: {
-                grid: {
-                  display: false
-                },
-                title: {
-                  display: true,
-                  text: "Mois",
-                  color: "#2c2c2c",
-                  font: {
-                    size: 14,
-                    family: "'Poppins', sans-serif",
-                    weight: '600'
-                  },
-                  padding: { top: 10 }
-                },
-                ticks: {
-                  font: {
-                    family: "'Poppins', sans-serif",
-                    size: 12
-                  }
-                }
-              },
-              y: {
-                beginAtZero: true,
-                grid: {
-                  color: 'rgba(0, 0, 0, 0.05)'
-                },
-                title: {
-                  display: true,
-                  text: "Nombre de Commandes",
-                  color: "#2c2c2c",
-                  font: {
-                    size: 14,
-                    family: "'Poppins', sans-serif",
-                    weight: '600'
-                  },
-                  padding: { bottom: 10 }
-                },
-                ticks: {
-                  font: {
-                    family: "'Poppins', sans-serif",
-                    size: 12
-                  },
-                  precision: 0,
-                  stepSize: 1
-                }
-              },
-            },
-            layout: {
-              padding: {
-                top: 20,
-                right: 20,
-                bottom: 20,
-                left: 20
-              }
-            }
-          },
-        });
-      } catch (error) {
-        console.error("Dashboard error details:", {
-          name: error.name,
-          message: error.message,
-          stack: error.stack
-        });
-
-        if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-          alert("Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet.");
-        } else {
-          alert(`Une erreur s'est produite lors du chargement du tableau de bord: ${error.message}`);
-        }
+    document.addEventListener('DOMContentLoaded', function () {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/admin/login';
+        return;
       }
-    };
 
-    // Fetch dashboard data on page load
-    window.onload = fetchDashboardData;
+      fetch('/admin/dashboard', {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      })
+        .then(response => {
+          if (!response.ok) {
+            if (response.status === 401) {
+              localStorage.removeItem('token');
+              window.location.href = '/admin/login';
+              return;
+            }
+            throw new Error('Network response was not ok');
+          }
+          return response.json();
+        })
+        .then(data => {
+          document.getElementById('totalOrders').textContent = data.totalOrders || 0;
+          document.getElementById('totalRestaurants').textContent = data.totalRestaurants || 0;
+          document.getElementById('activeRestaurants').textContent = data.activeRestaurants || 0;
+          document.getElementById('totalDeliverers').textContent = data.activeDeliverers || 0;
+        })
+        .catch(error => {
+          console.error('Error fetching dashboard data:', error);
+        });
+    });
   </script>
 </body>
 

@@ -130,77 +130,49 @@
         }
     </style>
     <script>
-        async function handleAdminLogin(event) {
-            event.preventDefault();
+        document.addEventListener('DOMContentLoaded', function () {
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const errorMessage = document.getElementById('errorMessage');
+                    errorMessage.style.display = 'none';
 
-            const phoneNumber = document.getElementById("phoneNumber").value;
-            const password = document.getElementById("password").value;
+                    const phoneNumber = document.getElementById('phoneNumber').value;
+                    const password = document.getElementById('password').value;
 
-            console.log("Attempting login with phone:", phoneNumber);
-
-            try {
-                const response = await fetch("/admin/login", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ phoneNumber, password }),
-                });
-
-                console.log("Login response status:", response.status);
-
-                const result = await response.json();
-                console.log("Login response:", result);
-
-                if (response.ok) {
-                    console.log("Login successful, received token");
-                    // Store the token
-                    localStorage.setItem("authToken", result.token);
-
-                    // Verify the token contains admin role
                     try {
-                        const tokenParts = result.token.split('.');
-                        if (tokenParts.length !== 3) {
-                            console.error("Invalid token format");
-                            throw new Error('Invalid token format');
-                        }
-                        const payload = JSON.parse(atob(tokenParts[1]));
-                        console.log("Token payload:", payload);
+                        const response = await fetch('/admin/login', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': '<%= csrfToken %>'
+                            },
+                            body: JSON.stringify({ phoneNumber, password })
+                        });
 
-                        if (!payload.role || payload.role !== 'admin') {
-                            console.error("Invalid role in token:", payload.role);
-                            throw new Error('Invalid role');
+                        const data = await response.json();
+
+                        if (response.ok) {
+                            // Store the token
+                            localStorage.setItem('token', data.token);
+                            localStorage.setItem('userRole', data.user.role);
+                            localStorage.setItem('userId', data.user.id);
+
+                            // Redirect to dashboard
+                            window.location.href = '/admin/dashboard';
+                        } else {
+                            errorMessage.textContent = data.error || 'Une erreur est survenue';
+                            errorMessage.style.display = 'block';
                         }
-                        // If we get here, token is valid and has admin role
-                        console.log("Token validation successful, redirecting to dashboard");
-                        window.location.href = "/admin/dashboard";
                     } catch (error) {
-                        console.error('Token validation error:', error);
-                        localStorage.removeItem("authToken");
-                        alert("Erreur d'authentification. Veuillez réessayer.");
+                        console.error('Login error:', error);
+                        errorMessage.textContent = 'Une erreur est survenue lors de la connexion';
+                        errorMessage.style.display = 'block';
                     }
-                } else {
-                    // Handle specific error cases
-                    if (response.status === 401) {
-                        console.error("Authentication failed: Invalid credentials");
-                        alert("Numéro de téléphone ou mot de passe incorrect.");
-                    } else if (response.status === 403) {
-                        console.error("Authentication failed: Access denied");
-                        alert("Accès refusé. Droits d'administrateur requis.");
-                    } else {
-                        console.error("Server error:", result.error);
-                        alert(result.error || "Une erreur s'est produite. Veuillez réessayer.");
-                    }
-                }
-            } catch (error) {
-                console.error("Login error details:", error);
-                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                    alert("Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet.");
-                } else {
-                    alert("Une erreur s'est produite lors de la connexion. Veuillez réessayer.");
-                }
+                });
             }
-        }
+        });
     </script>
 </head>
 
@@ -210,7 +182,8 @@
             <h1>Gourmet d'amour</h1>
             <p>Administration</p>
         </div>
-        <form onsubmit="handleAdminLogin(event)">
+        <div id="errorMessage" class="error-message"></div>
+        <form id="loginForm">
             <div class="form-group">
                 <label for="phoneNumber">Numéro de téléphone</label>
                 <input type="text" id="phoneNumber" name="phoneNumber" placeholder="Entrez votre numéro de téléphone"

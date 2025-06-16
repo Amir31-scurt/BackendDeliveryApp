@@ -6,11 +6,15 @@ import expressEjsLayouts from "express-ejs-layouts";
 import { readFileSync } from "fs";
 import multer from "multer";
 import path from "path";
+import cookieParser from "cookie-parser";
+import helmet from "helmet";
+import csrf from 'csurf';
 import resolvers from "./resolvers.js";
 import { delivererResolvers } from "./resolvers/delivererResolvers.js";
 import adminRoutes from "./routes/admin.js";
 import authRoutes from "./routes/auth.js";
 import { supabase } from "./supabaseClient.js";
+import { authMiddleware } from "./middleware/auth.js";
 // import { supabase } from "./supabaseClient.js";
 
 dotenv.config();
@@ -19,17 +23,36 @@ const __dirname = path.resolve();
 
 const app = express();
 
-const upload = multer({
-  storage: multer.memoryStorage(), // Store files in memory for further processing
-});
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "cdn.jsdelivr.net", "cdnjs.cloudflare.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "cdnjs.cloudflare.com"],
+      fontSrc: ["'self'", "fonts.gstatic.com", "fonts.googleapis.com", "cdnjs.cloudflare.com"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "ws:", "wss:", "https:"],
+      frameSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: []
+    }
+  }
+}));
 
-app.use(
-  cors({
-    origin: "*", // Allow all origins for testing
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+// CORS configuration
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL
+    : 'http://localhost:3000',
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "X-Requested-With", "Accept", "Origin"],
+  exposedHeaders: ["X-CSRF-Token"],
+  credentials: true
+}));
+
+// Cookie parser middleware
+app.use(cookieParser());
 
 // Middleware to parse JSON
 app.use(express.json());
@@ -37,6 +60,40 @@ app.use(express.json());
 // Setup EJS as the template engine
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+
+// CSRF protection setup
+const csrfProtection = csrf({
+  cookie: {
+    key: '_csrf',
+    path: '/',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  }
+});
+
+// Apply CSRF protection to all routes except GraphQL
+app.use((req, res, next) => {
+  if (req.path === '/graphql') {
+    return next();
+  }
+  csrfProtection(req, res, next);
+});
+
+// Make CSRF token available to all views
+app.use((req, res, next) => {
+  if (req.csrfToken) {
+    res.locals.csrfToken = req.csrfToken();
+  }
+  next();
+});
+
+// Authentication middleware for protected routes
+app.use('/admin', authMiddleware);
+
+const upload = multer({
+  storage: multer.memoryStorage(), // Store files in memory for further processing
+});
 
 app.post("/storage/upload", upload.single("image"), async (req, res) => {
   try {
@@ -199,15 +256,26 @@ app.listen(PORT, () => {
 
 // Root route
 app.get("/", (req, res) => {
-  // res.render('landing', { layout: false });
-   res.send("Gourmet d'amour API is running");
+  res.render('landing', { layout: false });
+  //  res.send("Gourmet d'amour API is running");
 });
-// Admin routes
+// Admin routes with CSRF protection
 app.use("/admin", adminRoutes);
-// Routes
+// Auth routes with CSRF protection
 app.use("/api/auth", authRoutes);
 
+// Setup layouts
 app.use(expressEjsLayouts);
 app.set("layout", "admin/layout");
 app.set("layout", "admin/restaurants");
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.status || 500).json({
+    error: process.env.NODE_ENV === 'production'
+      ? 'Internal server error'
+      : err.message
+  });
+});
 

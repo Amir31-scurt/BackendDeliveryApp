@@ -4,137 +4,242 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { supabase } from "../supabaseClient.js";
 import { graphqlRequest } from "../utils/graphqlClient.js";
+import { authMiddleware, requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
-export const isAdmin = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1]; // Extract token from `Authorization` header
-  console.log(req.headers);
-
-  if (!token) {
-    return res.status(401).json({ error: "Access denied. No token provided." });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Verify the token
-    if (decoded.role !== "admin") {
-      return res.status(403).json({ error: "Access denied. Admins only." });
-    }
-
-    req.user = decoded; // Attach user information to the request object
-    next();
-  } catch (error) {
-    console.error("Token verification failed:", error);
-    return res.status(401).json({ error: "Invalid token." });
-  }
-};
-
-// Admin login route
-router.post("/login", async (req, res) => {
-  const { phoneNumber, password } = req.body;
-
-  if (!phoneNumber || !password) {
-    return res
-      .status(400)
-      .json({ error: "Phone number and password are required." });
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("phone_number", phoneNumber)
-      .eq("role", "admin");
-
-    if (error) {
-      console.error(error);
-      return res.status(404).json({ error: "Admin not found." });
-    }
-
-    // Handle no matching user
-    if (!data) {
-      return res.status(404).json({ error: "Admin not found." });
-    }
-
-    const user = data;
-
-    // Log retrieved user data
-    console.log("Retrieved User:", user[0]);
-
-    const isValidPassword = await bcrypt.compare(password, user[0].password);
-    if (!isValidPassword) {
-      return res.status(400).json({ error: "Invalid credentials." });
-    }
-
-    // Generate JWT token with admin role
-    const token = jwt.sign(
-      {
-        id: user[0].id,
-        role: "admin",
-        phoneNumber: user[0].phone_number
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "1d",
-      }
-    );
-
-    res.status(200).json({
-      message: "Login successful.",
-      token,
-      user: user[0],
-    });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ error: "An error occurred during login." });
-  }
-});
-
+// Public routes (no auth required)
 router.get("/login", (req, res) => {
-  res.render("admin/login");
+  res.render("admin/adminLogin");
 });
 
-// Restaurant login route
+// Restaurant login routes (should be public)
+router.get("/login/restaurant", (req, res) => {
+  res.render("admin/restaurantLogin", { csrfToken: req.csrfToken() });
+});
+
 router.post("/login/restaurant", async (req, res) => {
-  const { email } = req.body;
-
-  if (!email) {
-    return res.status(400).json({ error: "Email is required." });
-  }
-
   try {
-    const { data, error } = await supabase
+    console.log("Login attempt with body:", req.body);
+    const { email } = req.body;
+
+    if (!email) {
+      console.log("No email provided");
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    console.log("Searching for restaurant with email:", email);
+    const { data: restaurant, error } = await supabase
       .from("restaurants")
       .select("*")
       .eq("email", email)
       .single();
 
-    if (error || !data) {
-      return res.status(404).json({ error: "Restaurant not found." });
+    if (error) {
+      console.error("Database error:", error);
+      return res.status(500).json({ error: "Error finding restaurant" });
     }
 
+    if (!restaurant) {
+      console.log("Restaurant not found");
+      return res.status(404).json({ error: "Restaurant not found" });
+    }
+
+    console.log("Restaurant found:", restaurant);
+
+    // Generate JWT token
     const token = jwt.sign(
-      { id: data.id, role: "restaurant" },
+      { id: restaurant.id, role: "restaurant" },
       process.env.JWT_SECRET,
-      {
-        expiresIn: "1d",
-      }
+      { expiresIn: "24h" }
     );
 
-    return res.status(200).json({
-      message: "Login successful.",
+    console.log("Generated token for restaurant:", restaurant.id);
+
+    // Set token in cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
+    res.json({
+      success: true,
+      message: "Login successful",
       token,
-      restaurant: data,
+      restaurant,
+      redirectUrl: `/admin/restaurant/${restaurant.id}/dashboard`
     });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ error: "An error occurred during login." });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-router.get("/login/restaurant", (req, res) => {
-  res.render("admin/restaurantLogin");
+// Restaurant dashboard route - moved before the catch-all route
+router.get('/restaurant/:id/dashboard', async (req, res) => {
+  try {
+    console.log('Dashboard access attempt - ID:', req.params.id);
+
+    // Get token from cookie or Authorization header
+    const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+    console.log('Token present:', !!token);
+
+    if (!token) {
+      console.log('No token found, redirecting to login');
+      return res.redirect('/admin/login/restaurant');
+    }
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('Token decoded:', decoded);
+
+      if (decoded.role !== 'restaurant' || decoded.id !== req.params.id) {
+        console.log('Invalid token role or ID');
+        return res.redirect('/admin/login/restaurant');
+      }
+
+      // Fetch restaurant data
+      const { data: restaurant, error: restaurantError } = await supabase
+        .from('restaurants')
+        .select('*')
+        .eq('id', req.params.id)
+        .single();
+
+      if (restaurantError) {
+        console.error('Error fetching restaurant:', restaurantError);
+        return res.status(500).send('Error fetching restaurant data');
+      }
+
+      if (!restaurant) {
+        console.log('Restaurant not found');
+        return res.status(404).send('Restaurant not found');
+      }
+
+      // Fetch orders for the restaurant
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          user:users (
+            name,
+            phone_number
+          )
+        `)
+        .eq('restaurant_id', req.params.id)
+        .order('created_at', { ascending: false });
+
+      if (ordersError) {
+        console.error('Error fetching orders:', ordersError);
+        return res.status(500).send('Error fetching orders');
+      }
+
+      // If we have orders, fetch their delivery addresses
+      if (orders && orders.length > 0) {
+        const orderIds = orders.map(order => order.id);
+        const { data: deliveryAddresses, error: deliveryError } = await supabase
+          .from('delivery_address')
+          .select('*')
+          .in('order_id', orderIds);
+
+        if (deliveryError) {
+          console.error('Error fetching delivery addresses:', deliveryError);
+        } else {
+          // Map delivery addresses to orders
+          orders.forEach(order => {
+            order.delivery_address = deliveryAddresses?.find(addr => addr.order_id === order.id) || null;
+          });
+        }
+      }
+
+      console.log('Rendering dashboard with restaurant and orders data');
+      res.render('restaurant/dashboard', {
+        restaurant,
+        orders: orders || [],
+        csrfToken: req.csrfToken()
+      });
+    } catch (err) {
+      console.error('Token verification error:', err);
+      return res.redirect('/admin/login/restaurant');
+    }
+  } catch (error) {
+    console.error('Dashboard route error:', error);
+    res.status(500).send('Internal server error');
+  }
 });
+
+// Restaurant menu route
+router.get('/restaurant/:id/menu', async (req, res) => {
+  try {
+    console.log('Menu access attempt - ID:', req.params.id);
+
+    // Get token from cookie or Authorization header
+    const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
+    console.log('Token present:', !!token);
+
+    if (!token) {
+      console.log('No token found, redirecting to login');
+      return res.redirect('/admin/login/restaurant');
+    }
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('Token decoded:', decoded);
+
+      if (decoded.role !== 'restaurant' || decoded.id !== req.params.id) {
+        console.log('Invalid token role or ID');
+        return res.redirect('/admin/login/restaurant');
+      }
+
+      // Fetch restaurant data
+      const { data: restaurant, error: restaurantError } = await supabase
+        .from('restaurants')
+        .select('*')
+        .eq('id', req.params.id)
+        .single();
+
+      if (restaurantError) {
+        console.error('Error fetching restaurant:', restaurantError);
+        return res.status(500).send('Error fetching restaurant data');
+      }
+
+      if (!restaurant) {
+        console.log('Restaurant not found');
+        return res.status(404).send('Restaurant not found');
+      }
+
+      // Fetch menu items for the restaurant
+      const { data: menuItems, error: menuError } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('restaurant_id', req.params.id)
+        .order('created_at', { ascending: false });
+
+      if (menuError) {
+        console.error('Error fetching menu items:', menuError);
+        return res.status(500).send('Error fetching menu items');
+      }
+
+      console.log('Rendering menu with restaurant and menu items data');
+      res.render('restaurant/menu', {
+        restaurant,
+        menuItems: menuItems || [],
+        csrfToken: req.csrfToken()
+      });
+    } catch (err) {
+      console.error('Token verification error:', err);
+      return res.redirect('/admin/login/restaurant');
+    }
+  } catch (error) {
+    console.error('Menu route error:', error);
+    res.status(500).send('Internal server error');
+  }
+});
+
+// Protected routes (auth required)
+router.use(authMiddleware);
+router.use(requireRole(['admin']));
 
 // Admin logout route
 router.post("/logout", (req, res) => {
@@ -156,20 +261,81 @@ router.post("/logout", (req, res) => {
 });
 
 router.get("/logout", (req, res) => {
-  res.clearCookie("token");
-  localStorage.removeItem("authToken");
-  req.session.destroy((err) => {
-    if (err) {
-      console.error("Session destruction error:", err);
-      return res.status(500).json({ error: "Failed to logout." });
-    }
-    res.status(200).json({ message: "Logout successful." });
-  });
+  try {
+    // Clear the session
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Error destroying session:', err);
+      }
+    });
+
+    // Clear the JWT cookie
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict'
+    });
+
+    // Redirect to login page
+    res.redirect('/admin/login');
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ error: 'Internal server error during logout' });
+  }
 });
 
 // Dashboard route
 router.get("/dashboard", async (req, res) => {
   try {
+    // Check if it's an AJAX request for data
+    if (req.xhr || req.headers.accept.includes('application/json')) {
+      // Fetch total restaurants
+      const { data: totalRestaurants, error: restaurantError } = await supabase
+        .from("restaurants")
+        .select("*", { count: "exact" });
+
+      if (restaurantError) {
+        console.error("Error fetching restaurant data:", restaurantError);
+      }
+
+      // Fetch total active restaurants
+      const { data: totalActiveRestaurants, error: activeRestaurantError } =
+        await supabase
+          .from("restaurants")
+          .select("*", { count: "exact" })
+          .eq("is_active", true);
+
+      if (activeRestaurantError) {
+        console.error("Error fetching restaurant data:", activeRestaurantError);
+      }
+
+      // Fetch total deliverers
+      const { data: totalDeliverers, error: delivererError } = await supabase
+        .from("deliverers")
+        .select("*", { count: "exact" });
+
+      if (delivererError) {
+        console.error("Error fetching deliverer data:", delivererError);
+      }
+
+      // Fetch total orders
+      const { data: totalOrders, error: orderError } = await supabase
+        .from("orders")
+        .select("*", { count: "exact" });
+
+      if (orderError) {
+        console.error("Error fetching orders data:", orderError);
+      }
+
+      return res.json({
+        totalOrders: totalOrders ? totalOrders.length : 0,
+        totalRestaurants: totalRestaurants ? totalRestaurants.length : 0,
+        activeRestaurants: totalActiveRestaurants ? totalActiveRestaurants.length : 0,
+        activeDeliverers: totalDeliverers ? totalDeliverers.length : 0
+      });
+    }
+
+    // Regular page render
     // Fetch total restaurants
     const { data: totalRestaurants, error: restaurantError } = await supabase
       .from("restaurants")
@@ -373,7 +539,7 @@ router.post("/upload", async (req, res) => {
 });
 
 // Handle adding a new restaurant
-router.post("/restaurants/add", isAdmin, async (req, res) => {
+router.post("/restaurants/add", requireRole(['admin']), async (req, res) => {
   try {
     const {
       name,
@@ -431,7 +597,7 @@ router.post("/restaurants/add", isAdmin, async (req, res) => {
 });
 
 // Handle toggling the restaurant's active status
-router.post("/restaurants/:id/toggle", isAdmin, async (req, res) => {
+router.post("/restaurants/:id/toggle", requireRole(['admin']), async (req, res) => {
   try {
     const { id } = req.params;
     const { isActive } = req.body;
@@ -454,7 +620,7 @@ router.post("/restaurants/:id/toggle", isAdmin, async (req, res) => {
 });
 
 // Handle deleting a restaurant
-router.post("/restaurants/:id/delete", isAdmin, async (req, res) => {
+router.post("/restaurants/:id/delete", requireRole(['admin']), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -511,56 +677,6 @@ router.post("/restaurants/:id/menu/add", async (req, res) => {
   } catch (error) {
     console.error("Error adding menu item:", error.message);
     res.status(500).send("Failed to add menu item.");
-  }
-});
-
-// Render the restaurant dashboard
-router.get("/restaurants/:id/orders", async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const query = `
-      query {
-        restaurant(id: "${id}") {
-          name
-          address
-          phoneNumber
-          imageUrl
-          email
-          type
-        }
-        orders(restaurantId: "${id}") {
-          id
-          totalAmount
-          deliveryAddress {
-            address
-            latitude
-            longitude
-          }
-          userId
-          user {
-            name
-            phoneNumber
-          }
-          instructions
-          createdAt
-          status
-        }
-      }
-    `;
-    const result = await graphqlRequest(query);
-    const restaurant = result.restaurant || {};
-    const orders = result.orders || [];
-
-    res.render("restaurant/dashboard", {
-      layout: "restaurant/layout",
-      title: "Orders Dashboard",
-      restaurant,
-      orders,
-    });
-  } catch (error) {
-    console.error("Error fetching restaurant or orders:", error.message);
-    res.status(500).send("An error occurred while fetching data.");
   }
 });
 
@@ -636,9 +752,6 @@ router.get("/deliverers", async (req, res) => {
       throw new Error("Failed to fetch deliverers.");
     }
 
-    console.log(deliverers)
-
-
     // Transform the data to match the schema structure
     const formattedDeliverers = deliverers.map(deliverer => ({
       userId: deliverer.user_id,
@@ -653,6 +766,12 @@ router.get("/deliverers", async (req, res) => {
       isVerified: deliverer.is_verified
     }));
 
+    // Check if it's an AJAX request
+    if (req.xhr || req.headers.accept?.includes('application/json')) {
+      return res.json({ deliverers: formattedDeliverers });
+    }
+
+    // Regular page render
     res.render("admin/deliverers", {
       layout: "admin/layout",
       title: "Livreurs",
@@ -660,6 +779,9 @@ router.get("/deliverers", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching deliverers:", error.message);
+    if (req.xhr || req.headers.accept?.includes('application/json')) {
+      return res.status(500).json({ error: "An error occurred while fetching deliverers." });
+    }
     res.status(500).send("An error occurred while fetching deliverers.");
   }
 });
@@ -667,93 +789,8 @@ router.get("/deliverers", async (req, res) => {
 // Get single deliverer details
 router.get("/deliverers/:id", async (req, res) => {
   const { id } = req.params;
-  const token = req.headers.authorization?.split(" ")[1];
 
-  // If no token in header, check if this is a page view request
-  if (!token) {
-    // For page view requests, we'll render the template
-    try {
-      // Fetch deliverer with user information
-      const { data: deliverer, error: delivererError } = await supabase
-        .from("deliverers")
-        .select(`
-          *,
-          users (
-            id,
-            name,
-            phone_number,
-            profile_picture
-          )
-        `)
-        .eq("user_id", id)
-        .single();
-
-      if (delivererError) {
-        console.error("Error fetching deliverer:", delivererError);
-        return res.status(404).render("error", {
-          message: "Livreur non trouvé."
-        });
-      }
-
-      // Fetch deliverer's orders
-      const { data: orders, error: ordersError } = await supabase
-        .from("orders")
-        .select(`
-          id,
-          total_amount,
-          status,
-          created_at,
-          delivery_address,
-          users (
-            name,
-            phone_number
-          )
-        `)
-        .eq("deliverer_id", id)
-        .order('created_at', { ascending: false });
-
-      if (ordersError) {
-        console.error("Error fetching orders:", ordersError);
-        // Continue without orders
-      }
-
-      // Transform the data to match the template structure
-      const formattedDeliverer = {
-        userId: deliverer.user_id,
-        user: deliverer.users,
-        vehicleId: deliverer.vehicle_id,
-        isAvailable: deliverer.is_available,
-        currentLocation: deliverer.current_location,
-        zone: deliverer.zone,
-        profilePicture: deliverer.profile_picture,
-        isActive: deliverer.is_active,
-        isVerified: deliverer.is_verified,
-        completedDeliveries: deliverer.completed_deliveries || 0,
-        orders: orders || []
-      };
-
-      // Render the template
-      return res.render("admin/delivererDetails", {
-        layout: "admin/layout",
-        title: `Détails du Livreur - ${formattedDeliverer.user.name}`,
-        deliverer: formattedDeliverer
-      });
-    } catch (error) {
-      console.error("Error fetching deliverer details:", error.message);
-      return res.status(500).render("error", {
-        message: "Une erreur s'est produite lors du chargement des détails du livreur."
-      });
-    }
-  }
-
-  // For API requests (with token)
   try {
-    // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (decoded.role !== "admin") {
-      return res.status(403).json({ error: "Access denied. Admins only." });
-    }
-
     // Fetch deliverer with user information
     const { data: deliverer, error: delivererError } = await supabase
       .from("deliverers")
@@ -771,7 +808,34 @@ router.get("/deliverers/:id", async (req, res) => {
 
     if (delivererError) {
       console.error("Error fetching deliverer:", delivererError);
-      return res.status(404).json({ error: "Deliverer not found." });
+      if (req.xhr || req.headers.accept?.includes('application/json')) {
+        return res.status(404).json({ error: "Deliverer not found." });
+      }
+      return res.status(404).render("error", {
+        message: "Livreur non trouvé."
+      });
+    }
+
+    // Fetch deliverer's orders
+    const { data: orders, error: ordersError } = await supabase
+      .from("orders")
+      .select(`
+        id,
+        total_amount,
+        status,
+        created_at,
+        delivery_address,
+        users (
+          name,
+          phone_number
+        )
+      `)
+      .eq("deliverer_id", id)
+      .order('created_at', { ascending: false });
+
+    if (ordersError) {
+      console.error("Error fetching orders:", ordersError);
+      // Continue without orders
     }
 
     // Transform the data to match the template structure
@@ -785,21 +849,34 @@ router.get("/deliverers/:id", async (req, res) => {
       profilePicture: deliverer.profile_picture,
       isActive: deliverer.is_active,
       isVerified: deliverer.is_verified,
-      completedDeliveries: deliverer.completed_deliveries || 0
+      completedDeliveries: deliverer.completed_deliveries || 0,
+      orders: orders || []
     };
 
-    return res.json(formattedDeliverer);
+    // Check if it's an AJAX request
+    if (req.xhr || req.headers.accept?.includes('application/json')) {
+      return res.json(formattedDeliverer);
+    }
+
+    // Regular page render
+    return res.render("admin/delivererDetails", {
+      layout: "admin/layout",
+      title: `Détails du Livreur - ${formattedDeliverer.user.name}`,
+      deliverer: formattedDeliverer
+    });
   } catch (error) {
     console.error("Error fetching deliverer details:", error.message);
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ error: "Invalid token." });
+    if (req.xhr || req.headers.accept?.includes('application/json')) {
+      return res.status(500).json({ error: "An error occurred while fetching deliverer details." });
     }
-    return res.status(500).json({ error: "Une erreur s'est produite lors du chargement des détails du livreur." });
+    return res.status(500).render("error", {
+      message: "Une erreur s'est produite lors du chargement des détails du livreur."
+    });
   }
 });
 
 // Handle adding a new deliverer
-router.post("/deliverers/add", isAdmin, async (req, res) => {
+router.post("/deliverers/add", requireRole(['admin']), async (req, res) => {
   try {
     const { name, phoneNumber, vehicleId, zone, profilePicture, isAvailable } = req.body;
     console.log("Adding new deliverer:", req.body);
@@ -837,7 +914,8 @@ router.post("/deliverers/add", isAdmin, async (req, res) => {
         name,
         password: hashedPassword,
         role: "deliverer",
-        is_verified: true // Deliverers are verified by admin
+        is_verified: true, // Deliverers are verified by admin
+        profile_picture: profilePicture || null // Add profile picture to user
       })
       .select()
       .single();
@@ -856,7 +934,6 @@ router.post("/deliverers/add", isAdmin, async (req, res) => {
         is_available: isAvailable || true,
         current_location: null,
         zone: zone,
-        profile_picture: profilePicture || null,
         is_active: true,
         completed_deliveries: 0
       });
@@ -880,7 +957,7 @@ router.post("/deliverers/add", isAdmin, async (req, res) => {
 });
 
 // Handle updating a deliverer
-router.post("/deliverers/:id/update", isAdmin, async (req, res) => {
+router.post("/deliverers/:id/update", requireRole(['admin']), async (req, res) => {
   try {
     const { id } = req.params;
     const { name, phoneNumber, vehicleId, zone, profilePicture, isAvailable, isActive } = req.body;
@@ -891,7 +968,7 @@ router.post("/deliverers/:id/update", isAdmin, async (req, res) => {
       .update({
         name,
         phone_number: phoneNumber,
-        profile_picture: profilePicture
+        profile_picture: profilePicture || null // Update profile picture in user
       })
       .eq("id", id);
 
@@ -906,7 +983,6 @@ router.post("/deliverers/:id/update", isAdmin, async (req, res) => {
       .update({
         vehicle_id: vehicleId,
         zone: zone,
-        profile_picture: profilePicture,
         is_available: isAvailable,
         is_active: isActive
       })
@@ -925,7 +1001,7 @@ router.post("/deliverers/:id/update", isAdmin, async (req, res) => {
 });
 
 // Delete deliverer
-router.post("/deliverers/:id/delete", isAdmin, async (req, res) => {
+router.post("/deliverers/:id/delete", requireRole(['admin']), async (req, res) => {
   const { id } = req.params;
   try {
     // First get the deliverer to find the user_id
@@ -970,7 +1046,7 @@ router.post("/deliverers/:id/delete", isAdmin, async (req, res) => {
 });
 
 // Handle toggling deliverer availability
-router.post("/deliverers/:id/toggle", isAdmin, async (req, res) => {
+router.post("/deliverers/:id/toggle", requireRole(['admin']), async (req, res) => {
   try {
     const { id } = req.params;
     const { isAvailable } = req.body;
@@ -1078,7 +1154,7 @@ const typeDefs = gql`
       name: String!
       email: String!
       phoneNumber: String!
-      imageUrl: String
+      profilePicture: String
       isAvailable: Boolean!
     ): Deliverer
 
@@ -1378,6 +1454,11 @@ router.get("/restaurant/menu", async (req, res) => {
     console.error("Error in menu page:", error);
     res.status(500).send("An error occurred while loading the menu page.");
   }
+});
+
+// Catch-all route for undefined routes
+router.get('*', (req, res) => {
+  res.status(404).send('Page not found');
 });
 
 export default router;

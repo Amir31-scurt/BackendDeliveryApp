@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="<%= csrfToken %>" />
     <title>Connexion Restaurant - Gourmet d'amour</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
@@ -129,35 +130,6 @@
             }
         }
     </style>
-    <script>
-        async function handleRestaurantLogin(event) {
-            event.preventDefault();
-
-            const email = document.getElementById("email").value;
-
-            try {
-                const response = await fetch("/admin/login/restaurant", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ email }),
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    localStorage.setItem("authToken", result.token);
-                    window.location.href = `/admin/restaurants/${result.restaurant.id}/orders`;
-                } else {
-                    alert(result.error || "Email invalide. Veuillez réessayer.");
-                }
-            } catch (error) {
-                console.error("Login error:", error);
-                alert("Une erreur s'est produite lors de la connexion. Veuillez réessayer.");
-            }
-        }
-    </script>
 </head>
 
 <body>
@@ -166,7 +138,7 @@
             <h1>Gourmet d'amour</h1>
             <p>Connexion Restaurant</p>
         </div>
-        <form onsubmit="handleRestaurantLogin(event)">
+        <form id="loginForm">
             <div class="form-group">
                 <label for="email">Email</label>
                 <input type="email" id="email" name="email" placeholder="Entrez votre email" required />
@@ -175,6 +147,58 @@
         </form>
         <a href="/" class="back-link">Retour à l'accueil</a>
     </div>
+
+    <script>
+        // Function to get CSRF token from meta tag
+        function getCsrfToken() {
+            const metaTag = document.querySelector('meta[name="csrf-token"]');
+            if (!metaTag) {
+                console.error('CSRF token meta tag not found');
+                return '';
+            }
+            return metaTag.content;
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            console.log('Attempting login with email:', email);
+
+            try {
+                const csrfToken = getCsrfToken();
+                console.log('Using CSRF token:', csrfToken);
+
+                const response = await fetch('/admin/login/restaurant', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({ email }),
+                    credentials: 'include' // Important for cookies
+                });
+
+                console.log('Response status:', response.status);
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (response.ok) {
+                    // Store token and restaurant data in localStorage
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('restaurant', JSON.stringify(data.restaurant));
+
+                    console.log('Login successful, redirecting to:', data.redirectUrl);
+                    window.location.href = data.redirectUrl;
+                } else {
+                    console.error('Login failed:', data.error);
+                    alert(data.error || 'Login failed. Please try again.');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('An error occurred during login. Please try again.');
+            }
+        });
+    </script>
 </body>
 
 </html>

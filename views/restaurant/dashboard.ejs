@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="<%= csrfToken %>" />
     <title>Tableau de Bord Restaurant - Gourmet d'amour</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
@@ -404,6 +405,166 @@
                 overflow-x: auto;
             }
         }
+
+        .search-container {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            padding-right: 2.5rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(219, 96, 126, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+
+        .pagination-container {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .pagination-info {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .pagination-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            color: var(--dark-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-btn:not(:disabled):hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .page-numbers {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .page-number {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .page-number.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .page-number:hover:not(.active) {
+            background: var(--background-color);
+        }
+
+        .nav-item.logout {
+            margin-top: auto;
+            color: #dc3545;
+        }
+
+        .nav-item.logout:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 60px);
+        }
+
+        .stat-card small {
+            font-size: 0.8em;
+            color: #666;
+            margin-left: 5px;
+        }
+
+        .rating-display {
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 2px;
+            white-space: nowrap;
+        }
+
+        .rating-value {
+            font-size: 2.0em;
+            font-weight: bold;
+            color: #2c3e50;
+            line-height: 1;
+        }
+
+        .rating-max {
+            font-size: 1.2em;
+            color: #7f8c8d;
+            line-height: 1;
+        }
+
+        .rating-count {
+            font-size: 0.8em;
+            color: #95a5a6;
+            margin-left: 8px;
+            line-height: 1;
+        }
+
+        .stat-card p {
+            color: #2c3e50;
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 0;
+            line-height: 1;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+        }
     </style>
 </head>
 
@@ -417,21 +578,21 @@
             <nav>
                 <ul class="nav-menu">
                     <li class="nav-item">
-                        <a href="/admin/dashboard" class="nav-link active">
+                        <a href="/admin/restaurant/<%= restaurant.id %>/dashboard" class="nav-link active">
                             <i class="fas fa-chart-line"></i>
                             <span>Tableau de Bord</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="/admin/menu" class="nav-link">
+                        <a href="/admin/restaurant/<%= restaurant.id %>/menu" class="nav-link">
                             <i class="fas fa-utensils"></i>
                             <span>Menu</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="/" class="nav-link">
-                            <i class="fas fa-home"></i>
-                            <span>Accueil</span>
+                        <a href="/admin/logout" class="nav-link logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Déconnexion</span>
                         </a>
                     </li>
                 </ul>
@@ -448,32 +609,59 @@
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3><i class="fas fa-shopping-cart"></i> Commandes Totales</h3>
-                    <p>
+                    <p id="totalOrdersCount">
                         <%= orders.length %>
                     </p>
                 </div>
 
                 <div class="stat-card">
-                    <h3><i class="fas fa-calendar-day"></i> Commandes Aujourd'hui</h3>
-                    <p>
-                        <%= orders.filter(order=> new Date(order.createdAt).toLocaleDateString() === new
+                    <h3><i class="fas fa-calendar-day"></i> Comm. Aujourd'hui</h3>
+                    <p id="todayOrdersCount">
+                        <%= orders.filter(order=> new Date(order.created_at).toLocaleDateString() === new
                             Date().toLocaleDateString()).length %>
                     </p>
                 </div>
 
                 <div class="stat-card">
                     <h3><i class="fas fa-users"></i> Clients Aujourd'hui</h3>
-                    <p>
-                        <%= orders.filter(order=> new Date(order.createdAt).toLocaleDateString() === new
+                    <p id="todayClientsCount">
+                        <%= orders.filter(order=> new Date(order.created_at).toLocaleDateString() === new
                             Date().toLocaleDateString()).length %>
                     </p>
                 </div>
 
                 <div class="stat-card">
                     <h3><i class="fas fa-money-bill-wave"></i> Revenus Aujourd'hui</h3>
-                    <p>
-                        <%= orders.filter(order=> new Date(order.createdAt).toLocaleDateString() === new
-                            Date().toLocaleDateString()).reduce((total, order) => total + order.totalAmount, 0) %> Fcfa
+                    <p id="todayRevenue">
+                        <%= orders.filter(order=> new Date(order.created_at).toLocaleDateString() === new
+                            Date().toLocaleDateString()).reduce((total, order) => total +
+                            (parseFloat(order.total_amount)
+                            || 0), 0).toLocaleString() %> Fcfa
+                    </p>
+                </div>
+
+                <div class="stat-card">
+                    <h3><i class="fas fa-chart-line"></i> Revenus Totaux</h3>
+                    <p id="totalRevenue">
+                        <%= orders.reduce((total, order)=> total + (parseFloat(order.total_amount) || 0),
+                            0).toLocaleString() %> Fcfa
+                    </p>
+                </div>
+
+                <div class="stat-card">
+                    <h3><i class="fas fa-star"></i> Note Moyenne</h3>
+                    <p id="averageRating" class="rating-display">
+                        <% const ratedOrders=orders.filter(order=> order.rating);
+                            const averageRating = ratedOrders.length > 0
+                            ? (ratedOrders.reduce((sum, order) => sum + order.rating, 0) /
+                            ratedOrders.length).toFixed(1)
+                            : 0;
+                            %>
+                            <span class="rating-value">
+                                <%= averageRating %>
+                            </span>
+                            <span class="rating-max">/5</span>
+                            <span class="rating-count">(<%= ratedOrders.length %> avis)</span>
                     </p>
                 </div>
             </div>
@@ -492,6 +680,11 @@
                         <i class="fas fa-list"></i>
                         Liste des Commandes
                     </h3>
+                    <div class="search-container">
+                        <input type="text" id="searchInput" placeholder="Rechercher par nom ou adresse..."
+                            class="search-input">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
                 </div>
 
                 <table class="orders-table">
@@ -508,34 +701,32 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="ordersTableBody">
                         <% if (orders && orders.length> 0) { %>
                             <% orders.forEach((order, index)=> { %>
-                                <tr>
+                                <tr class="order-row" data-order='<%= JSON.stringify(order) %>'>
                                     <td>
                                         <%= index + 1 %>
                                     </td>
                                     <td>
-                                        <%= new Date(order.createdAt).toLocaleString() %>
+                                        <%= new Date(order.created_at).toLocaleString() %>
                                     </td>
                                     <td>
-                                        <%= order.user.name %>
+                                        <%= order.user?.name || 'N/A' %>
                                     </td>
                                     <td>
-                                        <%= order.user.phoneNumber %>
+                                        <%= order.user?.phone_number || 'N/A' %>
                                     </td>
                                     <td>
-                                        <%= order.deliveryAddress.address %>
+                                        <%= order.delivery_address?.address || 'N/A' %>
                                     </td>
                                     <td>
-                                        <%= order.totalAmount %> Fcfa
+                                        <%= order.total_amount %> Fcfa
                                     </td>
                                     <td>
                                         <div class="note-container">
-                                            <span class="note-text" data-order-id="<%= order.id %>"
-                                                data-note="<%= order.note || '' %>"
-                                                onclick="editNote(this.dataset.orderId, this.dataset.note)">
-                                                <%= order.note || 'Ajouter une note...' %>
+                                            <span class="note-text">
+                                                <%= order.rating || 0 %>/5
                                             </span>
                                         </div>
                                     </td>
@@ -587,6 +778,24 @@
                                         <% } %>
                     </tbody>
                 </table>
+
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        Affichage de <span id="startIndex">1</span> à <span id="endIndex">10</span> sur <span
+                            id="totalOrders">
+                            <%= orders.length %>
+                        </span> commandes
+                    </div>
+                    <div class="pagination-controls">
+                        <button id="prevPage" class="pagination-btn" disabled>
+                            <i class="fas fa-chevron-left"></i> Précédent
+                        </button>
+                        <div id="pageNumbers" class="page-numbers"></div>
+                        <button id="nextPage" class="pagination-btn">
+                            Suivant <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -605,6 +814,337 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // Force console logs to appear
+        console.log('Script starting...');
+
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('DOM Content Loaded');
+
+            // Get all orders from the table
+            const orderRows = document.querySelectorAll('.order-row');
+            console.log('Found order rows:', orderRows.length);
+
+            const orders = Array.from(orderRows).map(row => {
+                try {
+                    const orderData = JSON.parse(row.dataset.order);
+                    console.log('Raw order data:', orderData);
+                    // Ensure total_amount is a number and handle different formats
+                    if (typeof orderData.total_amount === 'string') {
+                        // Remove any currency symbols and spaces
+                        orderData.total_amount = parseFloat(orderData.total_amount.replace(/[^0-9.-]+/g, '')) || 0;
+                    } else {
+                        orderData.total_amount = parseFloat(orderData.total_amount) || 0;
+                    }
+                    console.log('Processed order data:', orderData);
+                    return orderData;
+                } catch (e) {
+                    console.error('Error parsing order data:', e);
+                    return null;
+                }
+            }).filter(order => order !== null);
+
+            console.log('Total orders after parsing:', orders.length);
+            console.log('Orders data with amounts:', orders.map(o => ({ id: o.id, total_amount: o.total_amount })));
+
+            const itemsPerPage = 10;
+            let currentPage = 1;
+            let filteredOrders = [...orders];
+
+            // Update stats function
+            function updateStats(orders) {
+                console.log('Updating stats with orders:', orders);
+                const today = new Date().toLocaleDateString();
+                console.log('Today\'s date:', today);
+
+                const todayOrders = orders.filter(order => {
+                    const orderDate = new Date(order.created_at).toLocaleDateString();
+                    console.log('Order date:', orderDate, 'Matches today:', orderDate === today);
+                    return orderDate === today;
+                });
+
+                console.log('Today\'s orders:', todayOrders);
+
+                const totalRevenue = orders.reduce((total, order) => {
+                    const amount = parseFloat(order.total_amount) || 0;
+                    console.log('Adding amount:', amount, 'to total:', total);
+                    return total + amount;
+                }, 0);
+
+                const todayRevenue = todayOrders.reduce((total, order) => {
+                    const amount = parseFloat(order.total_amount) || 0;
+                    console.log('Adding today\'s amount:', amount, 'to total:', total);
+                    return total + amount;
+                }, 0);
+
+                // Calculate average rating
+                const ratedOrders = orders.filter(order => order.rating);
+                const averageRating = ratedOrders.length > 0
+                    ? (ratedOrders.reduce((sum, order) => sum + order.rating, 0) / ratedOrders.length).toFixed(1)
+                    : 0;
+
+                console.log('Total revenue:', totalRevenue);
+                console.log('Today\'s revenue:', todayRevenue);
+                console.log('Average rating:', averageRating);
+                console.log('Number of ratings:', ratedOrders.length);
+
+                document.getElementById('totalOrdersCount').textContent = orders.length;
+                document.getElementById('todayOrdersCount').textContent = todayOrders.length;
+                document.getElementById('todayClientsCount').textContent = todayOrders.length;
+                document.getElementById('todayRevenue').textContent = `${todayRevenue.toLocaleString()} Fcfa`;
+                document.getElementById('totalRevenue').textContent = `${totalRevenue.toLocaleString()} Fcfa`;
+                document.getElementById('averageRating').innerHTML = `
+                    <span class="rating-value">${averageRating}</span>
+                    <span class="rating-max">/5</span>
+                    <span class="rating-count">(${ratedOrders.length} avis)</span>
+                `;
+            }
+
+            // Search functionality
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('input', function (e) {
+                    const searchTerm = e.target.value.toLowerCase();
+                    console.log('Searching for:', searchTerm);
+
+                    filteredOrders = orders.filter(order => {
+                        const userName = (order.user?.name || '').toLowerCase();
+                        const address = (order.delivery_address?.address || '').toLowerCase();
+                        const matches = userName.includes(searchTerm) || address.includes(searchTerm);
+                        console.log('Order matches search:', matches, 'User:', userName, 'Address:', address);
+                        return matches;
+                    });
+
+                    console.log('Filtered orders:', filteredOrders.length);
+                    currentPage = 1;
+                    renderOrders();
+                    updatePagination();
+                    updateStats(filteredOrders);
+                });
+            }
+
+            // Pagination functionality
+            function renderOrders() {
+                const startIndex = (currentPage - 1) * itemsPerPage;
+                const endIndex = Math.min(startIndex + itemsPerPage, filteredOrders.length);
+                const tbody = document.getElementById('ordersTableBody');
+                if (!tbody) return;
+
+                tbody.innerHTML = '';
+
+                if (filteredOrders.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="9" style="text-align: center; padding: 2rem;">
+                                Aucune commande trouvée
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                filteredOrders.slice(startIndex, endIndex).forEach((order, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${startIndex + index + 1}</td>
+                        <td>${new Date(order.created_at).toLocaleString()}</td>
+                        <td>${order.user?.name || 'N/A'}</td>
+                        <td>${order.user?.phone_number || 'N/A'}</td>
+                        <td>${order.delivery_address?.address || 'N/A'}</td>
+                        <td>${order.total_amount.toLocaleString()} Fcfa</td>
+                        <td>
+                            <div class="note-container">
+                                <span class="note-text">${order.rating || 0}/5</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge status-${order.status.toLowerCase()}">
+                                ${order.status === 'PENDING' ? 'En attente' :
+                            order.status === 'PREPARING' ? 'En préparation' :
+                                order.status === 'DELIVERING' ? 'En livraison' :
+                                    order.status === 'COMPLETED' ? 'Livrée' : 'Annulée'}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-dropdown">
+                                <button class="action-button" onclick="toggleDropdown(this)">
+                                    <span>Actions</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a href="#" class="dropdown-item"
+                                        onclick="updateOrderStatus('${order.id}', 'PREPARING')">
+                                        <i class="fas fa-sync"></i>
+                                        En préparation
+                                    </a>
+                                    <a href="#" class="dropdown-item"
+                                        onclick="updateOrderStatus('${order.id}', 'DELIVERING')">
+                                        <i class="fas fa-truck"></i>
+                                        En livraison
+                                    </a>
+                                    <a href="#" class="dropdown-item"
+                                        onclick="updateOrderStatus('${order.id}', 'COMPLETED')">
+                                        <i class="fas fa-check"></i>
+                                        Livrée
+                                    </a>
+                                    <a href="#" class="dropdown-item"
+                                        onclick="updateOrderStatus('${order.id}', 'CANCELLED')">
+                                        <i class="fas fa-times"></i>
+                                        Annuler
+                                    </a>
+                                </div>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                // Update pagination info
+                const startIndexEl = document.getElementById('startIndex');
+                const endIndexEl = document.getElementById('endIndex');
+                const totalOrdersEl = document.getElementById('totalOrders');
+
+                if (startIndexEl) startIndexEl.textContent = filteredOrders.length === 0 ? 0 : startIndex + 1;
+                if (endIndexEl) endIndexEl.textContent = endIndex;
+                if (totalOrdersEl) totalOrdersEl.textContent = filteredOrders.length;
+            }
+
+            function updatePagination() {
+                const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+                const pageNumbers = document.getElementById('pageNumbers');
+                const prevButton = document.getElementById('prevPage');
+                const nextButton = document.getElementById('nextPage');
+
+                if (!pageNumbers || !prevButton || !nextButton) return;
+
+                // Update buttons
+                prevButton.disabled = currentPage === 1;
+                nextButton.disabled = currentPage === totalPages;
+
+                // Update page numbers
+                pageNumbers.innerHTML = '';
+                const maxPages = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxPages / 2));
+                let endPage = Math.min(totalPages, startPage + maxPages - 1);
+
+                if (endPage - startPage + 1 < maxPages) {
+                    startPage = Math.max(1, endPage - maxPages + 1);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const pageNumber = document.createElement('div');
+                    pageNumber.className = `page-number ${i === currentPage ? 'active' : ''}`;
+                    pageNumber.textContent = i;
+                    pageNumber.onclick = () => {
+                        currentPage = i;
+                        renderOrders();
+                        updatePagination();
+                    };
+                    pageNumbers.appendChild(pageNumber);
+                }
+            }
+
+            // Event listeners for pagination buttons
+            const prevButton = document.getElementById('prevPage');
+            const nextButton = document.getElementById('nextPage');
+
+            if (prevButton) {
+                prevButton.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderOrders();
+                        updatePagination();
+                    }
+                });
+            }
+
+            if (nextButton) {
+                nextButton.addEventListener('click', () => {
+                    const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderOrders();
+                        updatePagination();
+                    }
+                });
+            }
+
+            // Initial render
+            renderOrders();
+            updatePagination();
+            updateStats(orders);
+        });
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/admin/login/restaurant';
+                return;
+            }
+
+            // Add token to all fetch requests
+            const originalFetch = window.fetch;
+            window.fetch = function (url, options = {}) {
+                if (!options.headers) {
+                    options.headers = {};
+                }
+                options.headers['Authorization'] = `Bearer ${token}`;
+                return originalFetch(url, options);
+            };
+        });
+
+        // Function to get CSRF token from cookie
+        function getCSRFToken() {
+            const name = '_csrf=';
+            const decodedCookie = decodeURIComponent(document.cookie);
+            const cookieArray = decodedCookie.split(';');
+            for (let i = 0; i < cookieArray.length; i++) {
+                let cookie = cookieArray[i];
+                while (cookie.charAt(0) === ' ') {
+                    cookie = cookie.substring(1);
+                }
+                if (cookie.indexOf(name) === 0) {
+                    return cookie.substring(name.length, cookie.length);
+                }
+            }
+            return '';
+        }
+
+        // Function to make GraphQL requests
+        async function makeGraphQLRequest(query, variables = {}) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = '/admin/login/restaurant';
+                return;
+            }
+
+            const response = await fetch("/graphql", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`,
+                    "Accept": "application/json",
+                    "X-CSRF-Token": getCSRFToken()
+                },
+                body: JSON.stringify({ query, variables }),
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    window.location.href = '/admin/login/restaurant';
+                    return;
+                }
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            if (result.errors) {
+                throw new Error(result.errors[0].message);
+            }
+
+            return result.data;
+        }
+
         // Revenue Chart
         const revenueCtx = document.getElementById('revenueChart').getContext('2d');
         new Chart(revenueCtx, {
@@ -791,20 +1331,18 @@
         // Update order status
         async function updateOrderStatus(id, status) {
             try {
-                const response = await fetch(`/admin/orders/${id}/status`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ status }),
-                });
+                const query = `
+                    mutation {
+                        updateOrderStatus(id: "${id}", status: ${status}) {
+                            id
+                            status
+                        }
+                    }
+                `;
 
-                if (response.ok) {
-                    alert('Statut de la commande mis à jour avec succès!');
-                    window.location.reload();
-                } else {
-                    throw new Error('Échec de la mise à jour du statut');
-                }
+                await makeGraphQLRequest(query);
+                alert('Statut de la commande mis à jour avec succès!');
+                window.location.reload();
             } catch (error) {
                 console.error('Error updating order status:', error);
                 alert('Une erreur est survenue lors de la mise à jour du statut');
@@ -827,26 +1365,25 @@
             currentOrderId = null;
         }
 
+        // Save note
         async function saveNote() {
             if (!currentOrderId) return;
 
             const note = document.getElementById('noteText').value;
 
             try {
-                const response = await fetch(`/admin/orders/${currentOrderId}/note`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ note }),
-                });
+                const query = `
+                    mutation {
+                        updateOrderNote(id: "${currentOrderId}", note: "${note}") {
+                            id
+                            note
+                        }
+                    }
+                `;
 
-                if (response.ok) {
-                    alert('Note mise à jour avec succès!');
-                    window.location.reload();
-                } else {
-                    throw new Error('Échec de la mise à jour de la note');
-                }
+                await makeGraphQLRequest(query);
+                alert('Note mise à jour avec succès!');
+                window.location.reload();
             } catch (error) {
                 console.error('Error updating note:', error);
                 alert('Une erreur est survenue lors de la mise à jour de la note');
