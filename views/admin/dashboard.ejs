@@ -165,9 +165,10 @@
       border-radius: 20px;
       box-shadow: var(--card-shadow);
       margin-top: 3rem;
-      height: 500px;
+      height: 520px;
       position: relative;
       transition: all var(--transition-speed) ease;
+      overflow: hidden;
     }
 
     .chart-container:hover {
@@ -307,7 +308,9 @@
 
     <div class="chart-container">
       <h3 class="chart-title">Commandes Mensuelles</h3>
-      <canvas id="monthlyOrdersChart"></canvas>
+      <div style="position: relative; height: 400px; width: 100%;">
+        <canvas id="monthlyOrdersChart"></canvas>
+      </div>
     </div>
   </main>
 
@@ -339,10 +342,97 @@
           return response.json();
         })
         .then(data => {
+          console.log('Received dashboard data:', data);
           document.getElementById('totalOrders').textContent = data.totalOrders || 0;
           document.getElementById('totalRestaurants').textContent = data.totalRestaurants || 0;
           document.getElementById('activeRestaurants').textContent = data.activeRestaurants || 0;
           document.getElementById('totalDeliverers').textContent = data.activeDeliverers || 0;
+
+          const ctx = document.getElementById('monthlyOrdersChart').getContext('2d');
+          console.log('Chart data:', {
+            labels: data.monthlyOrders?.map(order => order.month) || [],
+            data: data.monthlyOrders?.map(order => order.orders) || []
+          });
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: data.monthlyOrders?.map(order => order.month) || [],
+              datasets: [{
+                label: 'Nombre de Commandes',
+                data: data.monthlyOrders?.map(order => order.orders) || [],
+                borderColor: '#DB607E',
+                backgroundColor: 'rgba(219, 96, 126, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              layout: {
+                padding: {
+                  top: 20,
+                  right: 20,
+                  bottom: 20,
+                  left: 20
+                }
+              },
+              plugins: {
+                legend: {
+                  position: 'top',
+                  labels: {
+                    font: {
+                      family: 'Poppins',
+                      size: 14
+                    }
+                  }
+                },
+                tooltip: {
+                  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                  titleColor: '#2c2c2c',
+                  bodyColor: '#2c2c2c',
+                  borderColor: '#DB607E',
+                  borderWidth: 1,
+                  padding: 12,
+                  boxPadding: 6,
+                  usePointStyle: true,
+                  callbacks: {
+                    label: function (context) {
+                      return `Commandes: ${context.raw}`;
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  grid: {
+                    color: 'rgba(0, 0, 0, 0.05)'
+                  },
+                  ticks: {
+                    font: {
+                      family: 'Poppins'
+                    },
+                    padding: 10
+                  }
+                },
+                x: {
+                  grid: {
+                    display: false
+                  },
+                  ticks: {
+                    font: {
+                      family: 'Poppins'
+                    },
+                    padding: 10,
+                    maxRotation: 45,
+                    minRotation: 45
+                  }
+                }
+              }
+            }
+          });
         })
         .catch(error => {
           console.error('Error fetching dashboard data:', error);

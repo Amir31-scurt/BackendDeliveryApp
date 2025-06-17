@@ -166,4 +166,22 @@ CREATE TRIGGER update_orders_updated_at
 CREATE TRIGGER update_restaurant_ratings_updated_at
     BEFORE UPDATE ON restaurant_ratings
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column(); 
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- Create function to get monthly orders
+CREATE OR REPLACE FUNCTION get_monthly_orders()
+RETURNS TABLE (
+    month TEXT,
+    orders BIGINT
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        TO_CHAR(created_at, 'Mon YYYY') as month,
+        COUNT(*) as orders
+    FROM orders
+    WHERE created_at >= NOW() - INTERVAL '12 months'
+    GROUP BY TO_CHAR(created_at, 'Mon YYYY')
+    ORDER BY MIN(created_at);
+END;
+$$ LANGUAGE plpgsql; 

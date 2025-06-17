@@ -13,6 +13,69 @@ router.get("/login", (req, res) => {
   res.render("admin/adminLogin");
 });
 
+// Admin login POST route
+router.post("/login", async (req, res) => {
+  try {
+    const { phoneNumber, password } = req.body;
+
+    if (!phoneNumber || !password) {
+      return res.status(400).json({ error: "Phone number and password are required" });
+    }
+
+    // Find user by phone number
+    const { data: user, error: userError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("phone_number", phoneNumber)
+      .single();
+
+    if (userError || !user) {
+      return res.status(401).json({ error: "Invalid phone number or password" });
+    }
+
+    // Verify password
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: "Invalid phone number or password" });
+    }
+
+    // Check if user is an admin
+    if (user.role !== "admin") {
+      return res.status(403).json({ error: "Access denied. Admin privileges required." });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "24h" }
+    );
+
+    // Set token in cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
+    res.json({
+      success: true,
+      message: "Login successful",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        phoneNumber: user.phone_number,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Restaurant login routes (should be public)
 router.get("/login/restaurant", (req, res) => {
   res.render("admin/restaurantLogin", { csrfToken: req.csrfToken() });
@@ -327,11 +390,17 @@ router.get("/dashboard", async (req, res) => {
         console.error("Error fetching orders data:", orderError);
       }
 
+      // Fetch monthly orders data
+      const { data: monthlyOrders, error: monthlyOrdersError } = await supabase.rpc(
+        "get_monthly_orders"
+      );
+
       return res.json({
         totalOrders: totalOrders ? totalOrders.length : 0,
         totalRestaurants: totalRestaurants ? totalRestaurants.length : 0,
         activeRestaurants: totalActiveRestaurants ? totalActiveRestaurants.length : 0,
-        activeDeliverers: totalDeliverers ? totalDeliverers.length : 0
+        activeDeliverers: totalDeliverers ? totalDeliverers.length : 0,
+        monthlyOrders: monthlyOrders || []
       });
     }
 

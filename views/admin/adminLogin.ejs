@@ -117,6 +117,16 @@
             color: var(--primary-color);
         }
 
+        .error-message {
+            color: var(--accent-color);
+            background-color: #ffebee;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            text-align: center;
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -129,51 +139,6 @@
             }
         }
     </style>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const loginForm = document.getElementById('loginForm');
-            if (loginForm) {
-                loginForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const errorMessage = document.getElementById('errorMessage');
-                    errorMessage.style.display = 'none';
-
-                    const phoneNumber = document.getElementById('phoneNumber').value;
-                    const password = document.getElementById('password').value;
-
-                    try {
-                        const response = await fetch('/admin/login', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-Token': '<%= csrfToken %>'
-                            },
-                            body: JSON.stringify({ phoneNumber, password })
-                        });
-
-                        const data = await response.json();
-
-                        if (response.ok) {
-                            // Store the token
-                            localStorage.setItem('token', data.token);
-                            localStorage.setItem('userRole', data.user.role);
-                            localStorage.setItem('userId', data.user.id);
-
-                            // Redirect to dashboard
-                            window.location.href = '/admin/dashboard';
-                        } else {
-                            errorMessage.textContent = data.error || 'Une erreur est survenue';
-                            errorMessage.style.display = 'block';
-                        }
-                    } catch (error) {
-                        console.error('Login error:', error);
-                        errorMessage.textContent = 'Une erreur est survenue lors de la connexion';
-                        errorMessage.style.display = 'block';
-                    }
-                });
-            }
-        });
-    </script>
 </head>
 
 <body>
@@ -197,6 +162,49 @@
         </form>
         <a href="/" class="back-link">Retour à l'accueil</a>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const loginForm = document.getElementById('loginForm');
+            const errorMessage = document.getElementById('errorMessage');
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errorMessage.style.display = 'none';
+
+                const phoneNumber = document.getElementById('phoneNumber').value;
+                const password = document.getElementById('password').value;
+
+                try {
+                    const response = await fetch('/admin/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ phoneNumber, password })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        // Store the token and user data
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+
+                        // Redirect to dashboard
+                        window.location.href = '/admin/dashboard';
+                    } else {
+                        errorMessage.textContent = data.error || 'Une erreur est survenue';
+                        errorMessage.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    errorMessage.textContent = 'Une erreur est survenue lors de la connexion';
+                    errorMessage.style.display = 'block';
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
