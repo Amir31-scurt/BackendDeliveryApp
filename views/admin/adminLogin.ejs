@@ -149,6 +149,7 @@
         </div>
         <div id="errorMessage" class="error-message"></div>
         <form id="loginForm">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="form-group">
                 <label for="phoneNumber">Numéro de téléphone</label>
                 <input type="text" id="phoneNumber" name="phoneNumber" placeholder="Entrez votre numéro de téléphone"
@@ -174,14 +175,17 @@
 
                 const phoneNumber = document.getElementById('phoneNumber').value;
                 const password = document.getElementById('password').value;
+                const csrfToken = document.querySelector('input[name="_csrf"]').value;
 
                 try {
                     const response = await fetch('/admin/login', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken
                         },
-                        body: JSON.stringify({ phoneNumber, password })
+                        body: JSON.stringify({ phoneNumber, password }),
+                        credentials: 'include'
                     });
 
                     const data = await response.json();
