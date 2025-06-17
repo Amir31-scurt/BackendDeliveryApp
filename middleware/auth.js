@@ -12,6 +12,41 @@ export const authMiddleware = async (req, res, next) => {
       return next();
     }
 
+    // Skip CSRF check for API routes (used by mobile app)
+    if (req.originalUrl.startsWith('/api/')) {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ error: "Authorization header must be provided" });
+      }
+
+      const token = authHeader.split(" ")[1];
+      if (!token) {
+        return res.status(401).json({ error: "Authentication token must be provided" });
+      }
+
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = {
+          userId: decoded.id,
+          role: decoded.role
+        };
+        return next();
+      } catch (err) {
+        if (err.name === 'TokenExpiredError') {
+          return res.status(401).json({ error: "Token expired" });
+        }
+        return res.status(401).json({ error: "Invalid token" });
+      }
+    }
+
+    // For web requests, check CSRF token
+    if (req.method !== 'GET') {
+      const csrfToken = req.headers['x-csrf-token'];
+      if (!csrfToken) {
+        return res.status(403).json({ error: "CSRF token missing" });
+      }
+    }
+
     // For page renders, check token in cookies or localStorage
     if (!req.xhr && !req.headers.accept?.includes('application/json')) {
       const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
@@ -31,14 +66,6 @@ export const authMiddleware = async (req, res, next) => {
       } catch (err) {
         console.log("Invalid token for page render, redirecting to login");
         return res.redirect('/admin/login/restaurant');
-      }
-    }
-
-    // For API requests, check CSRF token and Authorization header
-    if (req.method !== 'GET') {
-      const csrfToken = req.headers['x-csrf-token'];
-      if (!csrfToken) {
-        return res.status(403).json({ error: "CSRF token missing" });
       }
     }
 
