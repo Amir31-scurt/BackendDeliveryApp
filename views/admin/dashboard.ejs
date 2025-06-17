@@ -342,17 +342,12 @@
           return response.json();
         })
         .then(data => {
-          console.log('Received dashboard data:', data);
           document.getElementById('totalOrders').textContent = data.totalOrders || 0;
           document.getElementById('totalRestaurants').textContent = data.totalRestaurants || 0;
           document.getElementById('activeRestaurants').textContent = data.activeRestaurants || 0;
           document.getElementById('totalDeliverers').textContent = data.activeDeliverers || 0;
 
           const ctx = document.getElementById('monthlyOrdersChart').getContext('2d');
-          console.log('Chart data:', {
-            labels: data.monthlyOrders?.map(order => order.month) || [],
-            data: data.monthlyOrders?.map(order => order.orders) || []
-          });
           new Chart(ctx, {
             type: 'line',
             data: {
