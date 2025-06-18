@@ -860,7 +860,9 @@ router.get("/deliverers/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    // Fetch deliverer with user information
+    console.log("Fetching deliverer with ID:", id);
+
+    // Fetch deliverer with user information - use user_id since that's the primary key
     const { data: deliverer, error: delivererError } = await supabase
       .from("deliverers")
       .select(`
@@ -885,6 +887,8 @@ router.get("/deliverers/:id", async (req, res) => {
       });
     }
 
+    console.log("Found deliverer:", deliverer);
+
     // Fetch deliverer's orders
     const { data: orders, error: ordersError } = await supabase
       .from("orders")
@@ -899,7 +903,7 @@ router.get("/deliverers/:id", async (req, res) => {
           phone_number
         )
       `)
-      .eq("deliverer_id", id)
+      .eq("deliverer_id", deliverer.user_id)
       .order('created_at', { ascending: false });
 
     if (ordersError) {
@@ -921,6 +925,8 @@ router.get("/deliverers/:id", async (req, res) => {
       completedDeliveries: deliverer.completed_deliveries || 0,
       orders: orders || []
     };
+
+    console.log("Formatted deliverer:", formattedDeliverer);
 
     // Check if it's an AJAX request
     if (req.xhr || req.headers.accept?.includes('application/json')) {

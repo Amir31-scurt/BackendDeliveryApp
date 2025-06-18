@@ -524,7 +524,7 @@
       </div>
     </header>
 
-    <button onclick="openModal()" class="add-restaurant-btn">
+    <button id="addRestaurantBtn" class="add-restaurant-btn">
       <i class="fas fa-plus"></i> Ajouter un Restaurant
     </button>
 
@@ -547,7 +547,7 @@
         <tbody>
           <% if (restaurants && restaurants.length> 0) { %>
             <% restaurants.forEach((restaurant)=> { %>
-              <tr onclick="redirectToDetails('<%= restaurant.id %>')">
+              <tr data-restaurant-id="<%= restaurant.id %>">
                 <td>
                   <img src="<%= restaurant.imageUrl %>" alt="<%= restaurant.name %>" class="restaurant-image" />
                 </td>
@@ -565,16 +565,16 @@
                 </td>
                 <td>
                   <div class="action-buttons">
-                    <a href="/admin/restaurants/<%= restaurant.id %>/details" onclick="event.stopPropagation();"
-                      class="action-btn view-btn" title="Voir les détails">
+                    <a href="/admin/restaurants/<%= restaurant.id %>/details" class="action-btn view-btn"
+                      title="Voir les détails">
                       <i class="fas fa-eye"></i>
                     </a>
-                    <button class="action-btn edit-btn"
-                      onclick="event.stopPropagation(); editRestaurant('<%= restaurant.id %>')" title="Modifier">
+                    <button class="action-btn edit-btn edit-restaurant-btn" data-restaurant-id="<%= restaurant.id %>"
+                      title="Modifier">
                       <i class="fas fa-edit"></i>
                     </button>
-                    <button class="action-btn delete-btn"
-                      onclick="event.stopPropagation(); confirmDelete('<%= restaurant.id %>', '<%= restaurant.name %>')"
+                    <button class="action-btn delete-btn delete-restaurant-btn"
+                      data-restaurant-id="<%= restaurant.id %>" data-restaurant-name="<%= restaurant.name %>"
                       title="Supprimer">
                       <i class="fas fa-trash"></i>
                     </button>
@@ -608,7 +608,7 @@
     <!-- Add/Edit Restaurant Modal -->
     <div id="restaurantModal" class="modal">
       <div class="modal-content">
-        <button class="close-modal" onclick="closeModal()">&times;</button>
+        <button class="close-modal" id="closeModalBtn">&times;</button>
         <div class="modal-header">
           <h2 id="modalTitle">Ajouter un Restaurant</h2>
         </div>
@@ -670,7 +670,7 @@
           <div class="form-group">
             <label>Heures d'ouverture</label>
             <div style="margin-bottom: 1rem;">
-              <button type="button" onclick="setAllHours()" class="modal-btn submit-btn" style="padding: 0.5rem 1rem;">
+              <button type="button" id="setAllHoursBtn" class="modal-btn submit-btn" style="padding: 0.5rem 1rem;">
                 <i class="fas fa-clock"></i> Définir les mêmes heures pour tous les jours
               </button>
             </div>
@@ -700,10 +700,10 @@
           </div>
 
           <div class="modal-buttons">
-            <button type="button" id="submitButton" onclick="submitRestaurant()" class="modal-btn submit-btn">
+            <button type="button" id="submitButton" class="modal-btn submit-btn">
               Ajouter
             </button>
-            <button type="button" onclick="closeModal()" class="modal-btn cancel-btn">
+            <button type="button" id="cancelButton" class="modal-btn cancel-btn">
               Annuler
             </button>
           </div>
@@ -1154,6 +1154,81 @@
         alert("An error occurred while deleting the restaurant. Please try again.");
       }
     }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', function () {
+      // Add restaurant button
+      const addRestaurantBtn = document.getElementById('addRestaurantBtn');
+      if (addRestaurantBtn) {
+        addRestaurantBtn.addEventListener('click', openModal);
+      }
+
+      // Close modal button
+      const closeModalBtn = document.getElementById('closeModalBtn');
+      if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeModal);
+      }
+
+      // Cancel button
+      const cancelButton = document.getElementById('cancelButton');
+      if (cancelButton) {
+        cancelButton.addEventListener('click', closeModal);
+      }
+
+      // Submit button
+      const submitButton = document.getElementById('submitButton');
+      if (submitButton) {
+        submitButton.addEventListener('click', submitRestaurant);
+      }
+
+      // Set all hours button
+      const setAllHoursBtn = document.getElementById('setAllHoursBtn');
+      if (setAllHoursBtn) {
+        setAllHoursBtn.addEventListener('click', setAllHours);
+      }
+
+      // Edit restaurant buttons
+      const editButtons = document.querySelectorAll('.edit-restaurant-btn');
+      editButtons.forEach(button => {
+        button.addEventListener('click', function (e) {
+          e.stopPropagation();
+          const restaurantId = this.getAttribute('data-restaurant-id');
+          editRestaurant(restaurantId);
+        });
+      });
+
+      // Delete restaurant buttons
+      const deleteButtons = document.querySelectorAll('.delete-restaurant-btn');
+      deleteButtons.forEach(button => {
+        button.addEventListener('click', function (e) {
+          e.stopPropagation();
+          const restaurantId = this.getAttribute('data-restaurant-id');
+          const restaurantName = this.getAttribute('data-restaurant-name');
+          confirmDelete(restaurantId, restaurantName);
+        });
+      });
+
+      // Row click for details
+      const tableRows = document.querySelectorAll('.restaurants-table tbody tr');
+      tableRows.forEach(row => {
+        row.addEventListener('click', function () {
+          const restaurantId = this.getAttribute('data-restaurant-id');
+          if (restaurantId) {
+            redirectToDetails(restaurantId);
+          }
+        });
+      });
+
+      // Close modal when clicking outside
+      const modal = document.getElementById('restaurantModal');
+      if (modal) {
+        modal.addEventListener('click', function (e) {
+          if (e.target === modal) {
+            closeModal();
+          }
+        });
+      }
+    });
   </script>
 </body>
 
