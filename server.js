@@ -90,9 +90,9 @@ const csrfProtection = csrf({
   }
 });
 
-// Apply CSRF protection to all routes except GraphQL
+// Apply CSRF protection to all routes except GraphQL and API routes
 app.use((req, res, next) => {
-  if (req.path === '/graphql') {
+  if (req.path === '/graphql' || req.path.startsWith('/api/')) {
     return next();
   }
   csrfProtection(req, res, next);
