@@ -576,10 +576,6 @@
             <i class="fas fa-plus"></i> Ajouter un Livreur
         </button>
 
-        <button id="testEditBtn"
-            style="background: red; color: white; padding: 10px; margin: 10px; border: none; border-radius: 5px;">
-            Test Edit Function
-        </button>
 
         <div class="deliverers-section">
             <table class="deliverers-table">
@@ -641,7 +637,8 @@
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         <button class="action-btn edit-btn edit-deliverer-btn"
-                                            data-deliverer-id="<%= deliverer.userId %>" title="Modifier">
+                                            data-deliverer-id="<%= deliverer.id || deliverer.userId %>"
+                                            title="Modifier">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <button class="action-btn delete-btn delete-deliverer-btn"
@@ -768,12 +765,7 @@
 
         async function editDeliverer(id) {
             try {
-                console.log('=== EDIT DELIVERER FUNCTION START ===');
-                console.log('Editing deliverer with ID:', id);
-                console.log('ID type:', typeof id);
-
                 const token = localStorage.getItem('token');
-                console.log('Token found:', !!token);
 
                 if (!token) {
                     alert("Vous devez être connecté pour modifier un livreur");
@@ -782,7 +774,6 @@
                 }
 
                 const url = `/admin/deliverers/${id}`;
-                console.log('Making request to:', url);
 
                 const response = await fetch(url, {
                     headers: {
@@ -792,11 +783,7 @@
                     }
                 });
 
-                console.log('Response status:', response.status);
-                console.log('Response headers:', response.headers);
-
                 if (!response.ok) {
-                    console.log('Response not OK, status:', response.status);
                     if (response.status === 401) {
                         alert("Session expirée. Veuillez vous reconnecter.");
                         window.location.href = '/admin/login';
@@ -808,15 +795,10 @@
                         return;
                     }
                     const error = await response.json();
-                    console.log('Error response:', error);
                     throw new Error(error.error || `HTTP error! status: ${response.status}`);
                 }
 
                 const deliverer = await response.json();
-                console.log('=== DELIVERER DATA RECEIVED ===');
-                console.log('Deliverer data received:', deliverer);
-                console.log('Deliverer type:', typeof deliverer);
-                console.log('Deliverer keys:', Object.keys(deliverer));
 
                 if (!deliverer) {
                     throw new Error("Livreur non trouvé");
@@ -824,17 +806,12 @@
 
                 openEditModal(deliverer);
             } catch (error) {
-                console.error("=== ERROR IN EDIT DELIVERER ===");
-                console.error("Error fetching deliverer:", error);
-                console.error("Error message:", error.message);
-                console.error("Error stack:", error.stack);
                 alert(`Une erreur s'est produite: ${error.message}`);
             }
         }
 
         function openEditModal(deliverer) {
             try {
-                console.log('Opening edit modal with data:', deliverer);
                 isEditMode = true;
                 document.getElementById("modalTitle").textContent = "Modifier le Livreur";
                 document.getElementById("submitButton").textContent = "Mettre à jour";
@@ -1110,10 +1087,6 @@
 
                     // Single event listener for all table buttons (event delegation)
                     deliverersTable.addEventListener('click', function (e) {
-                        console.log('=== TABLE CLICK EVENT ===');
-                        console.log('Table clicked, target:', e.target);
-                        console.log('Target classList:', e.target.classList);
-                        console.log('Target tagName:', e.target.tagName);
 
                         // Check if we clicked on a button or its child elements
                         let button = null;
@@ -1123,26 +1096,20 @@
                             e.target.classList.contains('edit-deliverer-btn') ||
                             e.target.classList.contains('delete-deliverer-btn')) {
                             button = e.target;
-                            console.log('Target is directly a button');
                         }
                         // Check if the target is inside a button (like an icon)
                         else if (e.target.closest('.view-deliverer-btn')) {
                             button = e.target.closest('.view-deliverer-btn');
-                            console.log('Target is inside view button');
                         }
                         else if (e.target.closest('.edit-deliverer-btn')) {
                             button = e.target.closest('.edit-deliverer-btn');
-                            console.log('Target is inside edit button');
                         }
                         else if (e.target.closest('.delete-deliverer-btn')) {
                             button = e.target.closest('.delete-deliverer-btn');
-                            console.log('Target is inside delete button');
                         }
                         // If we clicked on a table row, check if it contains buttons
                         else if (e.target.tagName === 'TR') {
-                            console.log('Clicked on table row, checking for buttons...');
                             const buttons = e.target.querySelectorAll('.view-deliverer-btn, .edit-deliverer-btn, .delete-deliverer-btn');
-                            console.log('Buttons found in row:', buttons.length);
 
                             // Find which button was clicked by checking mouse position
                             const rect = e.target.getBoundingClientRect();
@@ -1163,25 +1130,19 @@
                         }
 
                         if (button) {
-                            console.log('Button found:', button);
-                            console.log('Button classList:', button.classList);
                             e.preventDefault();
                             e.stopPropagation();
 
                             const delivererId = button.getAttribute('data-deliverer-id');
-                            console.log('Deliverer ID:', delivererId);
 
                             // Handle different button types
                             if (button.classList.contains('view-deliverer-btn')) {
-                                console.log('View button clicked!');
                                 viewDeliverer(delivererId);
                             }
                             else if (button.classList.contains('edit-deliverer-btn')) {
-                                console.log('Edit button clicked!');
                                 editDeliverer(delivererId);
                             }
                             else if (button.classList.contains('delete-deliverer-btn')) {
-                                console.log('Delete button clicked!');
                                 const delivererName = button.getAttribute('data-deliverer-name');
                                 confirmDelete(delivererId, delivererName);
                             }
@@ -1201,12 +1162,9 @@
                             closeModal();
                         }
                     });
-                    console.log('Modal outside click listener added');
                 } else {
                     console.log('Modal not found');
                 }
-
-                console.log('=== ALL EVENT LISTENERS ATTACHED ===');
 
             } catch (error) {
                 console.error('Error setting up event listeners:', error);
