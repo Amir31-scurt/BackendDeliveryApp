@@ -704,7 +704,8 @@
                     <tbody id="ordersTableBody">
                         <% if (orders && orders.length> 0) { %>
                             <% orders.forEach((order, index)=> { %>
-                                <tr class="order-row" data-order='<%= JSON.stringify(order) %>'>
+                                <tr class="order-row" data-order='<%= JSON.stringify(order) %>'
+                                    data-order-id="<%= order.id %>">
                                     <td>
                                         <%= index + 1 %>
                                     </td>
@@ -739,31 +740,19 @@
                                     </td>
                                     <td>
                                         <div class="action-dropdown">
-                                            <button class="action-button" onclick="toggleDropdown(this)">
+                                            <button class="action-button" type="button">
                                                 <span>Actions</span>
                                                 <i class="fas fa-chevron-down"></i>
                                             </button>
                                             <div class="dropdown-menu">
-                                                <a href="#" class="dropdown-item"
-                                                    onclick="updateOrderStatus('<%= order.id %>', 'PREPARING')">
-                                                    <i class="fas fa-sync"></i>
-                                                    En préparation
-                                                </a>
-                                                <a href="#" class="dropdown-item"
-                                                    onclick="updateOrderStatus('<%= order.id %>', 'DELIVERING')">
-                                                    <i class="fas fa-truck"></i>
-                                                    En livraison
-                                                </a>
-                                                <a href="#" class="dropdown-item"
-                                                    onclick="updateOrderStatus('<%= order.id %>', 'COMPLETED')">
-                                                    <i class="fas fa-check"></i>
-                                                    Livrée
-                                                </a>
-                                                <a href="#" class="dropdown-item"
-                                                    onclick="updateOrderStatus('<%= order.id %>', 'CANCELLED')">
-                                                    <i class="fas fa-times"></i>
-                                                    Annuler
-                                                </a>
+                                                <a href="#" class="dropdown-item" data-action="PREPARING"> <i
+                                                        class="fas fa-sync"></i> En préparation </a>
+                                                <a href="#" class="dropdown-item" data-action="DELIVERING"> <i
+                                                        class="fas fa-truck"></i> En livraison </a>
+                                                <a href="#" class="dropdown-item" data-action="COMPLETED"> <i
+                                                        class="fas fa-check"></i> Livrée </a>
+                                                <a href="#" class="dropdown-item" data-action="CANCELLED"> <i
+                                                        class="fas fa-times"></i> Annuler </a>
                                             </div>
                                         </div>
                                     </td>
@@ -966,35 +955,20 @@
                         </td>
                         <td>
                             <div class="action-dropdown">
-                                <button class="action-button" onclick="toggleDropdown(this)">
+                                <button class="action-button" type="button">
                                     <span>Actions</span>
                                     <i class="fas fa-chevron-down"></i>
                                 </button>
                                 <div class="dropdown-menu">
-                                    <a href="#" class="dropdown-item"
-                                        onclick="updateOrderStatus('${order.id}', 'PREPARING')">
-                                        <i class="fas fa-sync"></i>
-                                        En préparation
-                                    </a>
-                                    <a href="#" class="dropdown-item"
-                                        onclick="updateOrderStatus('${order.id}', 'DELIVERING')">
-                                        <i class="fas fa-truck"></i>
-                                        En livraison
-                                    </a>
-                                    <a href="#" class="dropdown-item"
-                                        onclick="updateOrderStatus('${order.id}', 'COMPLETED')">
-                                        <i class="fas fa-check"></i>
-                                        Livrée
-                                    </a>
-                                    <a href="#" class="dropdown-item"
-                                        onclick="updateOrderStatus('${order.id}', 'CANCELLED')">
-                                        <i class="fas fa-times"></i>
-                                        Annuler
-                                    </a>
+                                    <a href="#" class="dropdown-item" data-action="PREPARING"> <i class="fas fa-sync"></i> En préparation </a>
+                                    <a href="#" class="dropdown-item" data-action="DELIVERING"> <i class="fas fa-truck"></i> En livraison </a>
+                                    <a href="#" class="dropdown-item" data-action="COMPLETED"> <i class="fas fa-check"></i> Livrée </a>
+                                    <a href="#" class="dropdown-item" data-action="CANCELLED"> <i class="fas fa-times"></i> Annuler </a>
                                 </div>
                             </div>
                         </td>
                     `;
+                    row.setAttribute('data-order-id', order.id);
                     tbody.appendChild(row);
                 });
 
@@ -1006,6 +980,10 @@
                 if (startIndexEl) startIndexEl.textContent = filteredOrders.length === 0 ? 0 : startIndex + 1;
                 if (endIndexEl) endIndexEl.textContent = endIndex;
                 if (totalOrdersEl) totalOrdersEl.textContent = filteredOrders.length;
+
+                // Attach listeners to new elements
+                attachDropdownListeners();
+                attachOrderStatusListeners();
             }
 
             function updatePagination() {
@@ -1067,6 +1045,43 @@
                     }
                 });
             }
+
+            // Attach dropdown toggle event listeners (CSP-compliant)
+            function attachDropdownListeners() {
+                document.querySelectorAll('.action-button').forEach(button => {
+                    button.addEventListener('click', function (event) {
+                        console.log('Action button clicked');
+                        event.stopPropagation();
+                        // Close all other dropdowns first
+                        document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.remove('show'));
+                        const dropdown = button.nextElementSibling;
+                        if (dropdown) dropdown.classList.toggle('show');
+                    });
+                });
+            }
+
+            // Attach order status update event listeners (CSP-compliant)
+            function attachOrderStatusListeners() {
+                document.querySelectorAll('.dropdown-item').forEach(item => {
+                    item.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        console.log('Dropdown item clicked', item.getAttribute('data-action'));
+                        const action = item.getAttribute('data-action');
+                        const orderRow = item.closest('tr[data-order-id]');
+                        const orderId = orderRow ? orderRow.getAttribute('data-order-id') : null;
+                        // Close all dropdowns
+                        document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.remove('show'));
+                        if (action && orderId) {
+                            updateOrderStatus(orderId, action);
+                        }
+                    });
+                });
+            }
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function (event) {
+                document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.remove('show'));
+            });
 
             // Initial render
             renderOrders();
@@ -1310,22 +1325,6 @@
                     }
                 }
             }
-        });
-
-        // Dropdown functionality
-        function toggleDropdown(button) {
-            const dropdown = button.nextElementSibling;
-            dropdown.classList.toggle('show');
-        }
-
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function (event) {
-            const dropdowns = document.querySelectorAll('.dropdown-menu');
-            dropdowns.forEach(dropdown => {
-                if (!dropdown.contains(event.target) && !event.target.matches('.action-button')) {
-                    dropdown.classList.remove('show');
-                }
-            });
         });
 
         // Update order status
