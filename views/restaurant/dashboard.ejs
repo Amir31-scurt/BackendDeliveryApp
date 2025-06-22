@@ -42,11 +42,16 @@
         .sidebar {
             width: 250px;
             background: white;
-            padding: 2rem;
+            padding: 1rem;
             box-shadow: var(--card-shadow);
             position: fixed;
             height: 100vh;
             z-index: 100;
+        }
+
+        .logo-icon {
+            width: 150px;
+            height: 150px
         }
 
         .sidebar-header {
@@ -57,7 +62,7 @@
         .sidebar-header h1 {
             font-family: 'Playfair Display', serif;
             color: var(--primary-color);
-            font-size: 1.8rem;
+            font-size: 1.1rem;
             margin-bottom: 0.5rem;
         }
 
@@ -572,6 +577,7 @@
     <div class="dashboard-container">
         <aside class="sidebar">
             <div class="sidebar-header">
+                <img src="/images/logo.png" alt="logo" class="logo-icon">
                 <h1>Gourmet d'amour</h1>
                 <p>Restaurant</p>
             </div>
@@ -590,7 +596,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="/admin/logout" class="nav-link logout">
+                        <a href="/admin/restaurant/logout" class="nav-link logout">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Déconnexion</span>
                         </a>
@@ -804,19 +810,15 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Force console logs to appear
-        console.log('Script starting...');
 
         document.addEventListener('DOMContentLoaded', function () {
-            console.log('DOM Content Loaded');
 
             // Get all orders from the table
             const orderRows = document.querySelectorAll('.order-row');
-            console.log('Found order rows:', orderRows.length);
 
             const orders = Array.from(orderRows).map(row => {
                 try {
                     const orderData = JSON.parse(row.dataset.order);
-                    console.log('Raw order data:', orderData);
                     // Ensure total_amount is a number and handle different formats
                     if (typeof orderData.total_amount === 'string') {
                         // Remove any currency symbols and spaces
@@ -824,7 +826,6 @@
                     } else {
                         orderData.total_amount = parseFloat(orderData.total_amount) || 0;
                     }
-                    console.log('Processed order data:', orderData);
                     return orderData;
                 } catch (e) {
                     console.error('Error parsing order data:', e);
@@ -832,36 +833,26 @@
                 }
             }).filter(order => order !== null);
 
-            console.log('Total orders after parsing:', orders.length);
-            console.log('Orders data with amounts:', orders.map(o => ({ id: o.id, total_amount: o.total_amount })));
-
             const itemsPerPage = 10;
             let currentPage = 1;
             let filteredOrders = [...orders];
 
             // Update stats function
             function updateStats(orders) {
-                console.log('Updating stats with orders:', orders);
                 const today = new Date().toLocaleDateString();
-                console.log('Today\'s date:', today);
 
                 const todayOrders = orders.filter(order => {
                     const orderDate = new Date(order.created_at).toLocaleDateString();
-                    console.log('Order date:', orderDate, 'Matches today:', orderDate === today);
                     return orderDate === today;
                 });
 
-                console.log('Today\'s orders:', todayOrders);
-
                 const totalRevenue = orders.reduce((total, order) => {
                     const amount = parseFloat(order.total_amount) || 0;
-                    console.log('Adding amount:', amount, 'to total:', total);
                     return total + amount;
                 }, 0);
 
                 const todayRevenue = todayOrders.reduce((total, order) => {
                     const amount = parseFloat(order.total_amount) || 0;
-                    console.log('Adding today\'s amount:', amount, 'to total:', total);
                     return total + amount;
                 }, 0);
 
@@ -870,11 +861,6 @@
                 const averageRating = ratedOrders.length > 0
                     ? (ratedOrders.reduce((sum, order) => sum + order.rating, 0) / ratedOrders.length).toFixed(1)
                     : 0;
-
-                console.log('Total revenue:', totalRevenue);
-                console.log('Today\'s revenue:', todayRevenue);
-                console.log('Average rating:', averageRating);
-                console.log('Number of ratings:', ratedOrders.length);
 
                 document.getElementById('totalOrdersCount').textContent = orders.length;
                 document.getElementById('todayOrdersCount').textContent = todayOrders.length;
@@ -893,17 +879,14 @@
             if (searchInput) {
                 searchInput.addEventListener('input', function (e) {
                     const searchTerm = e.target.value.toLowerCase();
-                    console.log('Searching for:', searchTerm);
 
                     filteredOrders = orders.filter(order => {
                         const userName = (order.user?.name || '').toLowerCase();
                         const address = (order.delivery_address?.address || '').toLowerCase();
                         const matches = userName.includes(searchTerm) || address.includes(searchTerm);
-                        console.log('Order matches search:', matches, 'User:', userName, 'Address:', address);
                         return matches;
                     });
 
-                    console.log('Filtered orders:', filteredOrders.length);
                     currentPage = 1;
                     renderOrders();
                     updatePagination();
@@ -1050,7 +1033,6 @@
             function attachDropdownListeners() {
                 document.querySelectorAll('.action-button').forEach(button => {
                     button.addEventListener('click', function (event) {
-                        console.log('Action button clicked');
                         event.stopPropagation();
                         // Close all other dropdowns first
                         document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.remove('show'));
@@ -1065,7 +1047,6 @@
                 document.querySelectorAll('.dropdown-item').forEach(item => {
                     item.addEventListener('click', function (event) {
                         event.preventDefault();
-                        console.log('Dropdown item clicked', item.getAttribute('data-action'));
                         const action = item.getAttribute('data-action');
                         const orderRow = item.closest('tr[data-order-id]');
                         const orderId = orderRow ? orderRow.getAttribute('data-order-id') : null;

@@ -8,6 +8,7 @@ import { authMiddleware, requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
 
+
 // Public routes (no auth required)
 router.get("/login", (req, res) => {
   res.render("admin/adminLogin");
@@ -324,26 +325,40 @@ router.post("/logout", (req, res) => {
 });
 
 router.get("/logout", (req, res) => {
-  try {
-    // Clear the session
-    req.session.destroy((err) => {
+  if (req.session) {
+    req.session.destroy(err => {
       if (err) {
-        console.error('Error destroying session:', err);
+        return res.status(500).json({ message: 'Logout failed' });
       }
-    });
 
-    // Clear the JWT cookie
-    res.clearCookie('token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      res.clearCookie('connect.sid'); // clear session cookie
+      return res.redirect('/admin/login'); // ⬅️ redirect to login
     });
+  } else {
+    return res.redirect('/admin/login'); // ⬅️ fallback redirect if no session
+  }
+});
+router.get("/restaurant/logout", (req, res) => {
+  if (req.session) {
+    req.session.destroy(err => {
+      if (err) {
+        return res.status(500).json({ message: 'Logout failed' });
+      }
 
-    // Redirect to login page
-    res.redirect('/admin/login');
-  } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({ error: 'Internal server error during logout' });
+      res.clearCookie('connect.sid'); // clear session cookie
+
+      // Prevent caching the logout response
+      res.set('Cache-Control', 'no-store');
+      res.set('Pragma', 'no-cache');
+
+      return res.redirect('/admin/restaurant/login'); // ⬅️ redirect to login
+    });
+  } else {
+    // Same response even if session doesn't exist
+    res.set('Cache-Control', 'no-store');
+    res.set('Pragma', 'no-cache');
+
+    return res.redirect('/admin/restaurant/login'); // ⬅️ fallback redirect if no session
   }
 });
 

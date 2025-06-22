@@ -42,7 +42,7 @@
         .sidebar {
             width: 250px;
             background: white;
-            padding: 2rem;
+            padding: 1rem;
             box-shadow: var(--card-shadow);
             position: fixed;
             height: 100vh;
@@ -57,7 +57,7 @@
         .sidebar-header h1 {
             font-family: 'Playfair Display', serif;
             color: var(--primary-color);
-            font-size: 1.8rem;
+            font-size: 1.1rem;
             margin-bottom: 0.5rem;
         }
 
@@ -602,6 +602,11 @@
             text-align: center;
         }
 
+        .logo-icon {
+            width: 150px;
+            height: 150px
+        }
+
         @media (max-width: 768px) {
             .modal-body-grid {
                 grid-template-columns: 1fr;
@@ -614,6 +619,7 @@
     <div class="dashboard-container">
         <aside class="sidebar">
             <div class="sidebar-header">
+                <img src="/images/logo.png" alt="logo" class="logo-icon">
                 <h1>Gourmet d'amour</h1>
                 <p>Restaurant</p>
             </div>
@@ -632,7 +638,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="/admin/logout" class="nav-link logout">
+                        <a href="/admin/restaurant/logout" class="nav-link logout" onclick="logoutRedirect(event)">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Déconnexion</span>
                         </a>
@@ -768,8 +774,8 @@
                                 <div class="right-side">
                                     <div class="form-group">
                                         <label for="image">Image</label>
-                                        <input type="file" id="image" name="image" accept="image/*" class="form-control"
-                                            required />
+                                        <input type="file" id="image" value="" name="image" accept="image/*"
+                                            class="form-control" required />
                                     </div>
                                     <div class="image-preview-container">
                                         <label for="imagePreview">Apperçue de l'image</label>
@@ -805,6 +811,17 @@
             });
             document.body.style.overflow = 'hidden';
             populateCategoriesByType();
+            // Reset image preview for add mode
+            if (imagePreview && noImagePreview) {
+                imagePreview.src = '';
+                imagePreview.style.display = 'none';
+                noImagePreview.style.display = 'block';
+            }
+            lastImageUrl = '';
+            // Also reset the file input
+            if (imageInput) {
+                imageInput.value = '';
+            }
         }
 
         function populateCategoriesByType() {
@@ -827,6 +844,11 @@
                 option.textContent = category.charAt(0) + category.slice(1).toLowerCase();
                 categorySelect.appendChild(option);
             });
+        }
+
+        function logoutRedirect(event) {
+            event.preventDefault();
+            window.location.replace("/admin/restaurant/logout"); // no back history
         }
 
         function closeModal() {
@@ -863,6 +885,14 @@
 
             // Restore scrolling
             document.body.style.overflow = '';
+
+            // Reset image preview
+            if (imagePreview && noImagePreview) {
+                imagePreview.src = '';
+                imagePreview.style.display = 'none';
+                noImagePreview.style.display = 'block';
+            }
+            lastImageUrl = '';
         }
 
         // Initialize all event listeners when the DOM is loaded
@@ -962,17 +992,19 @@
             let lastImageUrl = '';
 
             if (imageInput) {
-                imageInput.addEventListener('change', function (e) {
-                    const file = e.target.files[0];
+                imageInput.addEventListener('input', function (e) {
+                    const file = e.target.files && e.target.files[0];
                     if (file) {
-                        const reader = new FileReader();
-                        reader.onload = function (event) {
-                            imagePreview.src = event.target.result;
-                            imagePreview.style.display = 'block';
-                            noImagePreview.style.display = 'none';
+                        const url = URL.createObjectURL(file);
+                        imagePreview.src = url;
+                        imagePreview.style.display = 'block';
+                        noImagePreview.style.display = 'none';
+                        // Revoke the object URL after the image loads to avoid memory leaks
+                        imagePreview.onload = function () {
+                            URL.revokeObjectURL(url);
                         };
-                        reader.readAsDataURL(file);
                     } else {
+                        // If no file is selected, revert to the original image
                         if (lastImageUrl) {
                             imagePreview.src = lastImageUrl;
                             imagePreview.style.display = 'block';
@@ -1083,9 +1115,10 @@
                 // Make image optional for edits
                 if (imageInput) {
                     imageInput.removeAttribute('required');
+                    imageInput.value = '';
                 }
 
-                // Show current image in preview
+                // Show current image in preview and set lastImageUrl
                 if (imagePreview && noImagePreview) {
                     if (menuItem.imageUrl) {
                         imagePreview.src = menuItem.imageUrl;
@@ -1195,12 +1228,12 @@
             let query;
             if (mode === "add") {
                 query = `
-                    mutation {
+                mutation {
                         addMenuItem(input: {
-                            name: "${variables.name}",
-                            description: "${variables.description}",
-                            price: ${variables.price},
-                            category: "${variables.category}",
+                        name: "${variables.name}",
+                        description: "${variables.description}",
+                        price: ${variables.price},
+                        category: "${variables.category}",
                             imageUrl: "${variables.imageUrl}",
                             restaurantId: "${variables.restaurantId}"
                         }) {
