@@ -1398,16 +1398,20 @@ const resolvers = {
       };
     },
     updateMenuItem: async (_, { id, input }) => {
+      // Build the update object dynamically
+      const updateObj = {
+        name: input.name,
+        description: input.description,
+        price: input.price,
+        category: input.category,
+        updated_at: new Date().toISOString()
+      };
+      if (typeof input.imageUrl === 'string' && input.imageUrl.trim() !== '') {
+        updateObj.image_url = input.imageUrl;
+      }
       const { data, error } = await supabase
         .from("menu_items")
-        .update({
-          name: input.name,
-          description: input.description,
-          price: input.price,
-          category: input.category,
-          image_url: input.imageUrl,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateObj)
         .eq("id", id)
         .select()
         .single();
