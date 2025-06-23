@@ -638,7 +638,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="/admin/restaurant/logout" class="nav-link logout" onclick="logoutRedirect(event)">
+                        <a href="/admin/logout" class="nav-link logout">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Déconnexion</span>
                         </a>
@@ -844,11 +844,6 @@
                 option.textContent = category.charAt(0) + category.slice(1).toLowerCase();
                 categorySelect.appendChild(option);
             });
-        }
-
-        function logoutRedirect(event) {
-            event.preventDefault();
-            window.location.replace("/admin/restaurant/logout"); // no back history
         }
 
         function closeModal() {

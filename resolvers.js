@@ -812,6 +812,23 @@ const resolvers = {
             `Failed to create order items: ${itemsError.message}`
           );
 
+        // Notify assigned deliverer if present
+        if (newOrder.deliverer_id) {
+          // Insert into notifications table
+          await supabase.from('notifications').insert({
+            user_id: newOrder.deliverer_id,
+            title: 'Nouvelle commande assignée',
+            body: `Une commande #${newOrder.id} vous a été assignée.`,
+          });
+
+          // Send push notification
+          await sendPushNotification(
+            newOrder.deliverer_id,
+            `Une nouvelle commande #${newOrder.id} vous a été assignée.`,
+            supabase
+          );
+        }
+
         return {
           id: newOrder.id,
           restaurantId: newOrder.restaurant_id,

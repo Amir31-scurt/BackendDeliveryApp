@@ -15,7 +15,6 @@ import adminRoutes from "./routes/admin.js";
 import authRoutes from "./routes/auth.js";
 import { supabase } from "./supabaseClient.js";
 import { authMiddleware } from "./middleware/auth.js";
-import session from "express-session";
 // import { supabase } from "./supabaseClient.js";
 
 dotenv.config();
@@ -23,17 +22,6 @@ dotenv.config();
 const __dirname = path.resolve();
 
 const app = express();
-
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your_fallback_secret",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false, // set to true if using HTTPS
-    },
-  })
-);
 
 // Security middleware
 app.use(helmet({
