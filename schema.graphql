@@ -102,6 +102,7 @@ type OrderItem {
 enum OrderStatus {
   Pending
   PREPARING
+  READY
   DELIVERING
   COMPLETED
   CANCELLED

@@ -865,6 +865,9 @@ const resolvers = {
           case 'PREPARING':
             statusFrench = 'en cours de préparation';
             break;
+          case 'READY':
+            statusFrench = 'prête à être récupérée';
+            break;
           case 'DELIVERING':
             statusFrench = 'en cours de livraison';
             break;
@@ -876,6 +879,38 @@ const resolvers = {
             break;
           default:
             statusFrench = 'mise à jour';
+        }
+
+        if (order.deliverer_id) {
+          let delivererMessage;
+
+          switch (status) {
+            case 'PREPARING':
+              delivererMessage = `La commande #${order.id} est en préparation.`;
+              break;
+            case 'READY':
+              delivererMessage = `La commande #${order.id} est prête. Veuillez la récupérer.`;
+              break;
+            case 'DELIVERING':
+              delivererMessage = `Vous êtes en cours de livraison pour la commande #${order.id}.`;
+              break;
+            case 'COMPLETED':
+              delivererMessage = `La commande #${order.id} a été livrée avec succès.`;
+              break;
+            case 'CANCELLED':
+              delivererMessage = `La commande #${order.id} a été annulée.`;
+              break;
+            default:
+              delivererMessage = `La commande #${order.id} a été mise à jour.`;
+          }
+
+          await supabase.from('notifications').insert({
+            user_id: order.deliverer_id,
+            title: 'Mise à jour de commande',
+            body: delivererMessage,
+          });
+
+          await sendPushNotification(order.deliverer_id, delivererMessage, supabase);
         }
 
         // Insert notification in French
