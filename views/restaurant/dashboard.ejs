@@ -245,6 +245,11 @@
             color: #4b5563;
         }
 
+        .status-ready {
+            background-color: #e0f2f1;
+            color: #00695c;
+        }
+
         .status-preparing {
             background-color: #dbeafe;
             color: #1e40af;
@@ -753,6 +758,9 @@
                                             <div class="dropdown-menu">
                                                 <a href="#" class="dropdown-item" data-action="PREPARING"> <i
                                                         class="fas fa-sync"></i> En préparation </a>
+                                                <a href="#" class="dropdown-item" data-action="READY">
+                                                    <i class="fas fa-bell"></i> Prête
+                                                </a>
                                                 <a href="#" class="dropdown-item" data-action="DELIVERING"> <i
                                                         class="fas fa-truck"></i> En livraison </a>
                                                 <a href="#" class="dropdown-item" data-action="COMPLETED"> <i
@@ -932,8 +940,9 @@
                             <span class="status-badge status-${order.status.toLowerCase()}">
                                 ${order.status === 'PENDING' ? 'En attente' :
                             order.status === 'PREPARING' ? 'En préparation' :
-                                order.status === 'DELIVERING' ? 'En livraison' :
-                                    order.status === 'COMPLETED' ? 'Livrée' : 'Annulée'}
+                                order.status === 'READY' ? 'Prête' :
+                                    order.status === 'DELIVERING' ? 'En livraison' :
+                                        order.status === 'COMPLETED' ? 'Livrée' : 'Annulée'}
                             </span>
                         </td>
                         <td>
@@ -944,6 +953,8 @@
                                 </button>
                                 <div class="dropdown-menu">
                                     <a href="#" class="dropdown-item" data-action="PREPARING"> <i class="fas fa-sync"></i> En préparation </a>
+                                    <a href="#" class="dropdown-item" 
+                                    data-action="READY"> <i class="fas fa-bell"></i> Prête </a>
                                     <a href="#" class="dropdown-item" data-action="DELIVERING"> <i class="fas fa-truck"></i> En livraison </a>
                                     <a href="#" class="dropdown-item" data-action="COMPLETED"> <i class="fas fa-check"></i> Livrée </a>
                                     <a href="#" class="dropdown-item" data-action="CANCELLED"> <i class="fas fa-times"></i> Annuler </a>

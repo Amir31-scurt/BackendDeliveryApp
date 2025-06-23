@@ -769,12 +769,6 @@ const resolvers = {
         const priceMap = Object.fromEntries(
           menuItems.map((item) => [item.id, item.price])
         );
-        const totalAmount = input.items.reduce((total, item) => {
-          const itemPrice = priceMap[item.menuItemId];
-          if (!itemPrice)
-            throw new Error(`Menu item not found: ${item.menuItemId}`);
-          return total + itemPrice * item.quantity;
-        }, 0);
 
         const { data: newOrder, error: orderError } = await supabase
           .from("orders")
@@ -784,7 +778,7 @@ const resolvers = {
               restaurant_id: input.restaurantId,
               delivery_address: input.deliveryAddress,
               instructions: input.instructions || null,
-              total_amount: totalAmount,
+              total_amount: input.totalAmount,
               status: input.status || "Pending",
               is_paid: input.isPaid || false,
               payment_method: input.paymentMethod || "CASH",
