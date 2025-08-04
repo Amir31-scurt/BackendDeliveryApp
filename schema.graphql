@@ -21,6 +21,9 @@ type Restaurant {
   ratings: [RestaurantRating!]
   imageUrl: String
   isActive: Boolean
+  latitude: Float
+  longitude: Float
+  distance: Float
   createdAt: String!
   updatedAt: String!
 }
@@ -152,6 +155,7 @@ type Query {
   restaurants: [Restaurant!]!
   restaurant(id: ID!): Restaurant
   searchRestaurants(query: String!): [Restaurant!]!
+  restaurantsNearby(latitude: Float!, longitude: Float!, maxDistance: Float): [Restaurant!]!
   menuItems(restaurantId: ID!): [MenuItem!]!
   menuItem(id: ID!): MenuItem
   allMenuItems: [MenuItem!]!
@@ -229,6 +233,8 @@ input CreateRestaurantInput {
   email: String!
   imageUrl: String
   isActive: Boolean
+  latitude: Float
+  longitude: Float
 }
 
 input UpdateRestaurantInput {
@@ -241,6 +247,8 @@ input UpdateRestaurantInput {
   email: String
   imageUrl: String
   isActive: Boolean
+  latitude: Float
+  longitude: Float
 }
 
 input OpeningHoursInput {
