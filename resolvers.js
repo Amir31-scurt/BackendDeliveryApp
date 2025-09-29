@@ -480,7 +480,7 @@ const resolvers = {
             .single();
 
           let userData = null;
-          if (delivererData?.user_id) {
+          if (delivererData && delivererData.user_id) {
             const { data: userRow, error: userError } = await supabase
               .from("users")
               .select("id, name, phone_number")
@@ -489,9 +489,12 @@ const resolvers = {
 
             if (!userError && userRow) {
               userData = {
+                id: userRow.id,
                 name: userRow.name,
                 phoneNumber: userRow.phone_number
               };
+            } else {
+              userData = null;
             }
           }
 
@@ -525,6 +528,7 @@ const resolvers = {
             id: order.restaurant.id,
             name: order.restaurant.name,
             description: order.restaurant.description,
+            phoneNumber: order.restaurant.phone_number,
             address: order.restaurant.address
           },
           items: order.order_items.map((item) => ({
@@ -877,7 +881,7 @@ const resolvers = {
               restaurant_id: input.restaurantId,
               delivery_address: input.deliveryAddress,
               instructions: input.instructions || null,
-              total_amount: totalAmount,
+              total_amount: input.totalAmount,
               status: input.status || "Pending",
               is_paid: input.isPaid || false,
               payment_method: input.paymentMethod || "CASH",
@@ -1537,6 +1541,8 @@ const resolvers = {
   },
   Deliverer: {
     user: async (parent, _, { supabase }) => {
+      if (parent.user) return parent.user; // already resolved
+      if (!parent.user_id) return null;
       const { data, error } = await supabase
         .from("users")
         .select("*")
