@@ -411,42 +411,97 @@ const resolvers = {
 
         if (error) throw new Error(`Failed to fetch orders: ${error.message}`);
 
-        return (orders || []).map((order) => ({
-          id: order.id,
-          restaurantId: order.restaurant_id,
-          userId: order.user_id,
-          user: order.user,
-          restaurant: {
-            ...order.restaurant,
-            phoneNumber: order.restaurant.phone_number || "Not provided",
-            openingHours: order.restaurant.opening_hours,
-            imageUrl: order.restaurant.image_url || null,
-            isActive: order.restaurant.is_active,
-            createdAt: order.restaurant.created_at,
-            updatedAt: order.restaurant.updated_at
-          },
-          items: order.order_items.map((item) => ({
-            menuItemId: item.menu_item_id,
-            menuItem: item.menu_item
-              ? {
-                ...item.menu_item,
-                imageUrl: item.menu_item.image_url || null,
+        // For each order, fetch deliverer info if deliverer_id exists
+        const ordersWithDeliverer = await Promise.all((orders || []).map(async (order) => {
+          let deliverer = null;
+          if (order.deliverer_id) {
+            const { data: delivererData, error: delivererError } = await supabase
+              .from("deliverers")
+              .select("*")
+              .eq("user_id", order.deliverer_id)
+              .single();
+
+            let userData = null;
+            if (delivererData && delivererData.user_id) {
+              const { data: userRow, error: userError } = await supabase
+                .from("users")
+                .select("id, name, phone_number")
+                .eq("id", delivererData.user_id)
+                .single();
+
+              if (!userError && userRow) {
+                userData = {
+                  id: userRow.id,
+                  name: userRow.name,
+                  phoneNumber: userRow.phone_number
+                };
+              } else {
+                userData = null;
               }
-              : null,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-          totalAmount: order.total_amount,
-          deliveryAddress: order.delivery_address,
-          instructions: order.instructions,
-          status: order.status,
-          isPaid: order.is_paid || false,
-          paymentMethod: order.payment_method || "CASH",
-          createdAt: order.created_at,
-          updatedAt: order.updated_at,
-          delivererId: order.deliverer_id,
-          deliverer: order.deliverer,
+            }
+
+            if (!delivererError && delivererData) {
+              deliverer = {
+                userId: delivererData.user_id,
+                user_id: delivererData.user_id, // for Deliverer.user resolver
+                user: userData,
+                vehicleId: delivererData.vehicle_id,
+                isAvailable: delivererData.is_available,
+                currentLocation: typeof delivererData.current_location === "string"
+                  ? JSON.parse(delivererData.current_location)
+                  : delivererData.current_location,
+                zone: delivererData.zone,
+                profilePicture: delivererData.profile_picture,
+                isActive: delivererData.is_active,
+                isVerified: delivererData.is_verified
+              };
+            }
+          }
+
+          return {
+            id: order.id,
+            restaurantId: order.restaurant_id,
+            userId: order.user_id,
+            user: order.user ? {
+              id: order.user.id,
+              name: order.user.name,
+              phoneNumber: order.user.phone_number
+            } : null,
+            restaurant: order.restaurant ? {
+              id: order.restaurant.id,
+              name: order.restaurant.name,
+              description: order.restaurant.description,
+              phoneNumber: order.restaurant.phone_number,
+              address: order.restaurant.address
+            } : null,
+            items: (order.order_items || []).map((item) => ({
+              menuItemId: item.menu_item_id,
+              menuItem: item.menu_item
+                ? {
+                  id: item.menu_item.id,
+                  name: item.menu_item.name,
+                  description: item.menu_item.description,
+                  price: item.menu_item.price,
+                  imageUrl: item.menu_item.image_url || null
+                }
+                : null,
+              quantity: item.quantity,
+              price: item.price
+            })),
+            totalAmount: order.total_amount,
+            deliveryAddress: order.delivery_address,
+            instructions: order.instructions,
+            status: order.status,
+            isPaid: order.is_paid || false,
+            paymentMethod: order.payment_method || "CASH",
+            createdAt: order.created_at || null,
+            updatedAt: order.updated_at || null,
+            delivererId: order.deliverer_id,
+            deliverer
+          };
         }));
+
+        return ordersWithDeliverer;
       } catch (err) {
         console.error("Error fetching orders:", err.message);
         throw new Error(err.message);
