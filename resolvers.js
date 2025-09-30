@@ -518,7 +518,7 @@ const resolvers = {
             `*, 
         order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), 
         user:users(id, name, phone_number), 
-        restaurant:restaurants(id, name, description, address, type, opening_hours, phone_number, email, image_url, is_active, created_at, updated_at)`
+        restaurant:restaurants(id, name, description, address, type, opening_hours, phone_number, email, image_url, is_active, created_at, updated_at, latitude, longitude)`
           )
           .eq("id", id)
           .single();
