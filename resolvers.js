@@ -186,6 +186,20 @@ const resolvers = {
 
         if (error) throw new Error(error.message);
 
+        if (ordersError) throw new Error(ordersError.message);
+
+        // Fetch all users for feedbacks
+        const userIds = [...new Set(orders.map(order => order.user_id))];
+        const { data: users, error: usersError } = await supabase
+          .from("users")
+          .select("id, name")
+          .in("id", userIds);
+
+        const userMap = {};
+        (users || []).forEach(user => {
+          userMap[user.id] = user.name;
+        });
+
         // Calculate average ratings for each restaurant
         const restaurantsWithRatings = restaurants.map(restaurant => {
           // Filter for completed orders with ratings
@@ -259,6 +273,43 @@ const resolvers = {
         .single();
       if (error) throw new Error(error.message);
 
+      // Fetch all completed orders with ratings and notes for this restaurant
+      const { data: orders, error: ordersError } = await supabase
+        .from("orders")
+        .select("id, rating, note, user_id, created_at")
+        .eq("restaurant_id", id)
+        .eq("status", "COMPLETED")
+        .not("rating", "is", null);
+
+      if (ordersError) throw new Error(ordersError.message);
+
+      const userIds = [...new Set(orders.map(order => order.user_id))];
+      const { data: users, error: usersError } = await supabase
+        .from("users")
+        .select("id, name")
+        .in("id", userIds);
+
+      const userMap = {};
+      (users || []).forEach(user => {
+        userMap[user.id] = user.name;
+      });
+
+      const ratings = orders.map(order => order.rating).filter(r => r !== null && r !== undefined);
+
+      const averageRating = ratings.length > 0
+        ? (ratings.reduce((sum, r) => sum + r, 0) / ratings.length)
+        : null;
+
+      // Collect feedbacks (notes)
+      const feedbacks = orders
+        .filter(order => order.note && order.note.trim() !== "")
+        .map(order => ({
+          note: order.note,
+          userId: order.user_id,
+          userName: userMap[order.user_id] || "Utilisateur inconnu",
+          createdAt: order.created_at
+        }));
+
       if (!data.opening_hours) {
         // Provide a default value for opening hours
         data.opening_hours = {
@@ -273,6 +324,8 @@ const resolvers = {
       }
       return {
         ...data,
+        averageRating,
+        feedbacks,
         openingHours: data.opening_hours,
         phoneNumber: data.phone_number || "Not provided",
         imageUrl: data.image_url || null,
@@ -313,7 +366,63 @@ const resolvers = {
 
         console.log(`Found ${restaurantsWithDistance.length} restaurants within ${maxDistance}km of (${latitude}, ${longitude})`);
 
-        return restaurantsWithDistance.map(transformRestaurantData);
+        // Get all restaurant IDs
+        const restaurantIds = restaurantsWithDistance.map(r => r.id);
+
+        // Fetch all completed orders with ratings and notes for these restaurants
+        const { data: orders, error: ordersError } = await supabase
+          .from("orders")
+          .select("id, rating, note, user_id, restaurant_id, created_at")
+          .in("restaurant_id", restaurantIds)
+          .eq("status", "COMPLETED");
+
+        if (ordersError) {
+          console.error('Error fetching orders:', ordersError);
+          // Continue without orders data
+        }
+
+        // Fetch all users for feedbacks
+        const userIds = [...new Set((orders || []).map(order => order.user_id))];
+        let userMap = {};
+        if (userIds.length > 0) {
+          const { data: users, error: usersError } = await supabase
+            .from("users")
+            .select("id, name")
+            .in("id", userIds);
+
+          if (!usersError && users) {
+            users.forEach(user => {
+              userMap[user.id] = user.name;
+            });
+          }
+        }
+
+        // Transform each restaurant with averageRating and feedbacks
+        return restaurantsWithDistance.map(restaurant => {
+          const restaurantOrders = (orders || []).filter(order => order.restaurant_id === restaurant.id);
+
+          // Calculate average rating
+          const ratings = restaurantOrders.map(order => order.rating).filter(r => r !== null && r !== undefined);
+          const averageRating = ratings.length > 0
+            ? (ratings.reduce((sum, r) => sum + r, 0) / ratings.length)
+            : null;
+
+          // Collect feedbacks (notes)
+          const feedbacks = restaurantOrders
+            .filter(order => order.note && order.note.trim() !== "")
+            .map(order => ({
+              note: order.note,
+              userId: order.user_id,
+              userName: userMap[order.user_id] || "Utilisateur inconnu",
+              createdAt: order.created_at
+            }));
+
+          return {
+            ...transformRestaurantData(restaurant),
+            averageRating: (averageRating === null ? 0 : averageRating),
+            feedbacks
+          };
+        });
 
       } catch (error) {
         console.error('Error in restaurantsNearby:', error);

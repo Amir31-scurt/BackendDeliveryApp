@@ -198,6 +198,8 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
         return res.status(500).send('Error fetching orders');
       }
 
+      console.log(orders)
+
       // If we have orders, fetch their delivery addresses
       if (orders && orders.length > 0) {
         const orderIds = orders.map(order => order.id);
