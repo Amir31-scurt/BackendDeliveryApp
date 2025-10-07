@@ -1657,7 +1657,7 @@ const resolvers = {
       if (!parent.user) return null;
       return {
         ...parent.user,
-        phoneNumber: parent.user.phone_number || "Not provided",
+        phoneNumber: parent.user.phoneNumber || parent.user.phone_number || "Not provided",
         createdAt: parent.user.created_at,
       };
     },
