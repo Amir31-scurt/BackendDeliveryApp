@@ -186,6 +186,14 @@ const resolvers = {
 
         if (error) throw new Error(error.message);
 
+        // Fetch all completed orders with ratings and notes for all restaurants
+        const { data: orders, error: ordersError } = await supabase
+          .from("orders")
+          .select("id, rating, note, user_id, restaurant_id, created_at")
+          .eq("status", "COMPLETED");
+
+        if (ordersError) throw new Error(ordersError.message);
+
         // Fetch all users for feedbacks
         const userIds = [...new Set(orders.map(order => order.user_id))];
         const { data: users, error: usersError } = await supabase
