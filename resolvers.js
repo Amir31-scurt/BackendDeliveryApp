@@ -312,6 +312,7 @@ const resolvers = {
         .map(order => ({
           note: order.note,
           userId: order.user_id,
+          rating: order.rating,
           userName: userMap[order.user_id] || "Utilisateur inconnu",
           createdAt: order.created_at
         }));
@@ -419,6 +420,7 @@ const resolvers = {
             .map(order => ({
               note: order.note,
               userId: order.user_id,
+              rating: order.rating,
               userName: userMap[order.user_id] || "Utilisateur inconnu",
               createdAt: order.created_at
             }));
