@@ -45,7 +45,7 @@ type MenuItem {
 type Feedback {
   note: String
   userId: ID
-  rating: Number,
+  rating: Float!,
   userName: String
   createdAt: String
 }
