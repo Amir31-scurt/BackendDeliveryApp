@@ -186,8 +186,6 @@ const resolvers = {
 
         if (error) throw new Error(error.message);
 
-        if (ordersError) throw new Error(ordersError.message);
-
         // Fetch all users for feedbacks
         const userIds = [...new Set(orders.map(order => order.user_id))];
         const { data: users, error: usersError } = await supabase
