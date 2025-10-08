@@ -199,6 +199,7 @@ type Mutation {
   deleteUser(id: ID!): Boolean!
   markNotificationAsRead(id: ID!): Notification!
   markAllNotificationsAsRead(userId: ID!): Boolean!
+  deleteNotification(id: ID!): Boolean!
   confirmOrderDelivery(orderId: ID!, token: String!, delivererId: ID!): Order!
   manualConfirmDelivery(orderId: ID!, delivererId: ID!): Order!
   addRestaurantRating(input: RestaurantRatingInput!): RestaurantRating!

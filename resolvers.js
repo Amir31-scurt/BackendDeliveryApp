@@ -1363,6 +1363,20 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
+    deleteNotification: async (_, { id }, { supabase }) => {
+      try {
+        const { error } = await supabase
+          .from('notifications')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw new Error(`Error deleting notification: ${error.message}`);
+        return true;
+      } catch (err) {
+        console.error('Error deleting notification:', err);
+        throw new Error(err.message);
+      }
+    },
     updateDelivererLocation: async (_, { userId, location }, { supabase }) => {
       try {
         const { data: deliverer, error } = await supabase
