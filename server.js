@@ -15,6 +15,7 @@ import adminRoutes from "./routes/admin.js";
 import authRoutes from "./routes/auth.js";
 import { supabase } from "./supabaseClient.js";
 import { authMiddleware } from "./middleware/auth.js";
+import { connectDB } from "./lib/dbClient.js";
 // import { supabase } from "./supabaseClient.js";
 
 dotenv.config();
@@ -261,7 +262,10 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   delivererResolvers,
-  context: { supabase },
+  context: async () => {
+    const db = await connectDB();
+    return { db, supabase }; // supabase reste pour le storage
+  },
 });
 
 // Apply middleware to the app
