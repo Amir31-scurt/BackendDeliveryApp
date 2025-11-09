@@ -86,6 +86,9 @@ router.post("/login/restaurant", async (req, res) => {
     console.log("Login attempt with body:", req.body);
     const { email } = req.body;
 
+    // --- CSRF token check ---
+    const csrfToken = req.body._csrf || req.headers["x-csrf-token"];
+
     if (!email) {
       console.log("No email provided");
       return res.status(400).json({ error: "Email is required" });
@@ -110,7 +113,7 @@ router.post("/login/restaurant", async (req, res) => {
 
     console.log("Restaurant found:", restaurant);
 
-    // Generate JWT token
+    // --- JWT token creation ---
     const token = jwt.sign(
       { id: restaurant.id, role: "restaurant" },
       process.env.JWT_SECRET,
@@ -119,26 +122,34 @@ router.post("/login/restaurant", async (req, res) => {
 
     console.log("Generated token for restaurant:", restaurant.id);
 
-    // Set token in cookie
+    // --- Secure cookie setup ---
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      sameSite: "lax",
+      path: "/",
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
+    // --- Disable caching ---
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+
+    // --- Response ---
     res.json({
       success: true,
       message: "Login successful",
       token,
       restaurant,
-      redirectUrl: `/admin/restaurant/${restaurant.id}/dashboard`
+      redirectUrl: `/admin/restaurant/${restaurant.id}/dashboard`,
     });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
 // Restaurant dashboard route - moved before the catch-all route
 router.get('/restaurant/:id/dashboard', async (req, res) => {
@@ -218,10 +229,54 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
         }
       }
 
-      console.log('Rendering dashboard with restaurant and orders data');
+      // Fetch restaurant-level revenue from the view
+      const { data: revenueData, error: revenueError } = await supabase
+        .from('restaurant_revenue')
+        .select('*')
+        .eq('restaurant_id', req.params.id)
+        .single();
+
+      if (revenueError) {
+        console.error('Error fetching restaurant revenue:', revenueError);
+      }
+
+      // KPIs
+      const totalOrders = orders.length;
+      const completedOrders = orders.filter(o => o.status === 'COMPLETED').length;
+      const uncompletedOrders = totalOrders - completedOrders;
+
+      // Total revenue from our view (more reliable than summing total_amount)
+      const totalRevenue = revenueData?.restaurant_revenue || 0;
+
+      // Today’s revenue
+      const todayDate = new Date().toLocaleDateString();
+      const todayOrders = orders.filter(
+        o => new Date(o.created_at).toLocaleDateString() === todayDate
+      );
+      const todayRevenue = todayOrders.reduce(
+        (sum, o) => sum + (parseFloat(o.total_amount) || 0),
+        0
+      );
+
+      // Optional: Monthly revenue aggregation for the chart
+      const { data: monthlyRevenue, error: monthlyError } = await supabase.rpc(
+        'get_monthly_restaurant_revenue',  // (we’ll define this next)
+        { restaurant_id: req.params.id }
+      );
+
+      if (monthlyError) {
+        console.error('Error fetching monthly revenue:', monthlyError);
+      }
+
       res.render('restaurant/dashboard', {
         restaurant,
-        orders: orders || [],
+        orders,
+        totalOrders,
+        completedOrders,
+        uncompletedOrders,
+        totalRevenue,
+        todayRevenue,
+        monthlyRevenue: monthlyRevenue || [],
         csrfToken: req.csrfToken()
       });
     } catch (err) {
@@ -301,6 +356,45 @@ router.get('/restaurant/:id/menu', async (req, res) => {
     res.status(500).send('Internal server error');
   }
 });
+
+router.get("/restaurant/logout", (req, res) => {
+  try {
+    // Clear cookie if any
+    res.clearCookie("token", {
+      path: "/",
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+    });
+
+    // Invalidate cache for this response
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+
+    // Send a small HTML snippet that clears browser history and redirects cleanly
+    res.send(`
+      <html>
+        <head>
+          <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+          <meta http-equiv="Pragma" content="no-cache">
+          <meta http-equiv="Expires" content="0">
+          <script>
+            // Remove JWT token from localStorage
+            localStorage.removeItem('token');
+            // Replace history so user can't go back
+            window.location.replace('/admin/login/restaurant');
+          </script>
+        </head>
+        <body></body>
+      </html>
+    `);
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ error: "Internal server error during logout" });
+  }
+});
+
 
 // Protected routes (auth required)
 router.use(authMiddleware);
@@ -397,12 +491,32 @@ router.get("/dashboard", async (req, res) => {
         "get_monthly_orders"
       );
 
+      // Fetch revenues from your SQL views
+      const [{ data: restoRev }, { data: delivererRev }, { data: gourmetRev }] = await Promise.all([
+        supabase.from('restaurant_revenue').select('restaurant_revenue'),
+        supabase.from('deliverer_revenue').select('deliverer_net_revenue'),
+        supabase.from('gourmet_revenue').select('total_revenue')
+      ]);
+
+      const totalRestaurantRevenue =
+        restoRev?.reduce((sum, r) => sum + Number(r.restaurant_revenue || 0), 0) || 0;
+      const totalDelivererRevenue =
+        delivererRev?.reduce((sum, d) => sum + Number(d.deliverer_net_revenue || 0), 0) || 0;
+      const totalGourmetRevenue =
+        gourmetRev?.[0]?.total_revenue || 0;
+
+
       return res.json({
         totalOrders: totalOrders ? totalOrders.length : 0,
         totalRestaurants: totalRestaurants ? totalRestaurants.length : 0,
         activeRestaurants: totalActiveRestaurants ? totalActiveRestaurants.length : 0,
         activeDeliverers: totalDeliverers ? totalDeliverers.length : 0,
-        monthlyOrders: monthlyOrders || []
+        monthlyOrders: monthlyOrders || [],
+        revenues: {
+          restaurants: totalRestaurantRevenue,
+          deliverers: totalDelivererRevenue,
+          gourmet: totalGourmetRevenue
+        }
       });
     }
 

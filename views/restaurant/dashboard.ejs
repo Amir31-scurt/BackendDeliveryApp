@@ -649,17 +649,16 @@
 
             <div class="stats-grid">
                 <div class="stat-card">
-                    <h3><i class="fas fa-shopping-cart"></i> Commandes Totales</h3>
-                    <p id="totalOrdersCount">
-                        <%= orders.length %>
+                    <h3><i class="fas fa-money-bill-wave"></i> Revenu Total</h3>
+                    <p>
+                        <%= totalRevenue.toLocaleString() %> Fcfa
                     </p>
                 </div>
 
                 <div class="stat-card">
-                    <h3><i class="fas fa-calendar-day"></i> Comm. Aujourd'hui</h3>
-                    <p id="todayOrdersCount">
-                        <%= orders.filter(order=> new Date(order.created_at).toLocaleDateString() === new
-                            Date().toLocaleDateString()).length %>
+                    <h3><i class="fas fa-calendar-day"></i> Revenu Aujourd'hui</h3>
+                    <p>
+                        <%= todayRevenue.toLocaleString() %> Fcfa
                     </p>
                 </div>
 
@@ -671,21 +670,33 @@
                     </p>
                 </div>
 
+
                 <div class="stat-card">
-                    <h3><i class="fas fa-money-bill-wave"></i> Revenus Aujourd'hui</h3>
-                    <p id="todayRevenue">
-                        <%= orders.filter(order=> new Date(order.created_at).toLocaleDateString() === new
-                            Date().toLocaleDateString()).reduce((total, order) => total +
-                            (parseFloat(order.total_amount)
-                            || 0), 0).toLocaleString() %> Fcfa
+                    <h3><i class="fas fa-shopping-cart"></i> Commandes Totales</h3>
+                    <p id="totalOrdersCount">
+                        <%= orders.length %>
                     </p>
                 </div>
 
                 <div class="stat-card">
-                    <h3><i class="fas fa-chart-line"></i> Revenus Totaux</h3>
-                    <p id="totalRevenue">
-                        <%= orders.reduce((total, order)=> total + (parseFloat(order.total_amount) || 0),
-                            0).toLocaleString() %> Fcfa
+                    <h3><i class="fas fa-check-circle"></i> Comm. Complètes</h3>
+                    <p>
+                        <%= completedOrders %>
+                    </p>
+                </div>
+
+                <div class="stat-card">
+                    <h3><i class="fas fa-hourglass-half"></i> Commandes En Cours</h3>
+                    <p>
+                        <%= uncompletedOrders %>
+                    </p>
+                </div>
+
+                <div class="stat-card">
+                    <h3><i class="fas fa-calendar-day"></i> Comm. Aujourd'hui</h3>
+                    <p id="todayOrdersCount">
+                        <%= orders.filter(order=> new Date(order.created_at).toLocaleDateString() === new
+                            Date().toLocaleDateString()).length %>
                     </p>
                 </div>
 
@@ -1186,13 +1197,19 @@
 
         // Revenue Chart
         const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+
+        // Safely pass your data from EJS → JS
+        const monthlyRevenueData = JSON.parse('<%- JSON.stringify(monthlyRevenue || []) %>');
+        const months = monthlyRevenueData.map(r => r.month);
+        const revenues = monthlyRevenueData.map(r => Number(r.revenue));
+
         new Chart(revenueCtx, {
             type: 'line',
             data: {
-                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+                labels: months.length > 0 ? months : ['Aucun mois'],
                 datasets: [{
                     label: 'Revenus',
-                    data: [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000],
+                    data: revenues.length > 0 ? revenues : [0],
                     backgroundColor: 'rgba(219, 96, 126, 0.1)',
                     borderColor: 'rgba(219, 96, 126, 1)',
                     borderWidth: 2,
@@ -1222,42 +1239,30 @@
                         displayColors: false,
                         callbacks: {
                             label: function (context) {
-                                return `${context.parsed.y} Fcfa`;
+                                return `${context.parsed.y.toLocaleString()} Fcfa`;
                             }
                         }
                     }
                 },
                 scales: {
                     x: {
-                        grid: {
-                            display: false
-                        },
+                        grid: { display: false },
                         title: {
                             display: true,
                             text: "Mois",
                             color: "#2c2c2c",
-                            font: {
-                                size: 14,
-                                family: "'Poppins', sans-serif",
-                                weight: '600'
-                            },
+                            font: { size: 14, family: "'Poppins', sans-serif", weight: '600' },
                             padding: { top: 10 }
                         }
                     },
                     y: {
                         beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' },
                         title: {
                             display: true,
                             text: "Revenus (Fcfa)",
                             color: "#2c2c2c",
-                            font: {
-                                size: 14,
-                                family: "'Poppins', sans-serif",
-                                weight: '600'
-                            },
+                            font: { size: 14, family: "'Poppins', sans-serif", weight: '600' },
                             padding: { bottom: 10 }
                         }
                     }

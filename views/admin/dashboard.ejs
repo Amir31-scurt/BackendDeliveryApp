@@ -278,6 +278,20 @@
     <h2 class="section-title">Aperçu</h2>
     <div class="stats-grid">
       <div class="stat-card">
+        <h3><i class="fa-solid fa-store"></i> Revenu Restaurants</h3>
+        <p id="restoRevenue">0 F</p>
+      </div>
+
+      <div class="stat-card">
+        <h3><i class="fa-solid fa-motorcycle"></i> Revenu Livreurs</h3>
+        <p id="delivererRevenue">0 F</p>
+      </div>
+
+      <div class="stat-card">
+        <h3><i class="fa-solid fa-heart"></i> Revenu Gourmet</h3>
+        <p id="gourmetRevenue">0 F</p>
+      </div>
+      <div class="stat-card">
         <h3><i class="fa-solid fa-cart-shopping"></i> Commandes Totales</h3>
         <p id="totalOrders">
           <%= totalOrders || 0 %>
@@ -345,8 +359,13 @@
           document.getElementById('totalOrders').textContent = data.totalOrders || 0;
           document.getElementById('totalRestaurants').textContent = data.totalRestaurants || 0;
           document.getElementById('activeRestaurants').textContent = data.activeRestaurants || 0;
+          document.getElementById('restoRevenue').textContent =
+            (data.revenues?.restaurants || 0).toLocaleString() + ' F';
+          document.getElementById('delivererRevenue').textContent =
+            (data.revenues?.deliverers || 0).toLocaleString() + ' F';
+          document.getElementById('gourmetRevenue').textContent =
+            (data.revenues?.gourmet || 0).toLocaleString() + ' F';
           document.getElementById('totalDeliverers').textContent = data.activeDeliverers || 0;
-
           const ctx = document.getElementById('monthlyOrdersChart').getContext('2d');
           new Chart(ctx, {
             type: 'line',

@@ -71,14 +71,6 @@ app.use(cors({
 
 // Cookie parser middleware
 app.use(cookieParser());
-
-// Middleware to parse JSON
-app.use(express.json());
-
-// Setup EJS as the template engine
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-
 // CSRF protection setup
 const csrfProtection = csrf({
   cookie: {
@@ -89,6 +81,15 @@ const csrfProtection = csrf({
     sameSite: 'strict'
   }
 });
+
+// Middleware to parse JSON
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Setup EJS as the template engine
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
+
 
 // Apply CSRF protection to all routes except GraphQL, API routes, and admin routes
 app.use((req, res, next) => {
