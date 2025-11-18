@@ -747,7 +747,8 @@
                             <th>Client</th>
                             <th>Téléphone</th>
                             <th>Adresse</th>
-                            <th>Montant</th>
+                            <th>Revenu</th>
+                            <th>Livraison</th>
                             <th>Note</th>
                             <th>Statut</th>
                             <th>Actions</th>
@@ -774,7 +775,10 @@
                                         <%= order.delivery_address?.address || 'N/A' %>
                                     </td>
                                     <td>
-                                        <%= order.total_amount %> Fcfa
+                                        <%= order.items_total.toLocaleString() %> F
+                                    </td>
+                                    <td>
+                                        <%= order.delivery_fee_final.toLocaleString() %> F
                                     </td>
                                     <td>
                                         <div class="note-container">
@@ -868,12 +872,12 @@
             const orders = Array.from(orderRows).map(row => {
                 try {
                     const orderData = JSON.parse(row.dataset.order);
-                    // Ensure total_amount is a number and handle different formats
-                    if (typeof orderData.total_amount === 'string') {
+                    // Ensure items_total is a number and handle different formats
+                    if (typeof orderData.items_total === 'string') {
                         // Remove any currency symbols and spaces
-                        orderData.total_amount = parseFloat(orderData.total_amount.replace(/[^0-9.-]+/g, '')) || 0;
+                        orderData.items_total = parseFloat(orderData.items_total.replace(/[^0-9.-]+/g, '')) || 0;
                     } else {
-                        orderData.total_amount = parseFloat(orderData.total_amount) || 0;
+                        orderData.items_total = parseFloat(orderData.items_total) || 0;
                     }
                     return orderData;
                 } catch (e) {
@@ -898,12 +902,12 @@
                 });
 
                 const totalRevenue = orders.reduce((total, order) => {
-                    const amount = parseFloat(order.total_amount) || 0;
+                    const amount = parseFloat(order.items_total) || 0;
                     return total + amount;
                 }, 0);
 
                 const todayRevenue = todayOrders.reduce((total, order) => {
-                    const amount = parseFloat(order.total_amount) || 0;
+                    const amount = parseFloat(order.items_total) || 0;
                     return total + amount;
                 }, 0);
 
@@ -973,7 +977,8 @@
                         <td>${order.user?.name || 'N/A'}</td>
                         <td>${order.user?.phone_number || 'N/A'}</td>
                         <td>${order.delivery_address?.address || 'N/A'}</td>
-                        <td>${order.total_amount.toLocaleString()} Fcfa</td>
+                        <td>${order.items_total.toLocaleString()} F</td>
+                        <td>${order.delivery_fee_final.toLocaleString()} F</td>
                         <td>
                             <div class="note-container">
                                 <span class="note-text">${order.rating || 0}/5</span>

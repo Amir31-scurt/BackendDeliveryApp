@@ -199,10 +199,16 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
           user:users (
             name,
             phone_number
+          ),
+          items:order_items (
+            quantity,
+            price,
+            menuItem:menu_items ( name )
           )
         `)
         .eq('restaurant_id', req.params.id)
         .order('created_at', { ascending: false });
+
 
       if (ordersError) {
         console.error('Error fetching orders:', ordersError);
@@ -267,6 +273,32 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
       if (monthlyError) {
         console.error('Error fetching monthly revenue:', monthlyError);
       }
+
+      orders.forEach(order => {
+
+        // 1. Items total
+        const itemsTotal = order.items.reduce(
+          (sum, item) => sum + (item.price * item.quantity),
+          0
+        );
+
+        order.items_total = itemsTotal;
+
+        // 2. Real delivery fee = total_amount - items_total - 200
+        let deliveryFee = (parseFloat(order.total_amount) || 0) - itemsTotal - 200;
+        if (deliveryFee < 0) deliveryFee = 0;
+
+        order.delivery_fee = deliveryFee;
+
+        // 3. Delivery fee minus 200 (your logic)
+        let deliveryFeeFinal = deliveryFee - 200;
+        if (deliveryFeeFinal < 0) deliveryFeeFinal = 0;
+
+        order.delivery_fee_final = deliveryFeeFinal;
+
+      });
+
+
 
       res.render('restaurant/dashboard', {
         restaurant,
@@ -487,15 +519,17 @@ router.get("/dashboard", async (req, res) => {
       }
 
       // Fetch monthly orders data
-      const { data: monthlyOrders, error: monthlyOrdersError } = await supabase.rpc(
-        "get_monthly_orders"
-      );
+      const { data: monthlyOrders, error: monthlyOrdersError } = await supabase.rpc("get_monthly_orders");
 
-      // Fetch revenues from your SQL views
-      const [{ data: restoRev }, { data: delivererRev }, { data: gourmetRev }] = await Promise.all([
-        supabase.from('restaurant_revenue').select('restaurant_revenue'),
-        supabase.from('deliverer_revenue').select('deliverer_net_revenue'),
-        supabase.from('gourmet_revenue').select('total_revenue')
+      // New revenue system using v2 functions
+      const [
+        { data: restoRev, error: restoErr },
+        { data: delivererRev, error: delivererErr },
+        { data: gourmetRev, error: gourmetErr }
+      ] = await Promise.all([
+        supabase.rpc('rpc_restaurant_revenue', { p_from: null, p_to: null }),
+        supabase.rpc('rpc_deliverer_revenue', { p_from: null, p_to: null }),
+        supabase.rpc('rpc_gourmet_revenue', { p_from: null, p_to: null })
       ]);
 
       const totalRestaurantRevenue =
