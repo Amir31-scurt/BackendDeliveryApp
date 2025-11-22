@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Payouts - Gourmet d'amour</title>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    :root {
+      --primary-color: #DB607E;
+      --secondary-color: #ABD27E;
+      --accent-color: #b22222;
+      --background-color: #f9f5f0;
+      --dark-color: #2c2c2c;
+      --card-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--background-color);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(rgba(0, 0, 0, 0.7),
+          rgba(0, 0, 0, 0.7)),
+        url("https://images.unsplash.com/photo-1601628828688-632f38a5a7d0?auto=format&fit=crop&w=1400&q=80");
+      background-size: cover;
+      background-position: center;
+      padding: 3rem 2rem;
+      text-align: center;
+      color: white;
+      position: relative;
+    }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 3rem;
+      color: var(--primary-color);
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    header p {
+      font-size: 1.2rem;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 2rem;
+    }
+
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      transition: 0.3s;
+    }
+
+    .nav-link:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 2rem auto;
+      padding: 2rem;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem;
+      text-align: center;
+      color: var(--dark-color);
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .section-title::after {
+      content: "";
+      width: 120px;
+      height: 4px;
+      background: linear-gradient(to right,
+          var(--primary-color),
+          var(--secondary-color));
+      display: block;
+      margin: 1rem auto;
+      border-radius: 2px;
+    }
+
+    /* STATS */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 2rem;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: var(--card-shadow);
+      transition: 0.3s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card h3 {
+      font-size: 1.2rem;
+      color: var(--dark-color);
+      margin-bottom: 1rem;
+    }
+
+    .stat-card p {
+      font-size: 2.4rem;
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+
+    /* TABLE */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 3rem;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+    }
+
+    th,
+    td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background: var(--primary-color);
+      color: white;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 0.9rem;
+    }
+
+    .status-success {
+      color: #2ecc71;
+      font-weight: bold;
+    }
+
+    .status-failed {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+
+    .status-processing {
+      color: #f1c40f;
+      font-weight: bold;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 10px;
+      background: var(--secondary-color);
+      color: white;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      background: #9ac36f;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>Payouts – Gourmet d'amour</h1>
+    <p>Suivi des paiements restaurants et livreurs</p>
+
+    <div class="nav-links">
+      <a href="/admin/dashboard" class="nav-link">
+        <i class="fa-solid fa-chart-line"></i> Dashboard
+      </a>
+      <a href="/admin/restaurants" class="nav-link">
+        <i class="fa-solid fa-store"></i> Restaurants
+      </a>
+      <a href="/admin/deliverers" class="nav-link">
+        <i class="fa-solid fa-motorcycle"></i> Livreurs
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <h2 class="section-title">Résumé des Payouts</h2>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Total vers Restaurants</h3>
+        <p><%= summary.totalRestaurant || 0 %> F</p>
+      </div>
+
+      <div class="stat-card">
+        <h3>Total vers Livreurs</h3>
+        <p><%= summary.totalDeliverer || 0 %> F</p>
+      </div>
+
+      <div class="stat-card">
+        <h3>Total Général</h3>
+        <p><%= summary.totalPayouts || 0 %> F</p>
+      </div>
+    </div>
+
+    <h2 class="section-title">Liste des Payouts</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Batch</th>
+          <th>Type</th>
+          <th>Montant</th>
+          <th>Statut</th>
+          <th>Date</th>
+          <th>Détails</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% payouts.forEach(p => { %>
+        <tr>
+          <td><%= p.batch_id %></td>
+          <td><%= p.target_type %></td>
+          <td><%= p.receive_amount %> F</td>
+
+          <td>
+            <% if (p.status === 'succeeded') { %>
+            <span class="status-success">Succès</span>
+            <% } else if (p.status === 'failed') { %>
+            <span class="status-failed">Échec</span>
+            <% } else { %>
+            <span class="status-processing">En cours</span>
+            <% } %>
+          </td>
+
+          <td><%= p.created_at %></td>
+
+          <td>
+            <a href="/admin/payouts/<%= p.batch_id %>" class="btn">
+              Voir
+            </a>
+          </td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+  </main>
+
+</body>
+
+</html>

@@ -203,7 +203,7 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
           items:order_items (
             quantity,
             price,
-            menuItem:menu_items ( name )
+            menuItem:menu_items ( name, image_url, description )
           )
         `)
         .eq('restaurant_id', req.params.id)
@@ -216,24 +216,6 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
       }
 
       console.log(orders)
-
-      // If we have orders, fetch their delivery addresses
-      if (orders && orders.length > 0) {
-        const orderIds = orders.map(order => order.id);
-        const { data: deliveryAddresses, error: deliveryError } = await supabase
-          .from('delivery_address')
-          .select('*')
-          .in('order_id', orderIds);
-
-        if (deliveryError) {
-          console.error('Error fetching delivery addresses:', deliveryError);
-        } else {
-          // Map delivery addresses to orders
-          orders.forEach(order => {
-            order.delivery_address = deliveryAddresses?.find(addr => addr.order_id === order.id) || null;
-          });
-        }
-      }
 
       // Fetch restaurant-level revenue from the view
       const { data: revenueData, error: revenueError } = await supabase
@@ -260,7 +242,7 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
         o => new Date(o.created_at).toLocaleDateString() === todayDate
       );
       const todayRevenue = todayOrders.reduce(
-        (sum, o) => sum + (parseFloat(o.total_amount) || 0),
+        (sum, o) => sum + (parseFloat(o.products_total) || 0),
         0
       );
 
@@ -654,6 +636,76 @@ router.get("/restaurants", async (req, res) => {
   } catch (error) {
     console.error("Error fetching restaurants:", error.message);
     res.status(500).send("An error occurred while fetching restaurants.");
+  }
+});
+
+router.get("/payouts", async (req, res) => {
+  const { status, target_type, limit = 50, offset = 0 } = req.query;
+
+  try {
+    let query = supabase
+      .from("payout_batch_items")
+      .select(
+        `
+        id,
+        batch_id,
+        payout_id,
+        order_id,
+        target_type,
+        target_id,
+        receive_amount,
+        fee,
+        status,
+        error_code,
+        error_message,
+        created_at
+      `
+      )
+      .order("created_at", { ascending: false })
+      .range(Number(offset), Number(limit) - 1);
+
+    if (status) query = query.eq("status", status);
+    if (target_type) query = query.eq("target_type", target_type);
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error("Payout load error:", error);
+      return res.render("admin/payouts", {
+        payouts: [],
+        summary: {
+          totalPayouts: 0,
+          totalRestaurant: 0,
+          totalDeliverer: 0
+        }
+      });
+    }
+
+    // Calcul résumé
+    const summary = {
+      totalPayouts: data.reduce((a, b) => a + (b.receive_amount || 0), 0),
+      totalRestaurant: data
+        .filter(x => x.target_type === "restaurant")
+        .reduce((a, b) => a + (b.receive_amount || 0), 0),
+      totalDeliverer: data
+        .filter(x => x.target_type === "deliverer")
+        .reduce((a, b) => a + (b.receive_amount || 0), 0)
+    };
+
+    return res.render("admin/payouts", {
+      payouts: data,
+      summary
+    });
+  } catch (err) {
+    console.error(err);
+    return res.render("admin/payouts", {
+      payouts: [],
+      summary: {
+        totalPayouts: 0,
+        totalRestaurant: 0,
+        totalDeliverer: 0
+      }
+    });
   }
 });
 

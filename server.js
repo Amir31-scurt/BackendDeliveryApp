@@ -13,6 +13,9 @@ import resolvers from "./resolvers.js";
 import { delivererResolvers } from "./resolvers/delivererResolvers.js";
 import adminRoutes from "./routes/admin.js";
 import authRoutes from "./routes/auth.js";
+import wavePaymentsRouter from './routes/wavePayments.js';
+import payoutStatusRouter from "./routes/payoutStatus.js";
+import adminPayoutsRouter from "./routes/adminPayouts.js";
 import { supabase } from "./supabaseClient.js";
 import { authMiddleware } from "./middleware/auth.js";
 // import { supabase } from "./supabaseClient.js";
@@ -287,6 +290,10 @@ app.get("/", (req, res) => {
 app.use("/admin", adminRoutes);
 // Auth routes with CSRF protection
 app.use("/api/auth", authRoutes);
+// Wave routes
+app.use(wavePaymentsRouter);
+app.use(payoutStatusRouter);
+app.use(adminPayoutsRouter);
 
 // Setup layouts
 app.use(expressEjsLayouts);

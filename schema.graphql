@@ -92,6 +92,16 @@ type Order {
   restaurant: Restaurant
   items: [OrderItem]!
   totalAmount: Float!
+  productsTotal: Float     
+  deliveryFee: Float       
+  serviceFee: Float        
+
+  restaurantPayout: Float  
+  delivererPayout: Float   
+  gourmetPayout: Float     
+
+  payoutStatus: String
+  payoutItems: [PayoutItem]       
   deliveryAddress: Address
   instructions: String
   note: String
@@ -105,12 +115,53 @@ type Order {
   deliverer: Deliverer
 }
 
+type PayoutItem {
+  id: ID!
+  batchId: String!
+  payoutId: String
+  targetType: String!
+  targetId: ID!
+  receiveAmount: Float!
+  fee: Float
+  status: String!
+  errorCode: String
+  errorMessage: String
+  createdAt: String!
+}
+type PayoutBatch {
+  batchId: String!
+  payouts: [PayoutItem!]!
+}
+
 type OrderItem {
   menuItemId: ID!
   menuItem: MenuItem
   quantity: Int!
   price: Float!
 }
+
+type PayoutSummary {
+  totalPayouts: Float!
+  totalRestaurant: Float!
+  totalDeliverer: Float!
+  totalSucceeded: Int!
+  totalFailed: Int!
+}
+
+type RestaurantPayoutSummary {
+  restaurantId: ID!
+  restaurantName: String!
+  totalPayout: Float!
+  lastPayoutAt: String
+}
+
+type DelivererPayoutSummary {
+  delivererId: ID!
+  delivererName: String!
+  totalPayout: Float!
+  lastPayoutAt: String
+}
+
 
 enum OrderStatus {
   Pending
@@ -179,6 +230,25 @@ type Query {
   notifications(userId: ID!): [Notification!]!
   restaurantRatings(restaurantId: ID!): [RestaurantRating!]!
   userRestaurantRating(restaurantId: ID!, userId: ID!): RestaurantRating
+
+  payoutStatusByOrder(orderId: ID!): [PayoutItem!]!       # OK
+  payoutStatusByBatch(batchId: String!): PayoutBatch       # OK
+
+  restaurantPayouts(restaurantId: ID!): [PayoutItem!]!     # optional
+  delivererPayouts(delivererId: ID!): [PayoutItem!]!       # OK
+
+  payoutsAdmin(
+    status: String
+    targetType: String
+    limit: Int
+    offset: Int
+  ): [PayoutItem!]!                                        # OK
+
+  payoutsSummaryGlobal: PayoutSummary                      # optional
+  payoutsSummaryRestaurants: [RestaurantPayoutSummary]     # optional
+  payoutsSummaryDeliverers: [DelivererPayoutSummary]       # optional
+  payoutItems(orderId: ID!): [PayoutItem!]!
+  payoutStatus(orderId: ID!): String!
 }
 
 type Mutation {
@@ -208,6 +278,8 @@ type Mutation {
   updateOrderNote(orderId: ID!, note: String!): Order!
   updateOrderRating(orderId: ID!, rating: Float!): Order!
   updateOrderFeedback(orderId: ID!, rating: Float!, note: String!): Order!
+  retryPayout(orderId: ID!): Boolean!
+  retryFailedPayout(payoutItemId: ID!): Boolean!
 }
 
 input CreateUserInput {

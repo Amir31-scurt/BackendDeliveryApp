@@ -769,6 +769,49 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
+
+    payoutItems: async ({ id }, _, { supabase }) => {
+      try {
+        const { data } = await supabase
+          .from("payout_batch_items")
+          .select("*")
+          .eq("order_id", id)
+          .order("created_at", { ascending: false });
+
+        return data.map(x => ({
+          id: x.id,
+          batchId: x.batch_id,
+          payoutId: x.payout_id,
+          targetType: x.target_type,
+          targetId: x.target_id,
+          receiveAmount: x.receive_amount,
+          fee: x.fee,
+          status: x.status,
+          errorCode: x.error_code,
+          errorMessage: x.error_message,
+          createdAt: x.created_at
+        }));
+      } catch (error) {
+        console.error("Error in payoutItems query:", error);
+        throw new Error(error.message);
+      }
+    },
+    payoutStatus: async ({ id }, _, { supabase }) => {
+      try {
+        const { data } = await supabase
+          .from("payout_batch_items")
+          .select("status")
+          .eq("order_id", id);
+
+        if (!data.length) return "pending";
+        if (data.every(p => p.status === "succeeded")) return "succeeded";
+        if (data.some(p => p.status === "failed")) return "partial";
+        return "processing";
+      } catch (err) {
+        console.error("Error in payoutItems query:", err);
+        throw new Error(err.message);
+      }
+    },
     restaurantRatings: async (_, { restaurantId }, { supabase }) => {
       try {
         const { data, error } = await supabase
@@ -1082,6 +1125,12 @@ const resolvers = {
           throw new Error(
             `Failed to create order items: ${itemsError.message}`
           );
+
+        // 4. Appeler la fonction compute_order_from_total
+        const { data: computed, error: computeErr } = await supabase.rpc(
+          "compute_order_from_total",
+          { p_order_id: newOrder.id }
+        );
 
         // Notify assigned deliverer if present
         if (newOrder.deliverer_id) {

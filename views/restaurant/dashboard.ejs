@@ -260,6 +260,7 @@
 
         .orders-table tr:hover {
             background-color: var(--background-color);
+            cursor: pointer;
         }
 
         .status-badge {
@@ -359,7 +360,6 @@
 
         .note-container {
             position: relative;
-            cursor: pointer;
         }
 
         .note-text {
@@ -848,24 +848,100 @@
         </main>
     </div>
 
-    <!-- Add Note Modal -->
-    <div id="noteModal" class="note-modal">
-        <div class="note-modal-content">
-            <h3>Modifier la note</h3>
-            <textarea id="noteText" placeholder="Entrez votre note ici..."></textarea>
-            <div class="note-modal-buttons">
-                <button onclick="closeNoteModal()" class="modal-btn cancel-btn">Annuler</button>
-                <button onclick="saveNote()" class="modal-btn submit-btn">Enregistrer</button>
-            </div>
-        </div>
-    </div>
+    <script async defer 
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCDVi5RrYOFaIP0pV4RJr26X8X8LI_1fZY">
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        function renderOrderMap(order) {
+            if (!order.delivery_address?.latitude || !order.delivery_address?.longitude) return;
+
+            const lat = order.delivery_address.latitude;
+            const lng = order.delivery_address.longitude;
+
+            const mapDiv = document.getElementById('orderMap');
+            mapDiv.innerHTML = ""; // Reset map
+
+            const map = new google.maps.Map(mapDiv, {
+                zoom: 14,
+                center: { lat, lng },
+            });
+
+            new google.maps.Marker({
+                position: { lat, lng },
+                map: map,
+                title: "Adresse du client",
+            });
+        }
+        function openOrderModal(order) {
+            const modal = document.getElementById('orderDetailsModal');
+            const content = document.getElementById('orderDetailsContent');
+
+            let itemsHTML = '';
+
+            if (order.items && order.items.length > 0) {
+                itemsHTML = `
+                    <h3 style="margin-bottom:10px;">Articles commandés</h3>
+                    <ul style="margin-top:10px; list-style:none; padding:0;">
+                        ${
+                            order.items.map(item => {
+                                const img = item.menuItem?.imageUrl 
+                                            || item.menuItem?.image_url;
+
+                                const name = item.menuItem?.name || "Article";
+                                const desc = item.menuItem?.description || "";
+                                console.log(item)
+
+                                return `
+                                    <li style="display:flex; gap:12px; margin-bottom:15px; align-items:flex-start;">
+                                        <img src="${img}" 
+                                            style="width:70px; height:70px; border-radius:8px; object-fit:cover;">
+                                        
+                                        <div>
+                                            <strong>${name}</strong><br>
+                                            <span>${item.quantity} × ${item.price.toLocaleString()} F</span><br>
+                                            <small style="color:#555">${desc}</small>
+                                        </div>
+                                    </li>
+                                `;
+                            }).join('')
+                        }
+                    </ul>
+                `;
+            } else {
+                itemsHTML = "<p>Aucun article trouvé.</p>";
+            }
+
+            content.innerHTML = `
+                <p><strong>Client:</strong> ${order.user?.name || 'N/A'}</p>
+                <p><strong>Adresse:</strong> ${order.delivery_address?.address || 'N/A'}</p>
+                <p><strong>Total Produits:</strong> ${order.items_total.toLocaleString()} Fcfa</p>
+                <p><strong>Frais de Livraison:</strong> ${order.delivery_fee_final.toLocaleString()} Fcfa</p>
+                <hr style="margin:1em 0;">
+                ${itemsHTML}
+            `;
+
+            modal.style.display = "block";
+
+            renderOrderMap(order);
+        }
+
+
+        function closeOrderModal() {
+            document.getElementById('orderDetailsModal').style.display = 'none';
+        }
+        // Close modal on outside click
+        window.addEventListener("click", function(e) {
+            const modal = document.getElementById('orderDetailsModal');
+            if (e.target === modal) {
+                closeOrderModal();
+            }
+        });
+
         // Force console logs to appear
 
         document.addEventListener('DOMContentLoaded', function () {
-
             // Get all orders from the table
             const orderRows = document.querySelectorAll('.order-row');
 
@@ -891,6 +967,28 @@
             let filteredOrders = [...orders];
 
             console.log(orders)
+
+            attachOrderDetailsListeners();
+
+            function attachOrderDetailsListeners() {
+                const tableBody = document.getElementById("ordersTableBody");
+
+                tableBody.addEventListener("click", (e) => {
+                    // Ignore buttons/dropdowns
+                    if (e.target.closest('.action-dropdown')) return;
+
+                    let row = e.target.closest("tr[data-order-id]");
+                    if (!row) return;
+
+                    const orderData = row.getAttribute("data-order");
+                    if (!orderData) return;
+
+                    const order = JSON.parse(orderData);
+                    openOrderModal(order);
+                });
+            }
+
+
 
             // Update stats function
             function updateStats(orders) {
@@ -927,6 +1025,17 @@
                     <span class="rating-max">/5</span>
                     <span class="rating-count">(${ratedOrders.length} avis)</span>
                 `;
+            }
+
+            // 🔹 Attach click on X (close button) for order details modal
+            const orderModal = document.getElementById('orderDetailsModal');
+            const closeBtn = orderModal ? orderModal.querySelector('.close') : null;
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function (e) {
+                    e.stopPropagation(); // prevent window click handler from interfering
+                    closeOrderModal();
+                });
             }
 
             // Search functionality
@@ -971,6 +1080,9 @@
 
                 filteredOrders.slice(startIndex, endIndex).forEach((order, index) => {
                     const row = document.createElement('tr');
+                    row.classList.add("order-row");
+                    row.setAttribute('data-order-id', order.id);
+                    row.setAttribute('data-order', JSON.stringify(order));
                     row.innerHTML = `
                         <td>${startIndex + index + 1}</td>
                         <td>${new Date(order.created_at).toLocaleString()}</td>
@@ -1010,7 +1122,6 @@
                             </div>
                         </td>
                     `;
-                    row.setAttribute('data-order-id', order.id);
                     tbody.appendChild(row);
                 });
 
@@ -1384,61 +1495,14 @@
 
         let currentOrderId = null;
 
-        function editNote(orderId, currentNote) {
-            currentOrderId = orderId;
-            const modal = document.getElementById('noteModal');
-            const textarea = document.getElementById('noteText');
-            textarea.value = currentNote;
-            modal.style.display = 'block';
-        }
 
-        function closeNoteModal() {
-            const modal = document.getElementById('noteModal');
-            modal.style.display = 'none';
-            currentOrderId = null;
-        }
-
-        // Save note
-        async function saveNote() {
-            if (!currentOrderId) return;
-
-            const note = document.getElementById('noteText').value;
-
-            try {
-                const query = `
-                    mutation {
-                        updateOrderNote(id: "${currentOrderId}", note: "${note}") {
-                            id
-                            note
-                        }
-                    }
-                `;
-
-                await makeGraphQLRequest(query);
-                alert('Note mise à jour avec succès!');
-                window.location.reload();
-            } catch (error) {
-                console.error('Error updating note:', error);
-                alert('Une erreur est survenue lors de la mise à jour de la note');
-            }
-
-            closeNoteModal();
-        }
-
-        // Close modal when clicking outside
-        window.onclick = function (event) {
-            const modal = document.getElementById('noteModal');
-            if (event.target === modal) {
-                closeNoteModal();
-            }
-        }
     </script>
-    <div id="orderDetailsModal" class="modal" style="display:none;">
+    <div id="orderDetailsModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeOrderModal()">&times;</span>
+            <span class="close">&times;</span>
             <h2>Détails de la commande</h2>
             <div id="orderDetailsContent"></div>
-            <div id="orderMap" style="height:300px;width:100%;margin-top:1em;"></div>
+            <div id="orderMap" style="width:100%;"></div>
         </div>
     </div>
 </body>
