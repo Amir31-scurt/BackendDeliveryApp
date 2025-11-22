@@ -43,8 +43,7 @@ router.get('/payment/wave/success', async (req, res) => {
     }
 
     // 3. Rediriger l’utilisateur vers ton app mobile / web
-    // Ex: deep link Gourmet d’Amour
-    res.redirect(`gourmetdamour://payment-success?orderId=${order.id}`);
+    res.redirect(`gourmetdamour://customer/UserOrdersScreen`);
 
     return res.send('Payment success. You can close this page.');
   } catch (err) {
