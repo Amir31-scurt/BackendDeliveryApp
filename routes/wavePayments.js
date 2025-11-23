@@ -45,7 +45,7 @@ router.get('/payment/wave/success', async (req, res) => {
     // 3. Rediriger l’utilisateur vers ton app mobile / web
     res.redirect(`gourmetdamour://customer/UserOrdersScreen`);
 
-    return res.send('Payment success. You can close this page.');
+    return res.send('Payement effectué. Vous pouvez fermer cette page.');
   } catch (err) {
     console.error('Wave success handler error:', err);
     return res.status(500).send('Internal server error');
