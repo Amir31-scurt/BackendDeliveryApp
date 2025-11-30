@@ -15,8 +15,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
     <!-- Leaflet Map -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script async
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCDVi5RrYOFaIP0pV4RJr26X8X8LI_1fZY&callback=initDelivererMap">
+        </script>
 
     <style>
         :root {
@@ -388,12 +389,6 @@
                                         Lng: <%= deliverer.currentLocation.longitude %>
                                 </small>
                         </p>
-
-                        <!-- Map Container -->
-                        <div id="delivererMap"
-                            style="width: 100%; height: 220px; border-radius: 12px; overflow: hidden; box-shadow: var(--card-shadow);">
-                        </div>
-
                         <% } else { %>
                             <p>Non disponible</p>
                             <% } %>
@@ -503,27 +498,59 @@
 
         /* Initialize dynamic Leaflet map if coordinates exist */
         function initDelivererMap() {
-            const hasLocation = <%= deliverer.currentLocation ? "true" : "false" %>;
+            const hasLocation = "<%= deliverer.currentLocation ? 'true' : 'false' %>";
 
             if (!hasLocation) return;
 
-            const lat = <%= deliverer.currentLocation?.latitude || 0 %>;
-            const lng = <%= deliverer.currentLocation?.longitude || 0 %>;
+            const lat = Number("<%= deliverer.currentLocation?.latitude || 0 %>");
+            const lng = Number("<%= deliverer.currentLocation?.longitude || 0 %>");
             const name = "<%= deliverer.user.name %>";
 
-            const map = L.map('delivererMap', { zoomControl: false }).setView([lat, lng], 15);
+            const mapElement = document.getElementById("delivererMap");
+            if (!mapElement) return;
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-            }).addTo(map);
+            const map = new google.maps.Map(mapElement, {
+                center: { lat, lng },
+                zoom: 15,
+                disableDefaultUI: true,
+                mapTypeId: "roadmap",
+                styles: [
+                    {
+                        featureType: "all",
+                        stylers: [{ saturation: -20 }]
+                    },
+                    {
+                        featureType: "poi",
+                        stylers: [{ visibility: "off" }]
+                    }
+                ]
+            });
 
-            const marker = L.marker([lat, lng]).addTo(map);
+            const marker = new google.maps.Marker({
+                position: { lat, lng },
+                map,
+                animation: google.maps.Animation.DROP,
+                title: name,
+                icon: {
+                    url: "https://maps.google.com/mapfiles/ms/icons/pink-dot.png"
+                }
+            });
 
-            marker.bindPopup(`
-        <b>${name}</b><br>
-        Latitude: ${lat}<br>
-        Longitude: ${lng}
-      `).openPopup();
+            const infoWindow = new google.maps.InfoWindow({
+                content: `
+            <div style="font-family: 'Poppins'; font-size: 14px;">
+                <b>${name}</b><br>
+                Latitude: ${lat}<br>
+                Longitude: ${lng}
+            </div>
+        `
+            });
+
+            infoWindow.open(map, marker);
+
+            marker.addListener("click", () => {
+                infoWindow.open(map, marker);
+            });
         }
 
         initDelivererMap();
