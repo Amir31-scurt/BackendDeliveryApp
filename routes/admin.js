@@ -926,15 +926,24 @@ router.get("/orders", async (req, res) => {
 // Revenues route
 router.get("/revenues", async (req, res) => {
   try {
+    const { from, to } = req.query;
+    const dateFrom = from ? new Date(from) : null;
+    const dateTo = to ? new Date(to) : null;
+
+    const rpcParams = {
+      p_from: dateFrom ? dateFrom.toISOString() : null,
+      p_to: dateTo ? dateTo.toISOString() : null
+    };
+
     // Fetch revenue data using the same functions as dashboard
     const [
       { data: restoRev, error: restoErr },
       { data: delivererRev, error: delivererErr },
       { data: gourmetRev, error: gourmetErr }
     ] = await Promise.all([
-      supabase.rpc('rpc_restaurant_revenue', { p_from: null, p_to: null }),
-      supabase.rpc('rpc_deliverer_revenue', { p_from: null, p_to: null }),
-      supabase.rpc('rpc_gourmet_revenue', { p_from: null, p_to: null })
+      supabase.rpc('rpc_restaurant_revenue', rpcParams),
+      supabase.rpc('rpc_deliverer_revenue', rpcParams),
+      supabase.rpc('rpc_gourmet_revenue', rpcParams)
     ]);
 
     const totalRestaurantRevenue =
@@ -967,12 +976,52 @@ router.get("/revenues", async (req, res) => {
     })).sort((a, b) => b.revenue - a.revenue).slice(0, 10); // Top 10
 
     // Fetch total orders for revenue calculation explanation
-    const { data: totalOrdersData } = await supabase
+    let totalOrdersQuery = supabase
       .from("orders")
-      .select("total_amount, status")
+      .select("total_amount, status, created_at")
       .eq("status", "COMPLETED");
+    if (dateFrom) totalOrdersQuery = totalOrdersQuery.gte("created_at", dateFrom.toISOString());
+    if (dateTo) totalOrdersQuery = totalOrdersQuery.lte("created_at", dateTo.toISOString());
+
+    const { data: totalOrdersData } = await totalOrdersQuery;
 
     const totalOrderValue = totalOrdersData?.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0;
+
+    // Fetch per-order revenue breakdown (where it came from)
+    let revenueOrdersQuery = supabase
+      .from("orders")
+      .select(`
+        id,
+        total_amount,
+        restaurant_payout,
+        deliverer_payout,
+        gourmet_payout,
+        created_at,
+        restaurants!orders_restaurant_id_fkey (
+          name
+        )
+      `)
+      .eq("status", "COMPLETED")
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (dateFrom) revenueOrdersQuery = revenueOrdersQuery.gte("created_at", dateFrom.toISOString());
+    if (dateTo) revenueOrdersQuery = revenueOrdersQuery.lte("created_at", dateTo.toISOString());
+
+    const { data: revenueOrdersRaw, error: revenueOrdersError } = await revenueOrdersQuery;
+    if (revenueOrdersError) {
+      console.error("Error fetching revenue orders:", revenueOrdersError);
+    }
+
+    const revenueOrders = (revenueOrdersRaw || []).map(o => ({
+      id: o.id,
+      total: Number(o.total_amount || 0),
+      restaurantShare: Number(o.restaurant_payout || 0),
+      delivererShare: Number(o.deliverer_payout || 0),
+      gourmetShare: Number(o.gourmet_payout || 0),
+      restaurantName: o.restaurants?.name || "N/A",
+      createdAt: o.created_at
+    }));
 
     // Fetch monthly revenue data
     const { data: monthlyData, error: monthlyError } = await supabase.rpc("get_monthly_orders");
@@ -988,7 +1037,12 @@ router.get("/revenues", async (req, res) => {
       monthlyData: monthlyData || [],
       restaurantBreakdown: restaurantBreakdown || [],
       delivererBreakdown: delivererBreakdown || [],
-      totalOrderValue
+      totalOrderValue,
+      revenueOrders,
+      filters: {
+        from: from || "",
+        to: to || ""
+      }
     });
   } catch (error) {
     console.error("Error fetching revenues:", error.message);
@@ -1003,7 +1057,12 @@ router.get("/revenues", async (req, res) => {
       monthlyData: [],
       restaurantBreakdown: [],
       delivererBreakdown: [],
-      totalOrderValue: 0
+      totalOrderValue: 0,
+      revenueOrders: [],
+      filters: {
+        from: req.query.from || "",
+        to: req.query.to || ""
+      }
     });
   }
 });
@@ -1021,6 +1080,8 @@ router.get("/restaurants/:id/details", async (req, res) => {
           name
           description
           address
+          latitude
+          longitude
           type
           openingHours {
             monday { open close }

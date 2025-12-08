@@ -108,6 +108,44 @@
             transform: translateY(-2px);
         }
 
+        .filter-link {
+            text-decoration: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            transition: all var(--transition-speed) ease;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .filter-link:hover {
+            background: var(--primary-color);
+            transform: translateY(-2px);
+            color: white;
+        }
+
+        .reset-link {
+            text-decoration: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            transition: all var(--transition-speed) ease;
+            background: white;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .reset-link:hover {
+            background: white;
+            transform: translateY(-2px);
+            color: var(--primary-color);
+        }
+
         .revenue-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -388,6 +426,22 @@
     </header>
 
     <main class="container">
+        <form method="get" action="/admin/revenues"
+            style="margin-bottom: 1.5rem; display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end;">
+            <div>
+                <label for="from" style="display:block; margin-bottom:0.3rem; font-weight:600;">Du</label>
+                <input type="date" id="from" name="from" value="<%= filters?.from || '' %>"
+                    style="padding:0.6rem 0.9rem; border-radius:10px; border:1px solid #ddd;">
+            </div>
+            <div>
+                <label for="to" style="display:block; margin-bottom:0.3rem; font-weight:600;">Au</label>
+                <input type="date" id="to" name="to" value="<%= filters?.to || '' %>"
+                    style="padding:0.6rem 0.9rem; border-radius:10px; border:1px solid #ddd;">
+            </div>
+            <button type="submit" class="filter-link">Filtrer</button>
+            <a href="/admin/revenues" class="reset-link">Réinitialiser</a>
+        </form>
+
         <div class="revenue-grid">
             <div class="revenue-card restaurant">
                 <div class="icon">
@@ -526,6 +580,61 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <div class="breakdown-table-container" style="margin-top:2rem;">
+            <h3 class="section-title">Détails des Revenus par Commande</h3>
+            <p style="margin-bottom:1rem; color:#555;">Chaque ligne montre l'origine des revenus pour une commande
+                complétée.</p>
+            <table class="breakdown-table">
+                <thead>
+                    <tr>
+                        <th>Commande</th>
+                        <th>Restaurant</th>
+                        <th>Total</th>
+                        <th>Part Restaurant</th>
+                        <th>Part Livreur</th>
+                        <th>Part Gourmet</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (revenueOrders && revenueOrders.length> 0) { %>
+                        <% revenueOrders.forEach(o=> { %>
+                            <tr>
+                                <td>#<%= o.id.substring(0,8) %>
+                                </td>
+                                <td>
+                                    <%= o.restaurantName %>
+                                </td>
+                                <td>
+                                    <%= o.total.toLocaleString() %> F
+                                </td>
+                                <td>
+                                    <%= o.restaurantShare.toLocaleString() %> F
+                                </td>
+                                <td>
+                                    <%= o.delivererShare.toLocaleString() %> F
+                                </td>
+                                <td>
+                                    <%= o.gourmetShare.toLocaleString() %> F
+                                </td>
+                                <td>
+                                    <%= new Date(o.createdAt).toLocaleDateString('fr-FR') %>
+                                        <br><small style="color:#888;">
+                                            <%= new Date(o.createdAt).toLocaleTimeString('fr-FR') %>
+                                        </small>
+                                </td>
+                            </tr>
+                            <% }) %>
+                                <% } else { %>
+                                    <tr>
+                                        <td colspan="7" style="text-align:center; padding:1.5rem;">Aucune commande
+                                            trouvée pour cette période.</td>
+                                    </tr>
+                                    <% } %>
+                </tbody>
+            </table>
         </div>
 
         <div class="chart-container">
