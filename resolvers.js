@@ -957,6 +957,8 @@ const resolvers = {
       if (input.address) dbInput.address = input.address;
       if (input.type) dbInput.type = input.type;
       if (input.email) dbInput.email = input.email;
+      if (input.latitude !== undefined) dbInput.latitude = input.latitude;
+      if (input.longitude !== undefined) dbInput.longitude = input.longitude;
 
       // Map camelCase to snake_case
       if (input.phoneNumber) dbInput.phone_number = input.phoneNumber;

@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Commandes - Gourmet d'amour</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    :root {
+      --primary-color: #DB607E;
+      --secondary-color: #ABD27E;
+      --accent-color: #b22222;
+      --background-color: #f9f5f0;
+      --dark-color: #2c2c2c;
+      --card-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+      --transition-speed: 0.3s;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: var(--background-color);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    header {
+      background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('https://images.unsplash.com/photo-1601628828688-632f38a5a7d0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      padding: 3rem 2rem;
+      text-align: center;
+      color: white;
+      margin-bottom: 2rem;
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, rgba(219, 96, 126, 0.2), rgba(171, 210, 126, 0.2));
+      z-index: 1;
+    }
+
+    header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      color: var(--primary-color);
+      position: relative;
+      z-index: 2;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      animation: fadeInDown 1s ease-out;
+    }
+
+    header p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      position: relative;
+      z-index: 2;
+      animation: fadeInUp 1s ease-out;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 2rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 30px;
+      transition: all var(--transition-speed) ease;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .nav-link:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 15px;
+      box-shadow: var(--card-shadow);
+      text-align: center;
+      transition: all var(--transition-speed) ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card h3 {
+      font-size: 0.9rem;
+      color: var(--dark-color);
+      margin-bottom: 0.5rem;
+      opacity: 0.8;
+    }
+
+    .stat-card p {
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+
+    .orders-section {
+      background: white;
+      padding: 2.5rem;
+      border-radius: 20px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .filter-container {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 0.8rem 1.5rem;
+      border: 2px solid #eee;
+      background: white;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all var(--transition-speed) ease;
+      font-weight: 500;
+      text-decoration: none;
+      color: var(--dark-color);
+      display: inline-block;
+    }
+
+    .filter-btn:hover,
+    .filter-btn.active {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    .orders-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin-top: 1rem;
+    }
+
+    .orders-table th {
+      background-color: var(--background-color);
+      padding: 1.2rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--dark-color);
+      border-bottom: 2px solid var(--primary-color);
+    }
+
+    .orders-table td {
+      padding: 1.2rem;
+      border-bottom: 1px solid #eee;
+      color: var(--dark-color);
+    }
+
+    .orders-table tr:hover {
+      background-color: var(--background-color);
+    }
+
+    .status-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-block;
+    }
+
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .status-preparing {
+      background: #cfe2ff;
+      color: #084298;
+    }
+
+    .status-delivering {
+      background: #d1e7dd;
+      color: #0f5132;
+    }
+
+    .status-completed {
+      background: #d1e7dd;
+      color: #0f5132;
+    }
+
+    .status-cancelled {
+      background: #f8d7da;
+      color: #842029;
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .orders-table {
+        font-size: 0.85rem;
+      }
+
+      .orders-table th,
+      .orders-table td {
+        padding: 0.8rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Gourmet d'amour</h1>
+    <p>Gestion des Commandes</p>
+    <div class="nav-links">
+      <a href="/admin/dashboard" class="nav-link">
+        <i class="fa-solid fa-chart-line"></i> Tableau de Bord
+      </a>
+      <a href="/admin/restaurants" class="nav-link">
+        <i class="fa-solid fa-utensils"></i> Restaurants
+      </a>
+      <a href="/admin/deliverers" class="nav-link">
+        <i class="fa-solid fa-truck"></i> Livreurs
+      </a>
+      <a href="/" class="nav-link">
+        <i class="fa-solid fa-house"></i> Accueil
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Total Commandes</h3>
+        <p>
+          <%= summary.total || 0 %>
+        </p>
+      </div>
+      <div class="stat-card">
+        <h3>En Attente</h3>
+        <p>
+          <%= summary.pending || 0 %>
+        </p>
+      </div>
+      <div class="stat-card">
+        <h3>En Préparation</h3>
+        <p>
+          <%= summary.preparing || 0 %>
+        </p>
+      </div>
+      <div class="stat-card">
+        <h3>En Livraison</h3>
+        <p>
+          <%= summary.delivering || 0 %>
+        </p>
+      </div>
+      <div class="stat-card">
+        <h3>Terminées</h3>
+        <p>
+          <%= summary.completed || 0 %>
+        </p>
+      </div>
+      <div class="stat-card">
+        <h3>Annulées</h3>
+        <p>
+          <%= summary.cancelled || 0 %>
+        </p>
+      </div>
+      <div class="stat-card">
+        <h3>Revenu Total</h3>
+        <p>
+          <%= (summary.totalRevenue || 0).toLocaleString() %> F
+        </p>
+      </div>
+    </div>
+
+    <div class="orders-section">
+      <div class="filter-container">
+        <a href="?page=1" class="filter-btn <%= !currentStatus ? 'active' : '' %>">Toutes</a>
+        <a href="?page=1&status=Pending" class="filter-btn <%= currentStatus === 'Pending' ? 'active' : '' %>">En
+          Attente</a>
+        <a href="?page=1&status=PREPARING" class="filter-btn <%= currentStatus === 'PREPARING' ? 'active' : '' %>">En
+          Préparation</a>
+        <a href="?page=1&status=DELIVERING" class="filter-btn <%= currentStatus === 'DELIVERING' ? 'active' : '' %>">En
+          Livraison</a>
+        <a href="?page=1&status=COMPLETED"
+          class="filter-btn <%= currentStatus === 'COMPLETED' ? 'active' : '' %>">Terminées</a>
+        <a href="?page=1&status=CANCELLED"
+          class="filter-btn <%= currentStatus === 'CANCELLED' ? 'active' : '' %>">Annulées</a>
+      </div>
+
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Client</th>
+            <th>Restaurant</th>
+            <th>Montant</th>
+            <th>Statut</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="ordersTableBody">
+          <% if (orders && orders.length> 0) { %>
+            <% orders.forEach(order=> { %>
+              <% const user=order.user || order.users || null; const restaurant=order.restaurant || order.restaurants ||
+                null; %>
+                <tr data-status="<%= order.status %>">
+                  <td>#<%= order.id.substring(0, 8) %>
+                  </td>
+                  <td>
+                    <%= user?.name || 'N/A' %><br>
+                      <small style="color: #888;">
+                        <%= user?.phone_number || '' %>
+                      </small>
+                  </td>
+                  <td>
+                    <%= restaurant?.name || 'N/A' %>
+                  </td>
+                  <td>
+                    <%= (order.total_amount || 0).toLocaleString() %> F
+                  </td>
+                  <td>
+                    <span class="status-badge status-<%= order.status?.toLowerCase() || 'pending' %>">
+                      <%= order.status || 'Pending' %>
+                    </span>
+                  </td>
+                  <td>
+                    <%= new Date(order.created_at).toLocaleDateString('fr-FR') %><br>
+                      <small style="color: #888;">
+                        <%= new Date(order.created_at).toLocaleTimeString('fr-FR') %>
+                      </small>
+                  </td>
+                </tr>
+                <% }); %>
+                  <% } else { %>
+                    <tr>
+                      <td colspan="6" style="text-align: center; padding: 3rem;">
+                        <p>Aucune commande trouvée</p>
+                      </td>
+                    </tr>
+                    <% } %>
+        </tbody>
+      </table>
+
+      <% if (pagination && pagination.totalPages> 1) { %>
+        <div class="pagination-container">
+          <div class="pagination-info">
+            Affichage de <%= ((pagination.currentPage - 1) * pagination.pageSize) + 1 %> à
+              <%= Math.min(pagination.currentPage * pagination.pageSize, pagination.totalCount) %>
+                sur <%= pagination.totalCount %> commandes
+          </div>
+          <div class="pagination-controls">
+            <% if (pagination.hasPrev) { %>
+              <a href="?page=<%= pagination.currentPage - 1 %><%= currentStatus ? '&status=' + currentStatus : '' %>"
+                class="pagination-btn">
+                <i class="fa-solid fa-chevron-left"></i> Précédent
+              </a>
+              <% } else { %>
+                <span class="pagination-btn disabled">
+                  <i class="fa-solid fa-chevron-left"></i> Précédent
+                </span>
+                <% } %>
+
+                  <div class="pagination-numbers">
+                    <% let startPage=Math.max(1, pagination.currentPage - 2); let
+                      endPage=Math.min(pagination.totalPages, pagination.currentPage + 2); if (startPage> 1) { %>
+                      <a href="?page=1<%= currentStatus ? '&status=' + currentStatus : '' %>"
+                        class="pagination-number">1</a>
+                      <% if (startPage> 2) { %>
+                        <span class="pagination-ellipsis">...</span>
+                        <% } %>
+                          <% } for (let i=startPage; i <=endPage; i++) { %>
+                            <% if (i===pagination.currentPage) { %>
+                              <span class="pagination-number active">
+                                <%= i %>
+                              </span>
+                              <% } else { %>
+                                <a href="?page=<%= i %><%= currentStatus ? '&status=' + currentStatus : '' %>"
+                                  class="pagination-number">
+                                  <%= i %>
+                                </a>
+                                <% } %>
+                                  <% } if (endPage < pagination.totalPages) { %>
+                                    <% if (endPage < pagination.totalPages - 1) { %>
+                                      <span class="pagination-ellipsis">...</span>
+                                      <% } %>
+                                        <a href="?page=<%= pagination.totalPages %><%= currentStatus ? '&status=' + currentStatus : '' %>"
+                                          class="pagination-number">
+                                          <%= pagination.totalPages %>
+                                        </a>
+                                        <% } %>
+                  </div>
+
+                  <% if (pagination.hasNext) { %>
+                    <a href="?page=<%= pagination.currentPage + 1 %><%= currentStatus ? '&status=' + currentStatus : '' %>"
+                      class="pagination-btn">
+                      Suivant <i class="fa-solid fa-chevron-right"></i>
+                    </a>
+                    <% } else { %>
+                      <span class="pagination-btn disabled">
+                        Suivant <i class="fa-solid fa-chevron-right"></i>
+                      </span>
+                      <% } %>
+          </div>
+        </div>
+        <% } %>
+    </div>
+  </main>
+
+  <style>
+    .pagination-container {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: var(--background-color);
+      border-radius: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .pagination-info {
+      color: var(--dark-color);
+      font-size: 0.9rem;
+    }
+
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .pagination-btn {
+      padding: 0.8rem 1.5rem;
+      background: white;
+      border: 2px solid #eee;
+      border-radius: 30px;
+      text-decoration: none;
+      color: var(--dark-color);
+      font-weight: 500;
+      transition: all var(--transition-speed) ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .pagination-btn:hover:not(.disabled) {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+      transform: translateY(-2px);
+    }
+
+    .pagination-btn.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pagination-numbers {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .pagination-number {
+      padding: 0.6rem 1rem;
+      background: white;
+      border: 2px solid #eee;
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--dark-color);
+      font-weight: 500;
+      transition: all var(--transition-speed) ease;
+      min-width: 40px;
+      text-align: center;
+    }
+
+    .pagination-number:hover {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    .pagination-number.active {
+      background: var(--primary-color);
+      color: white;
+      border-color: var(--primary-color);
+    }
+
+    .pagination-ellipsis {
+      padding: 0.6rem 0.5rem;
+      color: var(--dark-color);
+    }
+
+    @media (max-width: 768px) {
+      .pagination-container {
+        flex-direction: column;
+      }
+
+      .pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+    }
+  </style>
+
+  <script>
+    // Filter functionality removed - now handled by server-side filtering with pagination
+  </script>
+</body>
+
+</html>
