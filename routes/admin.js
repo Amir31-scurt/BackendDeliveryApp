@@ -709,6 +709,364 @@ router.get("/payouts", async (req, res) => {
   }
 });
 
+// Orders route
+router.get("/orders", async (req, res) => {
+  try {
+    const { status, limit = 20, offset = 0, page = 1 } = req.query;
+    const pageSize = Number(limit);
+    const currentPage = Number(page);
+    const currentOffset = (currentPage - 1) * pageSize;
+
+    // Get total count for pagination
+    let countQuery = supabase
+      .from("orders")
+      .select("*", { count: "exact", head: true });
+
+    if (status) {
+      countQuery = countQuery.eq("status", status);
+    }
+
+    const { count: totalCount } = await countQuery;
+
+    // Fetch orders with user and restaurant relationships
+    let query = supabase
+      .from("orders")
+      .select(`
+        *,
+        users!orders_user_id_fkey (
+          id,
+          name,
+          phone_number
+        ),
+        restaurants!orders_restaurant_id_fkey (
+          id,
+          name,
+          address
+        ),
+        order_items (
+          quantity,
+          price,
+          menu_items (
+            id,
+            name,
+            image_url,
+            description
+          )
+        )
+      `)
+      .order("created_at", { ascending: false })
+      .range(currentOffset, currentOffset + pageSize - 1);
+
+    if (status) {
+      query = query.eq("status", status);
+    }
+
+    const { data: orders, error } = await query;
+
+    if (error) {
+      console.error("Error fetching orders:", error);
+      // Fallback: fetch orders without relationships and join manually
+      let simpleQuery = supabase
+        .from("orders")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .range(currentOffset, currentOffset + pageSize - 1);
+
+      if (status) {
+        simpleQuery = simpleQuery.eq("status", status);
+      }
+
+      const { data: simpleOrders, error: simpleError } = await simpleQuery;
+
+      if (simpleError) {
+        console.error("Error with simple query:", simpleError);
+        throw new Error("Failed to fetch orders.");
+      }
+
+      // Fetch related data separately
+      const ordersWithRelations = await Promise.all((simpleOrders || []).map(async (order) => {
+        const [userResult, restaurantResult, itemsResult, delivererResult] = await Promise.all([
+          supabase.from("users").select("id, name, phone_number").eq("id", order.user_id).single(),
+          supabase.from("restaurants").select("id, name, address").eq("id", order.restaurant_id).single(),
+          supabase.from("order_items")
+            .select("quantity, price, menu_items(id, name, image_url, description)")
+            .eq("order_id", order.id),
+          order.deliverer_id ? supabase.from("deliverers").select("id, user_id").eq("id", order.deliverer_id).single() : Promise.resolve({ data: null })
+        ]);
+
+        return {
+          ...order,
+          user: userResult.data,
+          restaurant: restaurantResult.data,
+          order_items: itemsResult.data || [],
+          deliverer: delivererResult.data
+        };
+      }));
+
+      // Calculate summary statistics
+      const { data: allOrders } = await supabase
+        .from("orders")
+        .select("status, total_amount");
+
+      const summary = {
+        total: allOrders?.length || 0,
+        pending: allOrders?.filter(o => o.status === "Pending").length || 0,
+        preparing: allOrders?.filter(o => o.status === "PREPARING").length || 0,
+        delivering: allOrders?.filter(o => o.status === "DELIVERING").length || 0,
+        completed: allOrders?.filter(o => o.status === "COMPLETED").length || 0,
+        cancelled: allOrders?.filter(o => o.status === "CANCELLED").length || 0,
+        totalRevenue: allOrders?.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0
+      };
+
+      const totalPages = Math.ceil((totalCount || 0) / pageSize);
+
+      return res.render("admin/orders", {
+        layout: "admin/layout",
+        title: "Commandes",
+        orders: ordersWithRelations || [],
+        summary,
+        pagination: {
+          currentPage,
+          totalPages,
+          pageSize,
+          totalCount: totalCount || 0,
+          hasNext: currentPage < totalPages,
+          hasPrev: currentPage > 1
+        },
+        currentStatus: status || ''
+      });
+    }
+
+    // Normalize data structure and fetch deliverers separately
+    const ordersWithDeliverers = await Promise.all((orders || []).map(async (order) => {
+      // Normalize user and restaurant fields (Supabase might return as plural)
+      const normalizedOrder = {
+        ...order,
+        user: order.user || order.users || null,
+        restaurant: order.restaurant || order.restaurants || null
+      };
+
+      // Remove plural versions if they exist
+      if (normalizedOrder.users) delete normalizedOrder.users;
+      if (normalizedOrder.restaurants) delete normalizedOrder.restaurants;
+
+      // Fetch deliverer if needed
+      if (normalizedOrder.deliverer_id) {
+        const { data: deliverer } = await supabase
+          .from("deliverers")
+          .select("id, user_id")
+          .eq("id", normalizedOrder.deliverer_id)
+          .single();
+        normalizedOrder.deliverer = deliverer;
+      }
+
+      return normalizedOrder;
+    }));
+
+    // Calculate summary statistics
+    const { data: allOrders } = await supabase
+      .from("orders")
+      .select("status, total_amount");
+
+    const summary = {
+      total: allOrders?.length || 0,
+      pending: allOrders?.filter(o => o.status === "Pending").length || 0,
+      preparing: allOrders?.filter(o => o.status === "PREPARING").length || 0,
+      delivering: allOrders?.filter(o => o.status === "DELIVERING").length || 0,
+      completed: allOrders?.filter(o => o.status === "COMPLETED").length || 0,
+      cancelled: allOrders?.filter(o => o.status === "CANCELLED").length || 0,
+      totalRevenue: allOrders?.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0
+    };
+
+    const totalPages = Math.ceil((totalCount || 0) / pageSize);
+
+    res.render("admin/orders", {
+      layout: "admin/layout",
+      title: "Commandes",
+      orders: ordersWithDeliverers || [],
+      summary,
+      pagination: {
+        currentPage,
+        totalPages,
+        pageSize,
+        totalCount: totalCount || 0,
+        hasNext: currentPage < totalPages,
+        hasPrev: currentPage > 1
+      },
+      currentStatus: status || ''
+    });
+  } catch (error) {
+    console.error("Error fetching orders:", error.message);
+    res.status(500).render("admin/orders", {
+      layout: "admin/layout",
+      title: "Commandes",
+      orders: [],
+      summary: {
+        total: 0,
+        pending: 0,
+        preparing: 0,
+        delivering: 0,
+        completed: 0,
+        cancelled: 0,
+        totalRevenue: 0
+      },
+      pagination: {
+        currentPage: 1,
+        totalPages: 1,
+        pageSize: pageSize,
+        totalCount: 0,
+        hasNext: false,
+        hasPrev: false
+      },
+      currentStatus: ''
+    });
+  }
+});
+
+// Revenues route
+router.get("/revenues", async (req, res) => {
+  try {
+    const { from, to } = req.query;
+    const dateFrom = from ? new Date(from) : null;
+    const dateTo = to ? new Date(to) : null;
+
+    const rpcParams = {
+      p_from: dateFrom ? dateFrom.toISOString() : null,
+      p_to: dateTo ? dateTo.toISOString() : null
+    };
+
+    // Fetch revenue data using the same functions as dashboard
+    const [
+      { data: restoRev, error: restoErr },
+      { data: delivererRev, error: delivererErr },
+      { data: gourmetRev, error: gourmetErr }
+    ] = await Promise.all([
+      supabase.rpc('rpc_restaurant_revenue', rpcParams),
+      supabase.rpc('rpc_deliverer_revenue', rpcParams),
+      supabase.rpc('rpc_gourmet_revenue', rpcParams)
+    ]);
+
+    const totalRestaurantRevenue =
+      restoErr ? 0 : (restoRev?.reduce((sum, r) => sum + Number(r.restaurant_revenue || 0), 0) || 0);
+    const totalDelivererRevenue =
+      delivererErr ? 0 : (delivererRev?.reduce((sum, d) => sum + Number(d.deliverer_net_revenue || 0), 0) || 0);
+    const totalGourmetRevenue =
+      gourmetErr ? 0 : (gourmetRev?.[0]?.total_revenue || 0);
+
+    const revenues = {
+      restaurants: totalRestaurantRevenue,
+      deliverers: totalDelivererRevenue,
+      gourmet: totalGourmetRevenue
+    };
+
+    // Fetch revenue breakdown by restaurant
+    const restaurantBreakdown = restoErr ? [] : (restoRev || []).map(r => ({
+      restaurantId: r.restaurant_id,
+      restaurantName: r.restaurant_name || 'N/A',
+      revenue: Number(r.restaurant_revenue || 0),
+      orderCount: Number(r.order_count || 0)
+    })).sort((a, b) => b.revenue - a.revenue).slice(0, 10); // Top 10
+
+    // Fetch revenue breakdown by deliverer
+    const delivererBreakdown = delivererErr ? [] : (delivererRev || []).map(d => ({
+      delivererId: d.deliverer_id,
+      delivererName: d.deliverer_name || 'N/A',
+      revenue: Number(d.deliverer_net_revenue || 0),
+      orderCount: Number(d.order_count || 0)
+    })).sort((a, b) => b.revenue - a.revenue).slice(0, 10); // Top 10
+
+    // Fetch total orders for revenue calculation explanation
+    let totalOrdersQuery = supabase
+      .from("orders")
+      .select("total_amount, status, created_at")
+      .eq("status", "COMPLETED");
+    if (dateFrom) totalOrdersQuery = totalOrdersQuery.gte("created_at", dateFrom.toISOString());
+    if (dateTo) totalOrdersQuery = totalOrdersQuery.lte("created_at", dateTo.toISOString());
+
+    const { data: totalOrdersData } = await totalOrdersQuery;
+
+    const totalOrderValue = totalOrdersData?.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0;
+
+    // Fetch per-order revenue breakdown (where it came from)
+    let revenueOrdersQuery = supabase
+      .from("orders")
+      .select(`
+        id,
+        total_amount,
+        restaurant_payout,
+        deliverer_payout,
+        gourmet_payout,
+        created_at,
+        restaurants!orders_restaurant_id_fkey (
+          name
+        )
+      `)
+      .eq("status", "COMPLETED")
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (dateFrom) revenueOrdersQuery = revenueOrdersQuery.gte("created_at", dateFrom.toISOString());
+    if (dateTo) revenueOrdersQuery = revenueOrdersQuery.lte("created_at", dateTo.toISOString());
+
+    const { data: revenueOrdersRaw, error: revenueOrdersError } = await revenueOrdersQuery;
+    if (revenueOrdersError) {
+      console.error("Error fetching revenue orders:", revenueOrdersError);
+    }
+
+    const revenueOrders = (revenueOrdersRaw || []).map(o => ({
+      id: o.id,
+      total: Number(o.total_amount || 0),
+      restaurantShare: Number(o.restaurant_payout || 0),
+      delivererShare: Number(o.deliverer_payout || 0),
+      gourmetShare: Number(o.gourmet_payout || 0),
+      restaurantName: o.restaurants?.name || "N/A",
+      createdAt: o.created_at
+    }));
+
+    // Fetch monthly revenue data
+    const { data: monthlyData, error: monthlyError } = await supabase.rpc("get_monthly_orders");
+
+    if (monthlyError) {
+      console.error("Error fetching monthly orders:", monthlyError);
+    }
+
+    res.render("admin/revenues", {
+      layout: "admin/layout",
+      title: "Revenus",
+      revenues,
+      monthlyData: monthlyData || [],
+      restaurantBreakdown: restaurantBreakdown || [],
+      delivererBreakdown: delivererBreakdown || [],
+      totalOrderValue,
+      revenueOrders,
+      filters: {
+        from: from || "",
+        to: to || ""
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching revenues:", error.message);
+    res.status(500).render("admin/revenues", {
+      layout: "admin/layout",
+      title: "Revenus",
+      revenues: {
+        restaurants: 0,
+        deliverers: 0,
+        gourmet: 0
+      },
+      monthlyData: [],
+      restaurantBreakdown: [],
+      delivererBreakdown: [],
+      totalOrderValue: 0,
+      revenueOrders: [],
+      filters: {
+        from: req.query.from || "",
+        to: req.query.to || ""
+      }
+    });
+  }
+});
+
 // Restaurant Details Route
 router.get("/restaurants/:id/details", async (req, res) => {
   const { id } = req.params;
@@ -722,6 +1080,8 @@ router.get("/restaurants/:id/details", async (req, res) => {
           name
           description
           address
+          latitude
+          longitude
           type
           openingHours {
             monday { open close }

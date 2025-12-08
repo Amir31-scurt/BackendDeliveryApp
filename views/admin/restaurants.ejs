@@ -634,6 +634,17 @@
           </div>
 
           <div class="form-group">
+            <label for="latitude">Latitude</label>
+            <input type="text" id="latitude" name="latitude" class="form-control" placeholder="Ex: 14.7167" required />
+          </div>
+
+          <div class="form-group">
+            <label for="longitude">Longitude</label>
+            <input type="text" id="longitude" name="longitude" class="form-control" placeholder="Ex: -17.4677"
+              required />
+          </div>
+
+          <div class="form-group">
             <label for="type">Type</label>
             <select id="type" name="type" class="form-control" required>
               <option value="RESTAURANT">Restaurant</option>
@@ -896,6 +907,8 @@
               name
               description
               address
+              latitude
+              longitude
               type
               phoneNumber
               email
@@ -936,6 +949,8 @@
         document.getElementById("name").value = restaurant.name || "";
         document.getElementById("description").value = restaurant.description || "";
         document.getElementById("address").value = restaurant.address || "";
+        document.getElementById("latitude").value = restaurant.latitude || "";
+        document.getElementById("longitude").value = restaurant.longitude || "";
         document.getElementById("type").value = (restaurant.type || "RESTAURANT").toLowerCase();
         document.getElementById("phoneNumber").value = restaurant.phoneNumber || "";
         document.getElementById("email").value = restaurant.email || "";
@@ -979,6 +994,8 @@
         const form = document.getElementById("restaurantForm");
         const formData = new FormData(form);
         const restaurantId = formData.get("restaurantId");
+        const latitudeValue = parseFloat(formData.get("latitude"));
+        const longitudeValue = parseFloat(formData.get("longitude"));
 
         const token = localStorage.getItem('token');
         if (!token) {
@@ -1028,6 +1045,8 @@
           name: formData.get("name") || "",
           description: formData.get("description") || "",
           address: formData.get("address") || "",
+          latitude: Number.isNaN(latitudeValue) ? null : latitudeValue,
+          longitude: Number.isNaN(longitudeValue) ? null : longitudeValue,
           type: (formData.get("type") || "RESTAURANT").toUpperCase(),
           phoneNumber: formData.get("phoneNumber") || "",
           email: formData.get("email") || "",
@@ -1068,6 +1087,9 @@
           input.imageUrl = imageUrl;
         }
 
+        const latitudeField = input.latitude !== null ? `latitude: ${input.latitude},` : "";
+        const longitudeField = input.longitude !== null ? `longitude: ${input.longitude},` : "";
+
         const query = isEditMode
           ? `
             mutation {
@@ -1075,6 +1097,8 @@
                 name: "${input.name}",
                 description: "${input.description}",
                 address: "${input.address}",
+                ${latitudeField}
+                ${longitudeField}
                 type: ${input.type},
                 phoneNumber: "${input.phoneNumber}",
                 email: "${input.email}",
@@ -1100,6 +1124,8 @@
                 name: "${input.name}",
                 description: "${input.description}",
                 address: "${input.address}",
+                ${latitudeField}
+                ${longitudeField}
                 type: ${input.type},
                 phoneNumber: "${input.phoneNumber}",
                 email: "${input.email}",

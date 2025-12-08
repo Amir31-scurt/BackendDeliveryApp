@@ -13,7 +13,7 @@ export const authMiddleware = async (req, res, next) => {
     }
 
     // Skip CSRF check for API routes and deliverer routes (used by mobile app and admin interface)
-    if (req.originalUrl.startsWith('/api/') || req.originalUrl.startsWith('/admin/deliverers/')) {
+    if (req.originalUrl.startsWith('/api/')) {
       const authHeader = req.headers.authorization;
       if (!authHeader) {
         return res.status(401).json({ error: "Authorization header must be provided" });

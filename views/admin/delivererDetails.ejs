@@ -5,10 +5,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Détails du Livreur - Gourmet d'amour</title>
+
+    <!-- Google Fonts -->
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <!-- Leaflet Map -->
+    <script async
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCDVi5RrYOFaIP0pV4RJr26X8X8LI_1fZY&callback=initDelivererMap">
+        </script>
+
     <style>
         :root {
             --primary-color: #DB607E;
@@ -16,6 +26,8 @@
             --accent-color: #b22222;
             --background-color: #f9f5f0;
             --dark-color: #2c2c2c;
+            --card-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
+            --transition-speed: 0.3s;
         }
 
         * {
@@ -27,199 +39,245 @@
         body {
             font-family: 'Poppins', sans-serif;
             background-color: var(--background-color);
-            min-height: 100vh;
             padding: 2rem;
+            min-height: 100vh;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
+        /* HEADER */
         header {
-            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1601628828688-632f38a5a7d0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80');
+            background: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)),
+                url('https://images.unsplash.com/photo-1601628828688-632f38a5a7d0?auto=format&fit=crop&w=1920&q=80');
             background-size: cover;
             background-position: center;
-            padding: 2rem;
+            padding: 3rem 2rem;
             text-align: center;
-            color: white;
+            color: #fff;
+            border-radius: 20px;
             margin-bottom: 2rem;
-            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(45deg,
+                    rgba(219, 96, 126, 0.25),
+                    rgba(171, 210, 126, 0.25));
         }
 
         header h1 {
+            position: relative;
+            z-index: 2;
             font-family: 'Playfair Display', serif;
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
+            font-size: 3rem;
             color: var(--primary-color);
+            animation: fadeInDown 1s ease-out;
+        }
+
+        header p {
+            position: relative;
+            z-index: 2;
+            font-size: 1.3rem;
+            margin-top: 0.5rem;
+            animation: fadeInUp 1s ease-out;
         }
 
         .nav-links {
+            margin-top: 2rem;
             display: flex;
             justify-content: center;
-            gap: 1rem;
-            margin-top: 1rem;
+            gap: 1.5rem;
+            z-index: 2;
+            position: relative;
         }
 
         .nav-link {
             color: white;
             text-decoration: none;
-            padding: 0.5rem 1rem;
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            backdrop-filter: blur(5px);
+            background: rgba(255, 255, 255, 0.15);
+            transition: all .3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .nav-link:hover {
-            background-color: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
         }
 
+        /* PROFILE CARD */
         .deliverer-profile {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            background: #fff;
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
             margin-bottom: 2rem;
+            transition: .3s ease;
         }
 
         .profile-header {
             display: flex;
-            align-items: center;
             gap: 2rem;
-            margin-bottom: 2rem;
+            align-items: center;
         }
 
-        .profile-image {
+        .profile-image,
+        .fallback-avatar {
             width: 150px;
             height: 150px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid var(--primary-color);
+            border: 4px solid var(--primary-color);
+            box-shadow: var(--card-shadow);
+        }
+
+        /* Initials avatar */
+        .fallback-avatar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 700;
+            color: white;
+            background: var(--primary-color);
+            text-transform: uppercase;
         }
 
         .profile-info h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 2rem;
+            font-family: 'Playfair Display';
+            font-size: 2.2rem;
             color: var(--dark-color);
-            margin-bottom: 0.5rem;
         }
 
         .status-badge {
-            display: inline-block;
             padding: 0.5rem 1rem;
             border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            margin-top: 0.5rem;
+            color: white;
+            font-size: .9rem;
+            margin-top: .5rem;
+            display: inline-block;
+            font-weight: 600;
         }
 
         .status-active {
-            background-color: var(--secondary-color);
-            color: white;
+            background: var(--secondary-color);
         }
 
         .status-inactive {
-            background-color: #e0e0e0;
-            color: var(--dark-color);
+            background: #ccc;
+            color: #444;
         }
 
         .profile-details {
+            margin-top: 2.5rem;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
             gap: 1.5rem;
-            margin-top: 2rem;
         }
 
         .detail-card {
             background: var(--background-color);
-            padding: 1.5rem;
-            border-radius: 10px;
+            padding: 1.8rem;
+            border-radius: 15px;
+            box-shadow: var(--card-shadow);
+            transition: .3s ease;
         }
 
-        .detail-card h3 {
-            color: var(--dark-color);
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
+        .detail-card:hover {
+            transform: translateY(-3px);
         }
 
-        .detail-card p {
-            color: var(--primary-color);
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
-
+        /* ACTION BUTTONS */
         .action-buttons {
+            margin-top: 2rem;
             display: flex;
             gap: 1rem;
-            margin-top: 2rem;
         }
 
         .action-btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
+            padding: .9rem 1.7rem;
+            border-radius: 12px;
             font-weight: 600;
+            font-size: 1rem;
+            border: none;
             cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
+            transition: .3s;
+            display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: .6rem;
         }
 
         .edit-btn {
-            background-color: var(--primary-color);
+            background: linear-gradient(45deg, var(--primary-color), #c44d68);
             color: white;
         }
 
         .delete-btn {
-            background-color: var(--accent-color);
+            background: var(--accent-color);
             color: white;
         }
 
         .action-btn:hover {
             transform: translateY(-2px);
-            opacity: 0.9;
+            box-shadow: var(--card-shadow);
         }
 
+        /* MAP */
+        #delivererMap:hover {
+            transform: scale(1.02);
+            transition: .3s ease;
+        }
+
+        /* DELIVERY HISTORY */
         .delivery-history {
             background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
         }
 
         .delivery-history h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
+            font-family: 'Playfair Display';
             color: var(--dark-color);
             margin-bottom: 1.5rem;
+            font-size: 1.8rem;
         }
 
         .delivery-table {
             width: 100%;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0;
         }
 
         .delivery-table th {
-            background-color: var(--background-color);
-            padding: 1rem;
-            text-align: left;
+            background: var(--background-color);
+            padding: 1.1rem;
+            border-bottom: 2px solid var(--primary-color);
             font-weight: 600;
             color: var(--dark-color);
-            border-bottom: 2px solid var(--primary-color);
         }
 
         .delivery-table td {
             padding: 1rem;
             border-bottom: 1px solid #eee;
-            color: var(--dark-color);
         }
 
         .delivery-table tr:hover {
-            background-color: var(--background-color);
+            background: var(--background-color);
+            transform: translateY(-2px);
+            transition: .3s ease;
         }
 
-        @media (max-width: 768px) {
+        @media(max-width:768px) {
             body {
                 padding: 1rem;
             }
@@ -229,14 +287,34 @@
                 text-align: center;
             }
 
-            .profile-image {
-                width: 120px;
-                height: 120px;
+            .delivery-table {
+                overflow-x: auto;
+                display: block;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px)
             }
 
-            .delivery-table {
-                display: block;
-                overflow-x: auto;
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
             }
         }
     </style>
@@ -244,9 +322,12 @@
 
 <body>
     <div class="container">
+
+        <!-- HEADER -->
         <header>
             <h1>Gourmet d'amour</h1>
             <p>Détails du Livreur</p>
+
             <div class="nav-links">
                 <a href="/admin/dashboard" class="nav-link">Tableau de Bord</a>
                 <a href="/admin/restaurants" class="nav-link">Restaurants</a>
@@ -255,75 +336,95 @@
             </div>
         </header>
 
+        <!-- PROFILE CARD -->
         <div class="deliverer-profile">
             <div class="profile-header">
-                <img src="<%= deliverer.profilePicture || deliverer.user.profile_picture || '/images/default-deliverer.png' %>"
-                    alt="<%= deliverer.user.name %>" class="profile-image" />
-                <div class="profile-info">
-                    <h2>
-                        <%= deliverer.user.name %>
-                    </h2>
-                    <p><i class="fas fa-phone"></i>
-                        <%= deliverer.user.phone_number %>
-                    </p>
-                    <span class="status-badge status-<%= deliverer.isAvailable ? 'active' : 'inactive' %>">
-                        <%= deliverer.isAvailable ? 'Disponible' : 'Occupé' %>
-                    </span>
-                </div>
+
+                <!-- Avatar with initials fallback -->
+                <% if (deliverer.profilePicture || deliverer.user.profile_picture) { %>
+                    <img src="<%= deliverer.profilePicture || deliverer.user.profile_picture %>"
+                        alt="<%= deliverer.user.name %>" class="profile-image" />
+                    <% } else { %>
+                        <div class="fallback-avatar" id="avatarFallback"></div>
+                        <% } %>
+
+                            <div class="profile-info">
+                                <h2>
+                                    <%= deliverer.user.name %>
+                                </h2>
+                                <p><i class="fa fa-phone"></i>
+                                    <%= deliverer.user.phone_number %>
+                                </p>
+                                <span class="status-badge status-<%= deliverer.isAvailable ? 'active':'inactive' %>">
+                                    <%= deliverer.isAvailable ? 'Disponible' :'Occupé' %>
+                                </span>
+                            </div>
             </div>
 
             <div class="profile-details">
+
                 <div class="detail-card">
                     <h3>Zone de Livraison</h3>
                     <p>
                         <%= deliverer.zone || 'Non spécifiée' %>
                     </p>
                 </div>
+
                 <div class="detail-card">
                     <h3>Véhicule</h3>
                     <p>
                         <%= deliverer.vehicleId || 'Non spécifié' %>
                     </p>
                 </div>
+
                 <div class="detail-card">
                     <h3>Position Actuelle</h3>
-                    <p>
-                        <% if (deliverer.currentLocation) { %>
+
+                    <% if (deliverer.currentLocation) { %>
+
+                        <p style="margin-bottom: 1rem;">
                             <%= deliverer.currentLocation.address %><br>
-                                <small>Lat: <%= deliverer.currentLocation.latitude %>, Lng: <%=
-                                            deliverer.currentLocation.longitude %></small>
-                                <% } else { %>
-                                    Non disponible
-                                    <% } %>
-                    </p>
+                                <small>
+                                    Lat: <%= deliverer.currentLocation.latitude %>,
+                                        Lng: <%= deliverer.currentLocation.longitude %>
+                                </small>
+                        </p>
+                        <% } else { %>
+                            <p>Non disponible</p>
+                            <% } %>
                 </div>
+
                 <div class="detail-card">
                     <h3>Commandes Livrées</h3>
                     <p>
                         <%= deliverer.completedDeliveries || 0 %>
                     </p>
                 </div>
+
                 <div class="detail-card">
-                    <h3>Statut du Compte</h3>
+                    <h3>Compte</h3>
                     <p>
                         <%= deliverer.isActive ? 'Actif' : 'Inactif' %>
                     </p>
                 </div>
+
             </div>
 
             <div class="action-buttons">
                 <button onclick="editDeliverer('<%= deliverer.userId %>')" class="action-btn edit-btn">
-                    <i class="fas fa-edit"></i> Modifier
+                    <i class="fa fa-edit"></i> Modifier
                 </button>
-                <button onclick="confirmDelete('<%= deliverer.userId %>', '<%= deliverer.user.name %>')"
+                <button onclick="confirmDelete('<%= deliverer.userId %>','<%= deliverer.user.name %>')"
                     class="action-btn delete-btn">
-                    <i class="fas fa-trash"></i> Supprimer
+                    <i class="fa fa-trash"></i> Supprimer
                 </button>
             </div>
         </div>
 
+        <!-- DELIVERY HISTORY -->
         <div class="delivery-history">
             <h2>Historique des Livraisons</h2>
+
             <table class="delivery-table">
                 <thead>
                     <tr>
@@ -334,6 +435,7 @@
                         <th>Adresse</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     <% if (deliverer.orders && deliverer.orders.length> 0) { %>
                         <% deliverer.orders.forEach(order=> { %>
@@ -345,7 +447,7 @@
                                     <%= new Date(order.created_at).toLocaleDateString('fr-FR') %>
                                 </td>
                                 <td>
-                                    <%= order.total_amount.toFixed(2) %> €
+                                    <%= order.total_amount.toFixed(2) %> FCFA
                                 </td>
                                 <td>
                                     <%= order.status %>
@@ -354,59 +456,140 @@
                                     <%= order.delivery_address.address %>
                                 </td>
                             </tr>
-                            <% }); %>
+                            <% }) %>
                                 <% } else { %>
                                     <tr>
-                                        <td colspan="5" style="text-align: center;">Aucune commande trouvée</td>
+                                        <td colspan="5" style="text-align:center;">Aucune commande trouvée</td>
                                     </tr>
                                     <% } %>
                 </tbody>
             </table>
+
         </div>
     </div>
 
     <script>
+        /* Auto-generate initials avatar with consistent color */
+        function generateColor(name) {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++)
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            let color = '#';
+            for (let i = 0; i < 3; i++)
+                color += ('00' + ((hash >> (i * 8)) & 0xFF).toString(16)).slice(-2);
+            return color;
+        }
+
+        function createInitialsAvatar(name) {
+            const initials = name.split(" ")
+                .map(w => w[0])
+                .join("")
+                .substring(0, 2)
+                .toUpperCase();
+
+            const avatar = document.getElementById("avatarFallback");
+            if (avatar) {
+                avatar.innerText = initials;
+                avatar.style.background = generateColor(name);
+            }
+        }
+
+        createInitialsAvatar("<%= deliverer.user.name %>");
+
+        /* Initialize dynamic Leaflet map if coordinates exist */
+        function initDelivererMap() {
+            const hasLocation = "<%= deliverer.currentLocation ? 'true' : 'false' %>";
+
+            if (!hasLocation) return;
+
+            const lat = Number("<%= deliverer.currentLocation?.latitude || 0 %>");
+            const lng = Number("<%= deliverer.currentLocation?.longitude || 0 %>");
+            const name = "<%= deliverer.user.name %>";
+
+            const mapElement = document.getElementById("delivererMap");
+            if (!mapElement) return;
+
+            const map = new google.maps.Map(mapElement, {
+                center: { lat, lng },
+                zoom: 15,
+                disableDefaultUI: true,
+                mapTypeId: "roadmap",
+                styles: [
+                    {
+                        featureType: "all",
+                        stylers: [{ saturation: -20 }]
+                    },
+                    {
+                        featureType: "poi",
+                        stylers: [{ visibility: "off" }]
+                    }
+                ]
+            });
+
+            const marker = new google.maps.Marker({
+                position: { lat, lng },
+                map,
+                animation: google.maps.Animation.DROP,
+                title: name,
+                icon: {
+                    url: "https://maps.google.com/mapfiles/ms/icons/pink-dot.png"
+                }
+            });
+
+            const infoWindow = new google.maps.InfoWindow({
+                content: `
+            <div style="font-family: 'Poppins'; font-size: 14px;">
+                <b>${name}</b><br>
+                Latitude: ${lat}<br>
+                Longitude: ${lng}
+            </div>
+        `
+            });
+
+            infoWindow.open(map, marker);
+
+            marker.addListener("click", () => {
+                infoWindow.open(map, marker);
+            });
+        }
+
+        initDelivererMap();
+
         function editDeliverer(id) {
             window.location.href = `/admin/deliverers/${id}/edit`;
         }
 
         function confirmDelete(id, name) {
-            if (confirm(`Êtes-vous sûr de vouloir supprimer le livreur "${name}"?`)) {
+            if (confirm(`Êtes-vous sûr de vouloir supprimer le livreur "${name}" ?`)) {
                 deleteDeliverer(id);
             }
         }
 
         async function deleteDeliverer(id) {
             try {
-                const token = localStorage.getItem('authToken');
+                const token = localStorage.getItem("authToken");
                 if (!token) {
-                    alert("Vous devez être connecté pour supprimer un livreur");
-                    window.location.href = '/admin/login';
-                    return;
+                    alert("Veuillez vous connecter.");
+                    return window.location.href = "/admin/login";
                 }
 
-                const response = await fetch(`/admin/deliverers/${id}/delete`, {
-                    method: 'POST',
+                const res = await fetch(`/admin/deliverers/${id}/delete`, {
+                    method: "POST",
                     headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
+                        "Authorization": `Bearer ${token}`
                     }
                 });
 
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || `HTTP error! status: ${response.status}`);
-                }
+                const data = await res.json();
+                alert(data.message || "Livreur supprimé !");
+                window.location.href = "/admin/deliverers";
 
-                const result = await response.json();
-                alert(result.message || "Livreur supprimé avec succès!");
-                window.location.href = '/admin/deliverers';
-            } catch (error) {
-                console.error("Error:", error);
-                alert(`Une erreur s'est produite: ${error.message}`);
+            } catch (e) {
+                alert("Erreur : " + e.message);
             }
         }
     </script>
+
 </body>
 
 </html>
