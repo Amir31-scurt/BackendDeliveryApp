@@ -2,11 +2,17 @@ import { ApolloServer, gql } from "apollo-server-express";
 import bcrypt from "bcrypt";
 import express from "express";
 import jwt from "jsonwebtoken";
+import multer from "multer";
+import path from "path";
+import { writeFile, mkdir } from "fs/promises";
+import { existsSync } from "fs";
 import { supabase } from "../supabaseClient.js";
 import { graphqlRequest } from "../utils/graphqlClient.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
+const ROOT_DIR = path.resolve();
 
 // Public routes (no auth required)
 router.get("/login", (req, res) => {
@@ -1137,24 +1143,41 @@ router.get("/restaurants/:id/details", async (req, res) => {
   }
 });
 
-router.post("/upload", async (req, res) => {
+// Upload restaurant image to local storage (replaces Supabase storage)
+router.post("/upload", upload.single("image"), async (req, res) => {
   try {
-    const { image, restaurantId } = req.body; // Ensure image is sent as a base64 or binary file
+    const { restaurantId } = req.body;
+    if (!restaurantId) {
+      return res.status(400).json({ error: "restaurantId is required" });
+    }
+
+    // Accept either multipart file (preferred) or base64 payload
+    let buffer;
+    let mimeType = "image/jpeg";
+
+    if (req.file && req.file.buffer) {
+      buffer = req.file.buffer;
+      mimeType = req.file.mimetype || "image/jpeg";
+    } else if (req.body.image) {
+      const base64 = req.body.image.replace(/^data:image\/\\w+;base64,/, "");
+      buffer = Buffer.from(base64, "base64");
+    } else {
+      return res.status(400).json({ error: "No image provided" });
+    }
+
     const fileName = `${restaurantId}-${Date.now()}.jpg`;
+    const uploadDir = path.join(ROOT_DIR, "public", "uploads", "restaurants");
 
-    const { data, error } = await supabase.storage
-      .from("restaurant-images")
-      .upload(fileName, image, {
-        contentType: "image/jpeg",
-      });
+    if (!existsSync(uploadDir)) {
+      await mkdir(uploadDir, { recursive: true });
+    }
 
-    if (error) throw new Error(error.message);
+    const filePath = path.join(uploadDir, fileName);
+    await writeFile(filePath, buffer);
 
-    const { publicUrl } = supabase.storage
-      .from("restaurant-images")
-      .getPublicUrl(fileName);
+    const publicUrl = `/uploads/restaurants/${fileName}`;
 
-    // Save the public URL in your restaurants table
+    // Save the public URL in restaurants table
     const { error: dbError } = await supabase
       .from("restaurants")
       .update({ image_url: publicUrl })

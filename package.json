@@ -4,7 +4,7 @@
   "main": "resolvers.js",
   "type": "module",
   "dependencies": {
-    "@supabase/supabase-js": "^2.47.10",
+    "pg": "^8.11.3",
     "accepts": "^1.3.8",
     "apollo-server-express": "^3.13.0",
     "array-flatten": "^1.1.1",

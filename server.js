@@ -3,7 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import expressEjsLayouts from "express-ejs-layouts";
-import { readFileSync } from "fs";
+import { readFileSync, writeFile, mkdir } from "fs/promises";
+import { existsSync } from "fs";
 import multer from "multer";
 import path from "path";
 import cookieParser from "cookie-parser";
@@ -130,37 +131,22 @@ app.post("/storage/upload", upload.single("image"), async (req, res) => {
     }
 
     const fileName = `restaurant-${Date.now()}-${file.originalname}`;
-    console.log("Uploading file:", fileName);
+    const uploadDir = path.join(__dirname, "public", "uploads", "restaurants");
 
-    // Attempt to upload the file
-    const { data, error } = await supabase.storage
-      .from("restaurant-images")
-      .upload(fileName, file.buffer, {
-        contentType: file.mimetype,
-      });
-
-    // Log the upload response
-    console.log("Upload response:", { data, error });
-
-    if (error) {
-      console.error("Upload error:", error);
-      throw new Error("Upload failed");
+    // Create directory if it doesn't exist
+    if (!existsSync(uploadDir)) {
+      await mkdir(uploadDir, { recursive: true });
     }
 
-    // Generate the public URL
-    const publicUrlData = supabase.storage
-      .from("restaurant-images")
-      .getPublicUrl(fileName);
+    const filePath = path.join(uploadDir, fileName);
+    await writeFile(filePath, file.buffer);
 
-    // Explicitly log the public URL data
-    console.log("Public URL data:", publicUrlData);
+    // Generate the public URL (relative to public directory)
+    const publicUrl = `/uploads/restaurants/${fileName}`;
 
-    if (!publicUrlData.data?.publicUrl) {
-      console.error("Failed to retrieve public URL");
-      return res.status(500).json({ error: "Public URL retrieval failed" });
-    }
+    console.log("File uploaded successfully:", publicUrl);
 
-    res.status(200).json({ publicUrl: publicUrlData.data.publicUrl });
+    res.status(200).json({ publicUrl });
   } catch (error) {
     console.error("Error uploading image:", error.message);
     res.status(500).json({ error: error.message });
@@ -174,37 +160,22 @@ app.post("/storage/profilePictures/upload", upload.single("image"), async (req, 
     }
 
     const fileName = `profile-${Date.now()}-${file.originalname}`;
-    console.log("Uploading file:", fileName);
+    const uploadDir = path.join(__dirname, "public", "uploads", "profiles");
 
-    // Attempt to upload the file
-    const { data, error } = await supabase.storage
-      .from("profile-pictures")
-      .upload(fileName, file.buffer, {
-        contentType: file.mimetype,
-      });
-
-    // Log the upload response
-    console.log("Upload response:", { data, error });
-
-    if (error) {
-      console.error("Upload error:", error);
-      throw new Error("Upload failed");
+    // Create directory if it doesn't exist
+    if (!existsSync(uploadDir)) {
+      await mkdir(uploadDir, { recursive: true });
     }
 
-    // Generate the public URL
-    const publicUrlData = supabase.storage
-      .from("profile-pictures")
-      .getPublicUrl(fileName);
+    const filePath = path.join(uploadDir, fileName);
+    await writeFile(filePath, file.buffer);
 
-    // Explicitly log the public URL data
-    console.log("Public URL data:", publicUrlData);
+    // Generate the public URL (relative to public directory)
+    const publicUrl = `/uploads/profiles/${fileName}`;
 
-    if (!publicUrlData.data?.publicUrl) {
-      console.error("Failed to retrieve public URL");
-      return res.status(500).json({ error: "Public URL retrieval failed" });
-    }
+    console.log("File uploaded successfully:", publicUrl);
 
-    res.status(200).json({ publicUrl: publicUrlData.data.publicUrl });
+    res.status(200).json({ publicUrl });
   } catch (error) {
     console.error("Error uploading image:", error.message);
     res.status(500).json({ error: error.message });
@@ -219,45 +190,41 @@ app.post('/api/push-token', async (req, res) => {
     return res.status(400).json({ message: 'Missing userId or token' });
   }
 
-  const { error } = await supabase
-    .from('push_tokens')
-    .upsert({ user_id: userId, token }, { onConflict: ['user_id'] });
-
-  if (error) {
-    return res.status(500).json({ message: 'Failed to save token', error });
-  }
-
-  return res.status(200).json({ message: 'Token saved successfully' });
-});
-
-// Serve static files
-app.use(express.static(path.join(__dirname, "public")));
-
-// Serve static files
-app.use(express.static(path.join(__dirname, "public")));
-
-app.post("/storage/upload", async (req, res) => {
   try {
-    const file = req.files.image; // Assuming `express-fileupload` or similar middleware is used
-    const fileName = `restaurant-${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage
-      .from("restaurant-images")
-      .upload(fileName, file.data, {
-        contentType: file.mimetype,
-      });
+    // Upsert push token (insert or update)
+    const { data: existing, error: checkError } = await supabase
+      .from('push_tokens')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
 
-    if (error) throw new Error(error.message);
+    if (checkError || !existing) {
+      // Insert new token
+      const { error: insertError } = await supabase.from('push_tokens').insert({ user_id: userId, token });
+      if (insertError) {
+        return res.status(500).json({ message: 'Failed to save token', error: insertError });
+      }
+    } else {
+      // Update existing token
+      const { error: updateError } = await supabase.from('push_tokens').update({ token }).eq('user_id', userId);
+      if (updateError) {
+        return res.status(500).json({ message: 'Failed to update token', error: updateError });
+      }
+    }
 
-    const { publicUrl } = supabase.storage
-      .from("restaurant-images")
-      .getPublicUrl(fileName);
-
-    res.status(200).json({ publicUrl });
+    return res.status(200).json({ message: 'Token saved successfully' });
   } catch (error) {
-    console.error("Error uploading image:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ message: 'Failed to save token', error: error.message });
   }
 });
+
+// Serve static files
+app.use(express.static(path.join(__dirname, "public")));
+
+// Serve static files
+app.use(express.static(path.join(__dirname, "public")));
+
+// Removed duplicate upload route - using the multer-based route above
 
 // Setup GraphQL server
 const typeDefs = readFileSync(path.join(__dirname, "schema.graphql"), "utf8");
@@ -265,7 +232,7 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   delivererResolvers,
-  context: { supabase },
+  context: { supabase, db: supabase },
 });
 
 // Apply middleware to the app
