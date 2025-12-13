@@ -1,6 +1,6 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/c2554004c/repositories/BackendDeliveryApp 
+    - export DEPLOYPATH=/home/c2554004c/repositories/
     - /bin/mkdir -p $DEPLOYPATH
     - /bin/rsync -az --delete --exclude=".git" --exclude="node_modules" ./ $DEPLOYPATH
