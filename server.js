@@ -306,6 +306,15 @@ app.listen(PORT, () => {
   );
 });
 
+// Health check route
+app.get("/health", (req, res) => {
+  res.status(200).json({ 
+    status: "ok", 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime() 
+  });
+});
+
 // Root route
 app.get("/", (req, res) => {
   res.render('landing', { layout: false });

@@ -10,7 +10,7 @@ const router = express.Router();
 
 // Public routes (no auth required)
 router.get("/login", (req, res) => {
-  res.render("admin/adminLogin");
+  res.render("admin/adminLogin", { layout: false });
 });
 
 // Admin login POST route
@@ -99,7 +99,7 @@ router.post("/login", [
 
 // Restaurant login routes (should be public)
 router.get("/login/restaurant", (req, res) => {
-  res.render("admin/restaurantLogin", { csrfToken: req.csrfToken() });
+  res.render("admin/restaurantLogin", { csrfToken: req.csrfToken(), layout: false });
 });
 
 router.post("/login/restaurant", async (req, res) => {
@@ -175,6 +175,11 @@ router.post("/login/restaurant", async (req, res) => {
 // Restaurant dashboard route - moved before the catch-all route
 router.get('/restaurant/:id/dashboard', async (req, res) => {
   try {
+    // Prevent caching
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+
     console.log('Dashboard access attempt - ID:', req.params.id);
 
     // Get token from cookie or Authorization header
@@ -327,6 +332,11 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
 // Restaurant menu route
 router.get('/restaurant/:id/menu', async (req, res) => {
   try {
+    // Prevent caching
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+
     console.log('Menu access attempt - ID:', req.params.id);
 
     // Get token from cookie or Authorization header
@@ -394,39 +404,32 @@ router.get('/restaurant/:id/menu', async (req, res) => {
 
 router.get("/restaurant/logout", (req, res) => {
   try {
-    // Clear cookie if any
-    res.clearCookie("token", {
-      path: "/",
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-    });
-
-    // Invalidate cache for this response
+    // Clear cookies
+    res.clearCookie("token", { path: "/", httpOnly: true, secure: process.env.NODE_ENV === "production" });
+    res.clearCookie("restaurant", { path: "/", httpOnly: true, secure: process.env.NODE_ENV === "production" });
+    
+    // Invalidate cache
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
 
-    // Send a small HTML snippet that clears browser history and redirects cleanly
+    // Force client-side cleanup and redirect
     res.send(`
       <html>
         <head>
           <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
-          <meta http-equiv="Pragma" content="no-cache">
-          <meta http-equiv="Expires" content="0">
           <script>
-            // Remove JWT token from localStorage
             localStorage.removeItem('token');
-            // Replace history so user can't go back
+            localStorage.removeItem('restaurant');
             window.location.replace('/admin/login/restaurant');
           </script>
         </head>
-        <body></body>
+        <body>Redirecting...</body>
       </html>
     `);
   } catch (error) {
     console.error("Logout error:", error);
-    res.status(500).json({ error: "Internal server error during logout" });
+    res.status(500).send("Error logging out");
   }
 });
 
