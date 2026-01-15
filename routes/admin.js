@@ -14,13 +14,25 @@ router.get("/login", (req, res) => {
 });
 
 // Admin login POST route
-router.post("/login", async (req, res) => {
+// Import express-validator
+import { body, validationResult } from "express-validator";
+
+// Admin login POST route
+router.post("/login", [
+    body('phoneNumber').notEmpty().withMessage('Le numéro de téléphone est requis'),
+    body('password').notEmpty().withMessage('Le mot de passe est requis')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.render("admin/adminLogin", {
+        errors: errors.array(),
+        csrfToken: req.csrfToken(),
+        phoneNumber: req.body.phoneNumber
+    });
+  }
+
   try {
     const { phoneNumber, password } = req.body;
-
-    if (!phoneNumber || !password) {
-      return res.status(400).json({ error: "Phone number and password are required" });
-    }
 
     // Find user by phone number
     const { data: user, error: userError } = await supabase
@@ -30,18 +42,30 @@ router.post("/login", async (req, res) => {
       .single();
 
     if (userError || !user) {
-      return res.status(401).json({ error: "Invalid phone number or password" });
+      return res.render("admin/adminLogin", {
+        error: "Numéro de téléphone ou mot de passe incorrect",
+        csrfToken: req.csrfToken(),
+        phoneNumber
+      });
     }
 
     // Verify password
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      return res.status(401).json({ error: "Invalid phone number or password" });
+      return res.render("admin/adminLogin", {
+        error: "Numéro de téléphone ou mot de passe incorrect",
+        csrfToken: req.csrfToken(),
+        phoneNumber
+      });
     }
 
     // Check if user is an admin
     if (user.role !== "admin") {
-      return res.status(403).json({ error: "Access denied. Admin privileges required." });
+      return res.render("admin/adminLogin", {
+        error: "Accès refusé. Privilèges administrateur requis.",
+        csrfToken: req.csrfToken(),
+        phoneNumber
+      });
     }
 
     // Generate JWT token
@@ -59,20 +83,17 @@ router.post("/login", async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 
-    res.json({
-      success: true,
-      message: "Login successful",
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        phoneNumber: user.phone_number,
-        role: user.role
-      }
-    });
+    // Also populate session for standard MVC (optional if using JWT mainly)
+    req.session.user = user;
+    req.flash('success_msg', 'Connexion réussie');
+
+    res.redirect("/admin/dashboard");
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.render("admin/adminLogin", {
+        error: "Erreur interne du serveur",
+        csrfToken: req.csrfToken()
+    });
   }
 });
 

@@ -9,6 +9,8 @@ import path from "path";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import csrf from 'csurf';
+import flash from "connect-flash";
+import session from "express-session";
 import resolvers from "./resolvers.js";
 import { delivererResolvers } from "./resolvers/delivererResolvers.js";
 import adminRoutes from "./routes/admin.js";
@@ -88,6 +90,29 @@ const csrfProtection = csrf({
 // Middleware to parse JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'secret_key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Flash messages
+app.use(flash());
+
+// Global variables for templates
+app.use((req, res, next) => {
+  res.locals.success_msg = req.flash('success_msg');
+  res.locals.error_msg = req.flash('error_msg');
+  res.locals.error = req.flash('error');
+  res.locals.errors = req.flash('errors') || []; 
+  next();
+});
 
 // Setup EJS as the template engine
 app.set("view engine", "ejs");
