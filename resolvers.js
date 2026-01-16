@@ -4,7 +4,7 @@ import { Expo } from 'expo-server-sdk';
 
 const expo = new Expo();
 
-async function sendPushNotification(userId, messageText, supabase) {
+async function sendPushNotification(userId, messageText, data = {}, supabase) {
   // 1. Get the user's saved push token from Supabase
   const { data: tokens, error } = await supabase
     .from('push_tokens')
@@ -22,6 +22,7 @@ async function sendPushNotification(userId, messageText, supabase) {
     sound: 'default',
     title: 'Mise à jour de la commande',
     body: messageText,            // e.g. "Your order is now ready"
+    data: data,                   // Include custom data for redirection
   }));
 
   // 3. Send messages using Expo SDK
@@ -1146,7 +1147,9 @@ const resolvers = {
           // Send push notification
           await sendPushNotification(
             newOrder.deliverer_id,
+            'Nouvelle commande assignée',
             `Une nouvelle commande #${newOrder.id} vous a été assignée.`,
+            { type: 'NEW_ORDER', orderId: newOrder.id, screen: 'OrderDetails' },
             supabase
           );
         }
@@ -1232,7 +1235,7 @@ const resolvers = {
             body: delivererMessage,
           });
 
-          await sendPushNotification(order.deliverer_id, delivererMessage, supabase);
+          await sendPushNotification(order.deliverer_id, 'Mise à jour de commande', delivererMessage, { type: 'DELIVERER_ORDER_UPDATE', orderId: order.id, screen: 'OrderDetails' }, supabase);
         }
 
         // Insert notification in French
@@ -1242,7 +1245,7 @@ const resolvers = {
           body: `Votre commande #${order.id} est maintenant ${statusFrench}`,
         });
 
-        await sendPushNotification(order.user_id, `Votre commande est maintenant ${statusFrench}`, supabase);
+        await sendPushNotification(order.user_id, 'Mise à jour de commande', `Votre commande est maintenant ${statusFrench}`, { type: 'ORDER_UPDATE', orderId: order.id, screen: 'OrderTracking' }, supabase);
       }
 
       return order;
@@ -1289,7 +1292,7 @@ const resolvers = {
         body: `Votre commande #${order.id} a été livrée avec succès.`,
       });
 
-      await sendPushNotification(order.user_id, `Votre commande #${order.id} est livrée ✅`, supabase);
+      await sendPushNotification(order.user_id, 'Commande livrée', `Votre commande #${order.id} est livrée ✅`, { type: 'ORDER_DELIVERED', orderId: order.id, screen: 'OrderTracking' }, supabase);
 
       return updated;
     },
@@ -1334,7 +1337,7 @@ const resolvers = {
         body: `Votre commande #${order.id} a été confirmée comme livrée.`,
       });
 
-      await sendPushNotification(order.user_id, `Votre commande #${order.id} a été livrée ✅`, supabase);
+      await sendPushNotification(order.user_id, 'Commande livrée', `Votre commande #${order.id} a été livrée ✅`, { type: 'ORDER_DELIVERED', orderId: order.id, screen: 'OrderTracking' }, supabase);
 
       return updated;
     },

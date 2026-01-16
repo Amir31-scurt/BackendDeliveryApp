@@ -2,7 +2,7 @@ import { Expo } from 'expo-server-sdk';
 
 const expo = new Expo();
 
-export async function sendPushNotification(userId, messageText, supabase) {
+export async function sendPushNotification(userId, title, messageText, data = {}, supabase) {
   // 1. Get the user's saved push token from Supabase
   const { data: tokens, error } = await supabase
     .from('push_tokens')
@@ -18,8 +18,9 @@ export async function sendPushNotification(userId, messageText, supabase) {
   const messages = tokens.map(({ token }) => ({
     to: token,                     // Expo push token
     sound: 'default',
-    title: 'Mise à jour de la commande',
-    body: messageText,            // e.g. "Your order is now ready"
+    title: title,                  // Dynamic title based on notification type
+    body: messageText,            // e.g. "Votre commande est maintenant prête"
+    data: data,                   // Include custom data for redirection (screen, orderId)
   }));
 
   // 3. Send messages using Expo SDK

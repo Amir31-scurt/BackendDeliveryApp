@@ -283,7 +283,7 @@ router.post("/forgot-password", async (req, res) => {
     });
 
     // 5. Send push notification via Expo
-    await sendPushNotification(user.id, bodyMessage, supabase);
+    await sendPushNotification(user.id, "Code de réinitialisation", bodyMessage, {}, supabase);
 
     // 6. Return response (you can omit `otp` in production)
     return res.status(200).json({
