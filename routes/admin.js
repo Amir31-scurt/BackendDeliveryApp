@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { supabase } from "../supabaseClient.js";
 import { graphqlRequest } from "../utils/graphqlClient.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
+import { body, validationResult } from "express-validator";
 
 const router = express.Router();
 
@@ -12,10 +13,6 @@ const router = express.Router();
 router.get("/login", (req, res) => {
   res.render("admin/adminLogin", { layout: false });
 });
-
-// Admin login POST route
-// Import express-validator
-import { body, validationResult } from "express-validator";
 
 // Admin login POST route
 router.post("/login", [
@@ -27,7 +24,8 @@ router.post("/login", [
     return res.render("admin/adminLogin", {
         errors: errors.array(),
         csrfToken: req.csrfToken(),
-        phoneNumber: req.body.phoneNumber
+        phoneNumber: req.body.phoneNumber,
+        layout: false
     });
   }
 
@@ -45,7 +43,8 @@ router.post("/login", [
       return res.render("admin/adminLogin", {
         error: "Numéro de téléphone ou mot de passe incorrect",
         csrfToken: req.csrfToken(),
-        phoneNumber
+        phoneNumber,
+        layout: false
       });
     }
 
@@ -55,7 +54,8 @@ router.post("/login", [
       return res.render("admin/adminLogin", {
         error: "Numéro de téléphone ou mot de passe incorrect",
         csrfToken: req.csrfToken(),
-        phoneNumber
+        phoneNumber,
+        layout: false
       });
     }
 
@@ -64,7 +64,8 @@ router.post("/login", [
       return res.render("admin/adminLogin", {
         error: "Accès refusé. Privilèges administrateur requis.",
         csrfToken: req.csrfToken(),
-        phoneNumber
+        phoneNumber,
+        layout: false
       });
     }
 
@@ -92,7 +93,8 @@ router.post("/login", [
     console.error("Login error:", error);
     res.render("admin/adminLogin", {
         error: "Erreur interne du serveur",
-        csrfToken: req.csrfToken()
+        csrfToken: req.csrfToken(),
+        layout: false
     });
   }
 });
@@ -459,6 +461,8 @@ router.post("/logout", (req, res) => {
 
 router.get("/logout", (req, res) => {
   try {
+    const role = req.user?.role || req.session?.user?.role;
+    
     // Clear the session
     req.session.destroy((err) => {
       if (err) {
@@ -466,15 +470,24 @@ router.get("/logout", (req, res) => {
       }
     });
 
-    // Clear the JWT cookie
+    // Clear the JWT cookies
     res.clearCookie('token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict'
     });
+    
+    // Clear other cookies to be safe
+    res.clearCookie('restaurant');
+    res.clearCookie('user');
+    res.clearCookie('deliverer');
 
-    // Redirect to login page
-    res.redirect('/admin/login');
+    // Redirect based on role
+    if (role === 'restaurant') {
+      res.redirect('/admin/login/restaurant');
+    } else {
+      res.redirect('/admin/login');
+    }
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ error: 'Internal server error during logout' });
@@ -625,37 +638,59 @@ router.get("/dashboard", async (req, res) => {
 });
 
 // Render the admin restaurants page
+// Render the admin restaurants page
 router.get("/restaurants", async (req, res) => {
   try {
-    console.log("Fetching restaurants...");
-    const query = `
-      query {
-        restaurants {
-          id
-          name
-          description
-          address
-          type
-          phoneNumber
-          email
-          imageUrl
-          isActive
-          createdAt
-          updatedAt
-        }
-      }
-    `;
-    const restaurants = await graphqlRequest(query);
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+    const pageSize = Number(limit);
 
-    if (!restaurants || !restaurants.restaurants) {
-      console.error("No restaurants found or restaurants undefined.");
+    console.log("Fetching restaurants with pagination...", { page, limit, search });
+
+    let query = supabase
+      .from("restaurants")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + pageSize - 1);
+
+    if (search) {
+      query = query.ilike("name", `%${search}%`);
+    }
+
+    const { data: restaurants, count, error } = await query;
+
+    if (error) {
+      console.error("Error fetching restaurants:", error);
       throw new Error("Failed to fetch restaurants.");
+    }
+
+    const totalPages = Math.ceil(count / pageSize);
+
+    // If it's an AJAX request (e.g. search), return JSON
+    if (req.xhr || req.headers.accept?.includes('application/json')) {
+       return res.json({
+         restaurants,
+         pagination: {
+           currentPage: Number(page),
+           totalPages,
+           totalCount: count
+         }
+       });
     }
 
     res.render("admin/restaurants", {
       layout: "admin/layout",
       title: "Restaurants",
-      restaurants: restaurants.restaurants,
+      restaurants: restaurants || [],
+      pagination: {
+        currentPage: Number(page),
+        totalPages,
+        pageSize,
+        totalCount: count,
+        hasNext: Number(page) < totalPages,
+        hasPrev: Number(page) > 1
+      },
+      searchQuery: search
     });
   } catch (error) {
     console.error("Error fetching restaurants:", error.message);
@@ -1012,6 +1047,10 @@ router.get("/revenues", async (req, res) => {
     const totalOrderValue = totalOrdersData?.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0;
 
     // Fetch per-order revenue breakdown (where it came from)
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+    const pageSize = Number(limit);
+
     let revenueOrdersQuery = supabase
       .from("orders")
       .select(`
@@ -1027,7 +1066,7 @@ router.get("/revenues", async (req, res) => {
       `)
       .eq("status", "COMPLETED")
       .order("created_at", { ascending: false })
-      .limit(200);
+      .range(offset, offset + pageSize - 1);
 
     if (dateFrom) revenueOrdersQuery = revenueOrdersQuery.gte("created_at", dateFrom.toISOString());
     if (dateTo) revenueOrdersQuery = revenueOrdersQuery.lte("created_at", dateTo.toISOString());
@@ -1047,6 +1086,9 @@ router.get("/revenues", async (req, res) => {
       createdAt: o.created_at
     }));
 
+    const totalCount = totalOrdersData?.length || 0;
+    const totalPages = Math.ceil(totalCount / pageSize);
+
     // Fetch monthly revenue data
     const { data: monthlyData, error: monthlyError } = await supabase.rpc("get_monthly_orders");
 
@@ -1063,6 +1105,14 @@ router.get("/revenues", async (req, res) => {
       delivererBreakdown: delivererBreakdown || [],
       totalOrderValue,
       revenueOrders,
+      pagination: {
+        currentPage: Number(page),
+        totalPages,
+        pageSize,
+        totalCount,
+        hasNext: Number(page) < totalPages,
+        hasPrev: Number(page) > 1
+      },
       filters: {
         from: from || "",
         to: to || ""
@@ -1387,20 +1437,46 @@ router.post("/orders/:id/note", async (req, res) => {
 });
 
 // Render the deliverers page
+// Render the deliverers page
 router.get("/deliverers", async (req, res) => {
   try {
-    console.log("Fetching deliverers...");
-    const { data: deliverers, error } = await supabase
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+    const pageSize = Number(limit);
+
+    console.log("Fetching deliverers with pagination...", { page, limit, search });
+
+    let query = supabase
       .from("deliverers")
       .select(`
         *,
-        users (
+        users!inner (
           id,
           name,
           phone_number,
           profile_picture
         )
-      `);
+      `, { count: "exact" })
+      .range(offset, offset + pageSize - 1)
+      .order("created_at", { ascending: false });
+
+    if (search) {
+      // Search by user name (via relation) or zone
+      // Note: Supabase ILIKE on foreign tables is supported with !inner join and special syntax
+      // But simple way is to use "or" filter if possible, or just zone for now.
+      // Searching relations is tricky. For now let's support searching by zone or maybe filter in code?
+      // Filtering in code breaks pagination.
+      // Let's assume search is mainly for zone or filtering by status if needed.
+      // Or we can try: .ilike('users.name', `%${search}%`) if Supabase supports it?
+      // Supabase JS doesn't support nested filtering neatly in one go easily without complications.
+      // Let's stick to simple filters or search on deliverer fields (zone).
+      // Or we can search on User table first then filter Deliverers.
+      // For simplicity let's search zone only or skip complex search for this iteration.
+      // Actually, let's try to search by zone.
+       query = query.ilike("zone", `%${search}%`);
+    }
+
+    const { data: deliverers, count, error } = await query;
 
     if (error) {
       console.error("Error fetching deliverers:", error);
@@ -1408,7 +1484,7 @@ router.get("/deliverers", async (req, res) => {
     }
 
     // Transform the data to match the schema structure
-    const formattedDeliverers = deliverers.map(deliverer => ({
+    const formattedDeliverers = (deliverers || []).map(deliverer => ({
       userId: deliverer.user_id,
       user: deliverer.users,
       vehicleId: deliverer.vehicle_id,
@@ -1421,9 +1497,18 @@ router.get("/deliverers", async (req, res) => {
       isVerified: deliverer.is_verified
     }));
 
+    const totalPages = Math.ceil(count / pageSize);
+
     // Check if it's an AJAX request
     if (req.xhr || req.headers.accept?.includes('application/json')) {
-      return res.json({ deliverers: formattedDeliverers });
+      return res.json({
+        deliverers: formattedDeliverers,
+        pagination: {
+           currentPage: Number(page),
+           totalPages,
+           totalCount: count
+         }
+      });
     }
 
     // Regular page render
@@ -1431,6 +1516,15 @@ router.get("/deliverers", async (req, res) => {
       layout: "admin/layout",
       title: "Livreurs",
       deliverers: formattedDeliverers || [],
+      pagination: {
+        currentPage: Number(page),
+        totalPages,
+        pageSize,
+        totalCount: count,
+        hasNext: Number(page) < totalPages,
+        hasPrev: Number(page) > 1
+      },
+      searchQuery: search
     });
   } catch (error) {
     console.error("Error fetching deliverers:", error.message);

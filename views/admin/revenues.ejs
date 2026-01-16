@@ -422,6 +422,9 @@
             <a href="/" class="nav-link">
                 <i class="fa-solid fa-house"></i> Accueil
             </a>
+            <a href="/admin/logout" class="nav-link" style="background-color: var(--accent-color);">
+                <i class="fas fa-sign-out-alt"></i> Déconnexion
+            </a>
         </div>
     </header>
 
@@ -635,6 +638,21 @@
                                     <% } %>
                 </tbody>
             </table>
+
+            <div class="pagination-controls"
+                style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; padding-top: 1rem; border-top: 1px solid #eee;">
+                <div class="pagination-info" style="font-size: 0.9rem; color: #666;">
+                    Affichage <span id="startIndex">0</span> - <span id="endIndex">0</span> sur <span
+                        id="totalItems">0</span>
+                </div>
+                <div class="pagination-buttons" style="display:flex; gap:10px; align-items: center;">
+                    <button id="prevPage" class="reset-link"
+                        style="padding: 0.5rem 1rem; font-size: 0.9rem;">Précédent</button>
+                    <span id="currentPage" style="font-weight: 500;">Page 1</span>
+                    <button id="nextPage" class="reset-link"
+                        style="padding: 0.5rem 1rem; font-size: 0.9rem;">Suivant</button>
+                </div>
+            </div>
         </div>
 
         <div class="chart-container">
@@ -647,7 +665,11 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const monthlyData = "<% - JSON.stringify(monthlyData || []) %>";
+            // Chart initialization (existing)
+            const monthlyData = <% - JSON.stringify(monthlyData || []) %>;
+
+            // ... (keep chart logic implicitly or explicitly if needed, but the tool replaces blocks)
+            // Wait, I am replacing the block. I need to keep the chart logic.
 
             const ctx = document.getElementById('revenueChart').getContext('2d');
             new Chart(ctx, {
@@ -711,7 +733,55 @@
                     }
                 }
             });
+
+            // Pagination Logic
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentPage = parseInt(urlParams.get('page')) || 1;
+            const limit = parseInt(urlParams.get('limit')) || 20;
+            // Use EJS to inject values
+            const totalItems = <%= pagination ?pagination.totalCount: 0 %>;
+            const totalPages = <%= pagination ?pagination.totalPages: 1 %>;
+
+            // Update UI
+            const startIndex = (currentPage - 1) * limit + 1;
+            const endIndex = Math.min(startIndex + limit - 1, totalItems);
+
+            const startIndexSpan = document.getElementById('startIndex');
+            const endIndexSpan = document.getElementById('endIndex');
+            const totalItemsSpan = document.getElementById('totalItems');
+            const currentPageSpan = document.getElementById('currentPage');
+
+            if (startIndexSpan) startIndexSpan.textContent = totalItems > 0 ? startIndex : 0;
+            if (endIndexSpan) endIndexSpan.textContent = endIndex;
+            if (totalItemsSpan) totalItemsSpan.textContent = totalItems;
+            if (currentPageSpan) currentPageSpan.textContent = `Page ${currentPage} sur ${totalPages}`;
+
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+
+            if (prevBtn) {
+                prevBtn.disabled = currentPage <= 1;
+                prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
+                prevBtn.style.pointerEvents = prevBtn.disabled ? 'none' : 'auto';
+                prevBtn.addEventListener('click', () => {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('page', currentPage - 1);
+                    window.location.href = newUrl.toString();
+                });
+            }
+
+            if (nextBtn) {
+                nextBtn.disabled = currentPage >= totalPages;
+                nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
+                nextBtn.style.pointerEvents = nextBtn.disabled ? 'none' : 'auto';
+                nextBtn.addEventListener('click', () => {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('page', currentPage + 1);
+                    window.location.href = newUrl.toString();
+                });
+            }
         });
+
     </script>
 </body>
 

@@ -37,6 +37,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "cdnjs.cloudflare.com"],
       fontSrc: ["'self'", "fonts.gstatic.com", "fonts.googleapis.com", "cdnjs.cloudflare.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
+      mediaSrc: ["'self'", "data:"],
       connectSrc: ["'self'", "ws:", "wss:", "https:"],
       frameSrc: ["'self'"],
       objectSrc: ["'none'"],
@@ -52,19 +53,26 @@ app.use(cors({
       'http://localhost:4000',
       'http://127.0.0.1:4000',
       'http://localhost:8080',
+      'http://localhost:8081',
       'https://www.gourmetdamour.com',
       'https://gourmetdamour.com',
       'com.gourmetdamour.app'
     ];
 
-    // Allow requests with no origin (like mobile apps)
-    if (!origin) {
+    // Allow requests with no origin (like mobile apps or curl) or "null" origin (redirects/local files)
+    if (!origin || origin === 'null') {
       return callback(null, true);
+    }
+
+    // Allow any localhost origin (for development with various ports)
+    if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:') || origin.startsWith('http://192.168.')) {
+        return callback(null, true);
     }
 
     if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.gourmetdamour.com')) {
       callback(null, true);
     } else {
+      console.log('Blocked by CORS:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -338,9 +346,8 @@ app.set("layout", "admin/restaurants");
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({
-    error: process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err.message
+    error: err.message,
+    stack: process.env.NODE_ENV === 'production' ? null : err.stack
   });
 });
 

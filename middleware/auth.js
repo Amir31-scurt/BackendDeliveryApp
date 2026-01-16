@@ -69,14 +69,20 @@ export const authMiddleware = async (req, res, next) => {
       }
     }
 
+    // Try to get token from Authorization header or Cookie
+    let token = null;
     const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      return res.status(401).json({ error: "Authorization header must be provided" });
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(" ")[1];
+    } else if (req.cookies && req.cookies.token) {
+        token = req.cookies.token;
     }
 
-    const token = authHeader.split(" ")[1];
     if (!token) {
-      return res.status(401).json({ error: "Authentication token must be provided" });
+      if (req.xhr || req.headers.accept?.includes('application/json')) {
+        return res.status(401).json({ error: "Authentication token must be provided" });
+      }
+      return res.redirect('/admin/login');
     }
 
     try {
@@ -87,10 +93,13 @@ export const authMiddleware = async (req, res, next) => {
       };
       next();
     } catch (err) {
-      if (err.name === 'TokenExpiredError') {
-        return res.status(401).json({ error: "Token expired" });
+      if (req.xhr || req.headers.accept?.includes('application/json')) {
+         if (err.name === 'TokenExpiredError') {
+          return res.status(401).json({ error: "Token expired" });
+        }
+        return res.status(401).json({ error: "Invalid token" });
       }
-      return res.status(401).json({ error: "Invalid token" });
+       return res.redirect('/admin/login');
     }
   } catch (error) {
     console.error("Auth middleware error:", error);

@@ -9,7 +9,6 @@
     href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
-    integrity="sha512-MGUG9ddRSH+ibTLYq0rBoKLDnA3obEyqV4anVupI7ynQfBpDbyzrxIDZ1Gj04y8GVzoy0wJnmvMsyZK94c+1og=="
     crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <style>
@@ -272,6 +271,9 @@
       <a href="/" class="nav-link">
         <i class="fa-solid fa-house"></i> Accueil
       </a>
+      <a href="/admin/logout" class="nav-link" style="background-color: var(--accent-color);">
+        <i class="fas fa-sign-out-alt"></i> Déconnexion
+      </a>
     </div>
   </header>
 
@@ -343,23 +345,17 @@
         });
       });
 
-      const token = localStorage.getItem('token');
-      if (!token) {
-        window.location.href = '/admin/login';
-        return;
-      }
-
       fetch('/admin/dashboard', {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+          'Accept': 'application/json'
+        },
+        credentials: 'include' // Send cookies
       })
         .then(response => {
           if (!response.ok) {
-            if (response.status === 401) {
-              localStorage.removeItem('token');
+            if (response.status === 401 || response.status === 403) {
+              // Redirect on auth failure
               window.location.href = '/admin/login';
               return;
             }

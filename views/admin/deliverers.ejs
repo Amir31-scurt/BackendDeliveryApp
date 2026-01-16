@@ -566,9 +566,18 @@
             <h1>Gourmet d'amour</h1>
             <p>Gestion des Livreurs</p>
             <div class="nav-links">
-                <a href="/admin/dashboard" class="nav-link">Tableau de Bord</a>
-                <a href="/admin/restaurants" class="nav-link">Restaurants</a>
-                <a href="/" class="nav-link">Accueil</a>
+                <a href="/admin/dashboard" class="nav-link">
+                    <i class="fa-solid fa-chart-line"></i> Tableau de Bord
+                </a>
+                <a href="/admin/restaurants" class="nav-link">
+                    <i class="fa-solid fa-utensils"></i> Restaurants
+                </a>
+                <a href="/" class="nav-link">
+                    <i class="fa-solid fa-house"></i> Accueil
+                </a>
+                <a href="/admin/logout" class="nav-link" style="background-color: var(--accent-color);">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </a>
             </div>
         </header>
 
@@ -578,6 +587,10 @@
 
 
         <div class="deliverers-section">
+            <div class="search-container" style="margin-bottom: 1rem;">
+                <input type="text" id="searchInput" class="form-control" placeholder="Rechercher par zone..."
+                    style="max-width: 300px;">
+            </div>
             <table class="deliverers-table">
                 <thead>
                     <tr>
@@ -652,11 +665,24 @@
                             <% }); %>
                                 <% } else { %>
                                     <tr>
-                                        <td colspan="6" class="text-center">Aucun livreur trouvé</td>
+                                        <td colspan="7" class="text-center">Aucun livreur trouvé</td>
                                     </tr>
                                     <% } %>
                 </tbody>
             </table>
+            <div class="pagination-controls"
+                style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <div class="pagination-info">
+                    Affichage de <span id="startIndex">1</span> à <span id="endIndex">10</span> sur <span
+                        id="totalItems">0</span>
+                    livreurs
+                </div>
+                <div class="pagination-buttons">
+                    <button id="prevPage" class="modal-btn cancel-btn" style="padding: 0.5rem 1rem;">Précédent</button>
+                    <span id="currentPage" style="margin: 0 1rem;">Page 1</span>
+                    <button id="nextPage" class="modal-btn submit-btn" style="padding: 0.5rem 1rem;">Suivant</button>
+                </div>
+            </div>
         </div>
 
         <!-- Add/Edit Deliverer Modal -->
@@ -765,20 +791,11 @@
 
         async function editDeliverer(id) {
             try {
-                const token = localStorage.getItem('token');
-
-                if (!token) {
-                    alert("Vous devez être connecté pour modifier un livreur");
-                    window.location.href = '/admin/login';
-                    return;
-                }
-
                 const url = `/admin/deliverers/${id}`;
-
                 const response = await fetch(url, {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json',
+
                         'Content-Type': 'application/json'
                     }
                 });
@@ -850,18 +867,11 @@
 
         async function deleteDeliverer(id) {
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    alert("Vous devez être connecté pour supprimer un livreur");
-                    window.location.href = '/admin/login';
-                    return;
-                }
-
                 const response = await fetch(`/admin/deliverers/${id}/delete`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json',
+
                         'Content-Type': 'application/json'
                     }
                 });
@@ -884,14 +894,6 @@
             const form = document.getElementById("delivererForm");
             const formData = new FormData(form);
             const delivererId = formData.get("delivererId");
-
-            // Get the auth token from localStorage
-            const token = localStorage.getItem('token');
-            if (!token) {
-                alert("Vous devez être connecté pour modifier un livreur");
-                window.location.href = '/admin/login';
-                return;
-            }
 
             // Validate required fields
             const name = formData.get("name");
@@ -920,7 +922,6 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify(input)
@@ -948,18 +949,11 @@
         // Add this new function for viewing deliverer details
         async function viewDeliverer(id) {
             try {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    alert("Vous devez être connecté pour voir les détails du livreur");
-                    window.location.href = '/admin/login';
-                    return;
-                }
-
                 // First fetch the data to verify access
                 const response = await fetch(`/admin/deliverers/${id}`, {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json'
+
                     }
                 });
 
@@ -1164,6 +1158,72 @@
                     });
                 } else {
                     console.log('Modal not found');
+                }
+
+                // Pagination and Search Logic
+                const urlParams = new URLSearchParams(window.location.search);
+                const currentPage = parseInt(urlParams.get('page')) || 1;
+                const limit = parseInt(urlParams.get('limit')) || 10;
+                const totalItems = parseInt('<%= pagination ? pagination.totalCount : 0 %>') || 0;
+                const totalPages = parseInt('<%= pagination ? pagination.totalPages : 1 %>') || 1;
+
+                // Update pagination info text
+                const startIndex = (currentPage - 1) * limit + 1;
+                const endIndex = Math.min(startIndex + limit - 1, totalItems);
+
+                const startIndexSpan = document.getElementById('startIndex');
+                const endIndexSpan = document.getElementById('endIndex');
+                const totalItemsSpan = document.getElementById('totalItems');
+                const currentPageSpan = document.getElementById('currentPage');
+
+                if (startIndexSpan) startIndexSpan.textContent = totalItems > 0 ? startIndex : 0;
+                if (endIndexSpan) endIndexSpan.textContent = endIndex;
+                if (totalItemsSpan) totalItemsSpan.textContent = totalItems;
+                if (currentPageSpan) currentPageSpan.textContent = `Page ${currentPage} sur ${totalPages}`;
+
+                // Pagination Buttons
+                const prevBtn = document.getElementById('prevPage');
+                const nextBtn = document.getElementById('nextPage');
+
+                if (prevBtn) {
+                    prevBtn.disabled = currentPage <= 1;
+                    prevBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('page', currentPage - 1);
+                        window.location.href = newUrl.toString();
+                    });
+                }
+
+                if (nextBtn) {
+                    nextBtn.disabled = currentPage >= totalPages;
+                    nextBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('page', currentPage + 1);
+                        window.location.href = newUrl.toString();
+                    });
+                }
+
+                // Search Input
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput) {
+                    searchInput.value = urlParams.get('search') || '';
+                    let debounceTimer;
+                    searchInput.addEventListener('input', (e) => {
+                        clearTimeout(debounceTimer);
+                        debounceTimer = setTimeout(() => {
+                            const val = e.target.value;
+                            const newUrl = new URL(window.location);
+                            if (val) {
+                                newUrl.searchParams.set('search', val);
+                            } else {
+                                newUrl.searchParams.delete('search');
+                            }
+                            newUrl.searchParams.set('page', 1);
+                            window.location.href = newUrl.toString();
+                        }, 500);
+                    });
                 }
 
             } catch (error) {
