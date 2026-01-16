@@ -162,6 +162,13 @@ type DelivererPayoutSummary {
   lastPayoutAt: String
 }
 
+type DelivererStats {
+  todayEarnings: Float!
+  todayDeliveries: Int!
+  totalEarnings: Float!
+  totalDeliveries: Int!
+}
+
 
 enum OrderStatus {
   Pending
@@ -230,6 +237,7 @@ type Query {
   notifications(userId: ID!): [Notification!]!
   restaurantRatings(restaurantId: ID!): [RestaurantRating!]!
   userRestaurantRating(restaurantId: ID!, userId: ID!): RestaurantRating
+  delivererStats(delivererId: ID!): DelivererStats!
 
   payoutStatusByOrder(orderId: ID!): [PayoutItem!]!       # OK
   payoutStatusByBatch(batchId: String!): PayoutBatch       # OK

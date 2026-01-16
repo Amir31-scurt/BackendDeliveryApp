@@ -868,6 +868,58 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
+
+    delivererStats: async (_, { delivererId }, { supabase }) => {
+      try {
+        // Get today's date range (start and end of day)
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+
+        // Fetch all completed orders for this deliverer
+        const { data: allOrders, error: allError } = await supabase
+          .from('orders')
+          .select('deliverer_payout, created_at')
+          .eq('deliverer_id', delivererId)
+          .eq('status', 'COMPLETED');
+
+        if (allError) {
+          console.error('Error fetching all orders:', allError);
+          throw new Error(`Error fetching orders: ${allError.message}`);
+        }
+
+        // Fetch today's completed orders for this deliverer
+        const { data: todayOrders, error: todayError } = await supabase
+          .from('orders')
+          .select('deliverer_payout')
+          .eq('deliverer_id', delivererId)
+          .eq('status', 'COMPLETED')
+          .gte('created_at', startOfDay.toISOString())
+          .lte('created_at', endOfDay.toISOString());
+
+        if (todayError) {
+          console.error('Error fetching today orders:', todayError);
+          throw new Error(`Error fetching today's orders: ${todayError.message}`);
+        }
+
+        // Calculate totals
+        const totalEarnings = (allOrders || []).reduce((sum, order) => sum + (order.deliverer_payout || 0), 0);
+        const totalDeliveries = (allOrders || []).length;
+
+        const todayEarnings = (todayOrders || []).reduce((sum, order) => sum + (order.deliverer_payout || 0), 0);
+        const todayDeliveries = (todayOrders || []).length;
+
+        return {
+          todayEarnings,
+          todayDeliveries,
+          totalEarnings,
+          totalDeliveries
+        };
+      } catch (err) {
+        console.error('Error in delivererStats query:', err);
+        throw new Error(err.message);
+      }
+    },
   },
   Mutation: {
     createUser: async (_, { input }, { supabase }) => {
