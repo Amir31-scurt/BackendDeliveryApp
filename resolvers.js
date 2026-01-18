@@ -4,7 +4,7 @@ import { Expo } from 'expo-server-sdk';
 
 const expo = new Expo();
 
-async function sendPushNotification(userId, messageText, data = {}, supabase) {
+async function sendPushNotification(userId, title, messageText, data = {}, supabase) {
   // 1. Get the user's saved push token from Supabase
   const { data: tokens, error } = await supabase
     .from('push_tokens')
@@ -20,7 +20,7 @@ async function sendPushNotification(userId, messageText, data = {}, supabase) {
   const messages = tokens.map(({ token }) => ({
     to: token,                     // Expo push token
     sound: 'default',
-    title: 'Mise à jour de la commande',
+    title: title,                  // Use the provided title
     body: messageText,            // e.g. "Your order is now ready"
     data: data,                   // Include custom data for redirection
   }));

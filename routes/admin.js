@@ -1018,12 +1018,17 @@ router.get("/revenues", async (req, res) => {
       gourmet: totalGourmetRevenue
     };
 
+    // Log the data for debugging purposes
+    if (restoRev && restoRev.length > 0) {
+      console.log('Restaurant Revenue Data Sample:', restoRev[0]);
+    }
+
     // Fetch revenue breakdown by restaurant
     const restaurantBreakdown = restoErr ? [] : (restoRev || []).map(r => ({
       restaurantId: r.restaurant_id,
       restaurantName: r.restaurant_name || 'N/A',
       revenue: Number(r.restaurant_revenue || 0),
-      orderCount: Number(r.order_count || 0)
+      orderCount: Number(r.order_count || r.orders || r.count || 0)
     })).sort((a, b) => b.revenue - a.revenue).slice(0, 10); // Top 10
 
     // Fetch revenue breakdown by deliverer
@@ -1031,7 +1036,7 @@ router.get("/revenues", async (req, res) => {
       delivererId: d.deliverer_id,
       delivererName: d.deliverer_name || 'N/A',
       revenue: Number(d.deliverer_net_revenue || 0),
-      orderCount: Number(d.order_count || 0)
+      orderCount: Number(d.order_count || d.orders || d.count || 0)
     })).sort((a, b) => b.revenue - a.revenue).slice(0, 10); // Top 10
 
     // Fetch total orders for revenue calculation explanation
