@@ -1358,15 +1358,8 @@ router.post("/restaurants/:id/menu/add", async (req, res) => {
 
   try {
     const addMenuItemMutation = `
-      mutation {
-        addMenuItem(input: {
-          name: "${name}",
-          description: "${description}",
-          price: ${parseFloat(price)},
-          category: ${category},
-          imageUrl: ${imageUrl},
-          restaurantId: "${id}"
-        }) {
+      mutation AddMenuItem($input: AddMenuItemInput!) {
+        addMenuItem(input: $input) {
           id
           name
           description
@@ -1377,7 +1370,18 @@ router.post("/restaurants/:id/menu/add", async (req, res) => {
       }
     `;
 
-    const result = await graphqlRequest(addMenuItemMutation);
+    const variables = {
+      input: {
+        name,
+        description,
+        price: parseFloat(price) || 0,
+        category,
+        imageUrl,
+        restaurantId: id,
+      },
+    };
+
+    const result = await graphqlRequest(addMenuItemMutation, variables);
 
     if (result.errors) {
       throw new Error(result.errors[0].message);

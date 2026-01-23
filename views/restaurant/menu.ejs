@@ -802,6 +802,7 @@
 
     <script>
         const restaurantType = "<%= restaurant.type %>";
+        let lastImageUrl = '';
 
         function openModal() {
             const modal = document.getElementById('menuItemModal');
@@ -984,7 +985,6 @@
             const imageInput = document.getElementById('image');
             const imagePreview = document.getElementById('imagePreview');
             const noImagePreview = document.getElementById('noImagePreview');
-            let lastImageUrl = '';
 
             if (imageInput) {
                 imageInput.addEventListener('input', function (e) {
@@ -1025,6 +1025,87 @@
                 categoryFilter.addEventListener('change', () => filterAndSortItems());
                 sortFilter.addEventListener('change', () => filterAndSortItems());
             }
+        }
+
+        function filterAndSortItems() {
+            const searchInput = document.getElementById('menuSearch');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const sortFilter = document.getElementById('sortFilter');
+            const menuItemsContainer = document.querySelector('.menu-grid');
+            const menuItems = Array.from(document.querySelectorAll('.menu-item-card'));
+
+            if (!searchInput || !categoryFilter || !sortFilter || !menuItemsContainer) return;
+
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedCategory = categoryFilter.value;
+            const sortValue = sortFilter.value;
+
+            // Filter items
+            const filteredItems = menuItems.filter(item => {
+                const name = item.querySelector('.menu-item-name').textContent.toLowerCase();
+                const description = item.querySelector('.menu-item-description').textContent.toLowerCase();
+                const category = item.dataset.category;
+
+                const matchesSearch = name.includes(searchTerm) || description.includes(searchTerm);
+                const matchesCategory = selectedCategory === '' || category === selectedCategory;
+
+                if (matchesSearch && matchesCategory) {
+                    item.style.display = 'block'; // Or 'flex' depending on your card design, but 'block' works for div
+                    return true;
+                } else {
+                    item.style.display = 'none';
+                    return false;
+                }
+            });
+
+            // Sort visible items
+            const sortedItems = filteredItems.sort((a, b) => {
+                const nameA = a.querySelector('.menu-item-name').textContent.trim();
+                const nameB = b.querySelector('.menu-item-name').textContent.trim();
+
+                // Extract price numbers safely
+                const priceAStr = a.querySelector('.menu-item-price').textContent.replace(/[^\d.,]/g, '').replace(',', '.');
+                const priceBStr = b.querySelector('.menu-item-price').textContent.replace(/[^\d.,]/g, '').replace(',', '.');
+                const priceA = parseFloat(priceAStr) || 0;
+                const priceB = parseFloat(priceBStr) || 0;
+
+                const categoryA = a.dataset.category;
+                const categoryB = b.dataset.category;
+
+                switch (sortValue) {
+                    case 'name':
+                        return nameA.localeCompare(nameB);
+                    case 'price-asc':
+                        return priceA - priceB;
+                    case 'price-desc':
+                        return priceB - priceA;
+                    case 'category':
+                        return categoryA.localeCompare(categoryB);
+                    default:
+                        return 0;
+                }
+            });
+
+            // Reorder DOM elements
+            // We only append the sorted ones. The hidden ones stay in the DOM but display:none.
+            // To ensure correct visual order, we can re-append all items (filtered ones first).
+            // Actually, simplest is to re-append sortedItems. The hidden ones are still children but hidden.
+            // Wait, if we only append sortedItems, the hidden items might end up at the top or bottom or mixed?
+            // `appendChild` moves the node. So if we iterate through sortedItems and append them, they will move to the end in that order.
+            // The hidden items that were NOT in sortedItems? They remain where they were, or effectively at the top if we moved everything else to the bottom?
+            // To be safe, we can just re-append them all. But `sortedItems` is just the visible ones.
+
+            // Better strategy: Clear container and append sortedItems? No, that kills event listeners if elements were recreated (but we are moving nodes, so listeners persist).
+            // But we missed the hidden items. 
+            // Let's filter `menuItems` (all items) into two groups: visible (sorted) and hidden.
+            // But `filteredItems` only contains visible ones.
+
+            // Actually, we just want to show/hide. Sorting requires reordering.
+            // Let's just re-append the sorted visible items. The hidden items can stay where they are (effectively invisible).
+            // IF the grid layout is sensitive to hidden elements, this might be an issue. But typically `display: none` elements don't affect layout.
+            // However, for the order to be correct visually, the visible items must be in the correct order relative to EACH OTHER.
+
+            sortedItems.forEach(item => menuItemsContainer.appendChild(item));
         }
 
         async function editMenuItem(id) {
@@ -1209,65 +1290,45 @@
                 }
             }
 
-            const variables = {
-                mode,
-                menuItemId,
-                restaurantId,
+            const input = {
                 name: formData.get("name"),
                 description: formData.get("description"),
                 price: parseFloat(formData.get("price")),
                 category: formData.get("category"),
-                imageUrl
+                ...(imageUrl && { imageUrl })
             };
 
             let query;
+            let variables;
+
             if (mode === "add") {
                 query = `
-                mutation {
-                        addMenuItem(input: {
-                        name: "${variables.name}",
-                        description: "${variables.description}",
-                        price: ${variables.price},
-                        category: "${variables.category}",
-                            imageUrl: "${variables.imageUrl}",
-                            restaurantId: "${variables.restaurantId}"
-                        }) {
+                    mutation AddMenuItem($input: AddMenuItemInput!) {
+                        addMenuItem(input: $input) {
                             id
                             name
-                            description
-                            price
-                            category
-                            imageUrl
                         }
                     }
                 `;
+                variables = {
+                    input: {
+                        ...input,
+                        restaurantId
+                    }
+                };
             } else {
-                // Build input fields for update, only include imageUrl if a new image is selected
-                let updateFields = `
-                    name: \"${variables.name}\",
-                    description: \"${variables.description}\",
-                    price: ${variables.price},
-                    category: \"${variables.category}\"`;
-                if (imageFile && imageFile.size > 0) {
-                    updateFields += `,\n                    imageUrl: \"${variables.imageUrl}\"`;
-                }
                 query = `
-                    mutation {
-                        updateMenuItem(
-                            id: "${menuItemId}",
-                            input: {
-                                ${updateFields}
-                            }
-                        ) {
+                    mutation UpdateMenuItem($id: ID!, $input: UpdateMenuItemInput!) {
+                        updateMenuItem(id: $id, input: $input) {
                             id
                             name
-                            description
-                            price
-                            category
-                            imageUrl
                         }
                     }
                 `;
+                variables = {
+                    id: menuItemId,
+                    input
+                };
             }
 
             try {
@@ -1276,7 +1337,7 @@
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({ query }),
+                    body: JSON.stringify({ query, variables }),
                 });
 
                 const result = await response.json();
@@ -1284,7 +1345,7 @@
                     throw new Error(result.errors[0].message);
                 }
 
-                if (!result.data || !result.data.createMenuItem && !result.data.updateMenuItem) {
+                if (!result.data || (!result.data.addMenuItem && !result.data.updateMenuItem)) {
                     throw new Error("No menu item data returned from server");
                 }
 
