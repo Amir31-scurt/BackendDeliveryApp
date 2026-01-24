@@ -17,32 +17,55 @@ router.get('/payment/wave/success', async (req, res) => {
   }
 
   try {
-    // 1. Marquer la commande comme payée
+    // Find the order by ID
     const { data: order, error: orderErr } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .single();
+
+    if (orderErr || !order) {
+      console.error('Error: Order not found for orderId:', orderId, orderErr);
+      return res.status(500).send('Failed to find order');
+    }
+
+    // 1. Mark the order as paid
+    const { data: updatedOrder, error: updateErr } = await supabase
       .from('orders')
       .update({
         is_paid: true,
         payment_method: 'WAVE',
       })
-      .eq('id', orderId)
+      .eq('id', order.id)
       .select()
       .single();
 
-    if (orderErr || !order) {
-      console.error('Error updating order as paid:', orderErr);
+    if (updateErr || !updatedOrder) {
+      console.error('Error updating order as paid:', updateErr);
       return res.status(500).send('Failed to update order');
     }
 
-    // 2. Optionnel : déclencher le payout automatique vers le restaurant
-    try {
-      await sendWavePayoutToRestaurant(order.id);
-    } catch (payoutErr) {
-      console.error('Wave payout error (restaurant):', payoutErr);
-      // Tu peux décider de ne PAS renvoyer une erreur au client ici
-      // car le paiement client est déjà fait; le payout peut être re-essayé plus tard.
+    // 1.5. Ensure revenue distribution is calculated (should already be done on order creation)
+    // But let's call it again just to be safe
+    const { data: computed, error: computeErr } = await supabase.rpc(
+      'compute_order_from_total',
+      { p_order_id: updatedOrder.id }
+    );
+
+    if (computeErr) {
+      console.error('Error computing order revenue:', computeErr);
+      // Don't fail the request, just log it
     }
 
-    // 3. Rediriger l’utilisateur vers ton app mobile / web
+    // 2. Optional: trigger automatic payout to restaurant
+    try {
+      await sendWavePayoutToRestaurant(updatedOrder.id);
+    } catch (payoutErr) {
+      console.error('Wave payout error (restaurant):', payoutErr);
+      // Don't fail - payout can be retried later
+    }
+
+    // 3. Redirect user back to app
     res.redirect(`gourmetdamour://customer/UserOrdersScreen`);
 
     return res.send('Payement effectué. Vous pouvez fermer cette page.');
