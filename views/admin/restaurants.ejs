@@ -939,7 +939,7 @@
         document.getElementById("address").value = restaurant.address || "";
         document.getElementById("latitude").value = restaurant.latitude || "";
         document.getElementById("longitude").value = restaurant.longitude || "";
-        document.getElementById("type").value = (restaurant.type || "RESTAURANT").toLowerCase();
+        document.getElementById("type").value = restaurant.type || "RESTAURANT";
         document.getElementById("phoneNumber").value = restaurant.phoneNumber || "";
         document.getElementById("email").value = restaurant.email || "";
         document.getElementById("isActive").value = (restaurant.isActive || false).toString();
@@ -985,12 +985,8 @@
         const latitudeValue = parseFloat(formData.get("latitude"));
         const longitudeValue = parseFloat(formData.get("longitude"));
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-          alert("Vous devez être connecté pour modifier un restaurant");
-          window.location.href = '/admin/login';
-          return;
-        }
+        // NOTE: No need to check localStorage - admin uses httpOnly cookies
+        // The cookies are automatically sent with fetch requests
 
         // Extract file input
         const imageFile = formData.get("image");
@@ -1005,7 +1001,6 @@
             const uploadResponse = await fetch(storageUrl, {
               method: "POST",
               headers: {
-                'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json',
                 'X-CSRF-Token': getCSRFToken()
               },

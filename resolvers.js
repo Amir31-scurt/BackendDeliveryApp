@@ -1449,10 +1449,7 @@ const resolvers = {
           throw new Error("Impossible de supprimer la commande.");
         }
 
-        return {
-          id: id,
-          status: "DELETED"
-        };
+        return true;
       } catch (err) {
         console.error("Error in deleteOrder mutation:", err.message);
         throw new Error(err.message);

@@ -291,7 +291,7 @@ type Mutation {
   updateOrderRating(orderId: ID!, rating: Float!): Order!
   updateOrderFeedback(orderId: ID!, rating: Float!, note: String!): Order!
   rateOrderComplete(input: CompleteOrderRatingInput!): Order!
-  deleteOrder(id: ID!): Order!
+  deleteOrder(id: ID!): Boolean!
   retryPayout(orderId: ID!): Boolean!
   retryFailedPayout(payoutItemId: ID!): Boolean!
 }

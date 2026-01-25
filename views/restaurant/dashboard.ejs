@@ -848,8 +848,7 @@
         </main>
     </div>
 
-    <script async defer 
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCDVi5RrYOFaIP0pV4RJr26X8X8LI_1fZY">
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCDVi5RrYOFaIP0pV4RJr26X8X8LI_1fZY">
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -884,16 +883,15 @@
                 itemsHTML = `
                     <h3 style="margin-bottom:10px;">Articles commandés</h3>
                     <ul style="margin-top:10px; list-style:none; padding:0;">
-                        ${
-                            order.items.map(item => {
-                                const img = item.menuItem?.imageUrl 
-                                            || item.menuItem?.image_url;
+                        ${order.items.map(item => {
+                    const img = item.menuItem?.imageUrl
+                        || item.menuItem?.image_url;
 
-                                const name = item.menuItem?.name || "Article";
-                                const desc = item.menuItem?.description || "";
-                                console.log(item)
+                    const name = item.menuItem?.name || "Article";
+                    const desc = item.menuItem?.description || "";
+                    console.log(item)
 
-                                return `
+                    return `
                                     <li style="display:flex; gap:12px; margin-bottom:15px; align-items:flex-start;">
                                         <img src="${img}" 
                                             style="width:70px; height:70px; border-radius:8px; object-fit:cover;">
@@ -905,8 +903,8 @@
                                         </div>
                                     </li>
                                 `;
-                            }).join('')
-                        }
+                }).join('')
+                    }
                     </ul>
                 `;
             } else {
@@ -932,7 +930,7 @@
             document.getElementById('orderDetailsModal').style.display = 'none';
         }
         // Close modal on outside click
-        window.addEventListener("click", function(e) {
+        window.addEventListener("click", function (e) {
             const modal = document.getElementById('orderDetailsModal');
             if (e.target === modal) {
                 closeOrderModal();
@@ -1240,24 +1238,9 @@
             updateStats(orders);
         });
 
-        // Check authentication on page load
-        document.addEventListener('DOMContentLoaded', function () {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = '/admin/login/restaurant';
-                return;
-            }
-
-            // Add token to all fetch requests
-            const originalFetch = window.fetch;
-            window.fetch = function (url, options = {}) {
-                if (!options.headers) {
-                    options.headers = {};
-                }
-                options.headers['Authorization'] = `Bearer ${token}`;
-                return originalFetch(url, options);
-            };
-        });
+        // NOTE: No authentication check needed here - restaurants use httpOnly cookies
+        // The cookies are automatically sent with all fetch requests
+        // This section was causing false "not logged in" errors
 
         // Function to get CSRF token from cookie
         function getCSRFToken() {
@@ -1278,17 +1261,11 @@
 
         // Function to make GraphQL requests
         async function makeGraphQLRequest(query, variables = {}) {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = '/admin/login/restaurant';
-                return;
-            }
-
+            // NOTE: No need to check localStorage - cookies are sent automatically
             const response = await fetch("/graphql", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`,
                     "Accept": "application/json",
                     "X-CSRF-Token": getCSRFToken()
                 },

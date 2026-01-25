@@ -567,17 +567,10 @@
 
         async function deleteDeliverer(id) {
             try {
-                const token = localStorage.getItem("authToken");
-                if (!token) {
-                    alert("Veuillez vous connecter.");
-                    return window.location.href = "/admin/login";
-                }
-
+                // NOTE: No need to check localStorage - admin uses httpOnly cookies
+                // Cookies are automatically sent with fetch requests
                 const res = await fetch(`/admin/deliverers/${id}/delete`, {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${token}`
-                    }
+                    method: "POST"
                 });
 
                 const data = await res.json();
