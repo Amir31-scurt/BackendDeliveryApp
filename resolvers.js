@@ -16,13 +16,28 @@ async function sendPushNotification(userId, title, messageText, data = {}, supab
     return;
   }
 
-  // 2. Create the message(s)
+  // 2. Create the message(s) with Android-specific configuration
   const messages = tokens.map(({ token }) => ({
-    to: token,                     // Expo push token
+    to: token,
     sound: 'default',
-    title: title,                  // Use the provided title
-    body: messageText,            // e.g. "Your order is now ready"
-    data: data,                   // Include custom data for redirection
+    title: title,
+    body: messageText,
+    data: data,
+    // Android-specific configuration for background notifications
+    priority: 'high',
+    channelId: 'default',
+    // These fields ensure the notification is displayed even when app is killed
+    android: {
+      sound: 'default',
+      priority: 'max',
+      channelId: 'default',
+      vibrate: [0, 250, 250, 250],
+      color: '#DB607E',
+    },
+    // iOS-specific configuration
+    ios: {
+      sound: 'default',
+    },
   }));
 
   // 3. Send messages using Expo SDK

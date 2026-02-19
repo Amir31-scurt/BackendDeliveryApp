@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="<%= csrfToken %>" />
     <title>Livreurs - Gourmet d'amour</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
@@ -867,12 +868,13 @@
 
         async function deleteDeliverer(id) {
             try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                 const response = await fetch(`/admin/deliverers/${id}/delete`, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
-
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'x-csrf-token': csrfToken
                     }
                 });
 
@@ -914,6 +916,7 @@
             };
 
             try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
                 const url = isEditMode
                     ? `/admin/deliverers/${delivererId}/update`
                     : '/admin/deliverers/add';
@@ -922,7 +925,8 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'x-csrf-token': csrfToken
                     },
                     body: JSON.stringify(input)
                 });
