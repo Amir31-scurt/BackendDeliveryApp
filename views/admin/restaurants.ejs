@@ -130,6 +130,36 @@
       box-shadow: 0 15px 30px rgba(219, 96, 126, 0.2);
     }
 
+    .export-btn {
+      padding: 1rem 2rem;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-decoration: none;
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.8rem;
+      transition: all var(--transition-speed) ease;
+      box-shadow: var(--card-shadow);
+      cursor: pointer;
+      border: none;
+    }
+
+    .export-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+      color: white;
+    }
+
+    .export-btn-excel {
+      background: linear-gradient(45deg, #217346, #1e623c);
+    }
+
+    .export-btn-pdf {
+      background: linear-gradient(45deg, #e74c3c, #c0392b);
+    }
+
     .restaurants-section {
       background: white;
       padding: 2.5rem;
@@ -551,9 +581,17 @@
       </div>
     </header>
 
-    <button id="addRestaurantBtn" class="add-restaurant-btn">
-      <i class="fas fa-plus"></i> Ajouter un Restaurant
-    </button>
+    <div style="display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 2rem;">
+      <button id="addRestaurantBtn" class="add-restaurant-btn" style="margin-bottom: 0;">
+        <i class="fas fa-plus"></i> Ajouter un Restaurant
+      </button>
+      <a href="/admin/restaurants/export?format=excel" class="export-btn export-btn-excel">
+        <i class="fas fa-file-excel"></i> Exporter Excel
+      </a>
+      <a href="/admin/restaurants/export?format=pdf" class="export-btn export-btn-pdf">
+        <i class="fas fa-file-pdf"></i> Exporter PDF
+      </a>
+    </div>
 
     <div class="restaurants-section">
       <div class="search-container" style="margin-bottom: 1rem;">

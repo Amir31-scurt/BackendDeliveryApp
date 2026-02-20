@@ -6,6 +6,7 @@ import { supabase } from "../supabaseClient.js";
 import { graphqlRequest } from "../utils/graphqlClient.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
 import { body, validationResult } from "express-validator";
+import { exportToExcel, exportToPdf } from "../utils/exportUtils.js";
 
 const router = express.Router();
 
@@ -698,6 +699,64 @@ router.get("/restaurants", async (req, res) => {
   }
 });
 
+// Export Restaurants
+router.get("/restaurants/export", async (req, res) => {
+  try {
+    const { format = 'excel', search = '' } = req.query;
+    
+    let query = supabase
+      .from("restaurants")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (search) {
+      query = query.ilike("name", `%${search}%`);
+    }
+
+    const { data: restaurants, error } = await query;
+    if (error) throw error;
+
+    const exportData = restaurants.map(r => ({
+      name: r.name || 'N/A',
+      address: r.address || 'N/A',
+      type: r.type || 'N/A',
+      phone: r.phone_number || 'N/A',
+      email: r.email || 'N/A',
+      status: r.is_active ? 'Actif' : 'Inactif',
+      createdAt: new Date(r.created_at).toLocaleDateString('fr-FR')
+    }));
+
+    if (format === 'pdf') {
+      const headers = ['Nom', 'Adresse', 'Type', 'Téléphone', 'Email', 'Statut', 'Date'];
+      const keys = ['name', 'address', 'type', 'phone', 'email', 'status', 'createdAt'];
+      const buffer = await exportToPdf(exportData, headers, keys, 'Liste des Restaurants');
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=restaurants.pdf');
+      return res.send(buffer);
+    } else {
+      const columns = [
+        { header: 'Nom', key: 'name', width: 20 },
+        { header: 'Adresse', key: 'address', width: 30 },
+        { header: 'Type', key: 'type', width: 15 },
+        { header: 'Téléphone', key: 'phone', width: 15 },
+        { header: 'Email', key: 'email', width: 25 },
+        { header: 'Statut', key: 'status', width: 12 },
+        { header: 'Date Inscription', key: 'createdAt', width: 15 }
+      ];
+      const buffer = await exportToExcel(exportData, columns, 'Restaurants');
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=restaurants.xlsx');
+      return res.send(buffer);
+    }
+  } catch (error) {
+    console.error("Export error:", error);
+    res.status(500).send("Erreur lors de l'exportation");
+  }
+});
+
+
 router.get("/payouts", async (req, res) => {
   const { status, target_type, limit = 50, offset = 0 } = req.query;
 
@@ -981,6 +1040,66 @@ router.get("/orders", async (req, res) => {
     });
   }
 });
+
+// Export Orders
+router.get("/orders/export", async (req, res) => {
+  try {
+    const { format = 'excel', status = '' } = req.query;
+    
+    let query = supabase
+      .from("orders")
+      .select(`
+        *,
+        users!orders_user_id_fkey ( name, phone_number ),
+        restaurants!orders_restaurant_id_fkey ( name )
+      `)
+      .order("created_at", { ascending: false });
+
+    if (status) {
+      query = query.eq("status", status);
+    }
+
+    const { data: orders, error } = await query;
+    if (error) throw error;
+
+    const exportData = orders.map(o => ({
+      id: o.id.substring(0, 8),
+      client: o.users?.name || 'N/A',
+      restaurant: o.restaurants?.name || 'N/A',
+      amount: o.total_amount || 0,
+      status: o.status || 'N/A',
+      date: new Date(o.created_at).toLocaleDateString('fr-FR') + ' ' + new Date(o.created_at).toLocaleTimeString('fr-FR')
+    }));
+
+    if (format === 'pdf') {
+      const headers = ['ID', 'Client', 'Restaurant', 'Montant', 'Statut', 'Date'];
+      const keys = ['id', 'client', 'restaurant', 'amount', 'status', 'date'];
+      const buffer = await exportToPdf(exportData, headers, keys, 'Liste des Commandes');
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=commandes.pdf');
+      return res.send(buffer);
+    } else {
+      const columns = [
+        { header: 'ID', key: 'id', width: 15 },
+        { header: 'Client', key: 'client', width: 25 },
+        { header: 'Restaurant', key: 'restaurant', width: 25 },
+        { header: 'Montant', key: 'amount', width: 15 },
+        { header: 'Statut', key: 'status', width: 15 },
+        { header: 'Date', key: 'date', width: 20 }
+      ];
+      const buffer = await exportToExcel(exportData, columns, 'Commandes');
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=commandes.xlsx');
+      return res.send(buffer);
+    }
+  } catch (error) {
+    console.error("Export error:", error);
+    res.status(500).send("Erreur lors de l'exportation");
+  }
+});
+
 
 // Revenues route
 router.get("/revenues", async (req, res) => {
@@ -1543,6 +1662,70 @@ router.get("/deliverers", async (req, res) => {
     res.status(500).send("An error occurred while fetching deliverers.");
   }
 });
+
+// Export Deliverers
+router.get("/deliverers/export", async (req, res) => {
+  try {
+    const { format = 'excel', search = '' } = req.query;
+    
+    let query = supabase
+      .from("deliverers")
+      .select(`
+        *,
+        users (
+          name,
+          phone_number
+        )
+      `)
+      .order("created_at", { ascending: false });
+
+    if (search) {
+      query = query.ilike("zone", `%${search}%`);
+    }
+
+    const { data: deliverers, error } = await query;
+    if (error) throw error;
+
+    const exportData = deliverers.map(d => ({
+      name: d.users?.name || 'N/A',
+      phone: d.users?.phone_number || 'N/A',
+      zone: d.zone || 'N/A',
+      vehicleId: d.vehicle_id || 'N/A',
+      status: d.is_available ? 'Disponible' : 'Occupé',
+      deliveries: d.completed_deliveries || 0,
+      createdAt: new Date(d.created_at).toLocaleDateString('fr-FR')
+    }));
+
+    if (format === 'pdf') {
+      const headers = ['Nom', 'Téléphone', 'Zone', 'Véhicule', 'Statut', 'Livraisons', 'Date'];
+      const keys = ['name', 'phone', 'zone', 'vehicleId', 'status', 'deliveries', 'createdAt'];
+      const buffer = await exportToPdf(exportData, headers, keys, 'Liste des Livreurs');
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=livreurs.pdf');
+      return res.send(buffer);
+    } else {
+      const columns = [
+        { header: 'Nom', key: 'name', width: 20 },
+        { header: 'Téléphone', key: 'phone', width: 15 },
+        { header: 'Zone', key: 'zone', width: 15 },
+        { header: 'Véhicule', key: 'vehicleId', width: 15 },
+        { header: 'Statut', key: 'status', width: 12 },
+        { header: 'Livraisons', key: 'deliveries', width: 12 },
+        { header: 'Date Inscription', key: 'createdAt', width: 15 }
+      ];
+      const buffer = await exportToExcel(exportData, columns, 'Livreurs');
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=livreurs.xlsx');
+      return res.send(buffer);
+    }
+  } catch (error) {
+    console.error("Export error:", error);
+    res.status(500).send("Erreur lors de l'exportation");
+  }
+});
+
 
 // Get single deliverer details
 router.get("/deliverers/:id", async (req, res) => {

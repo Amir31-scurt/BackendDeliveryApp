@@ -107,6 +107,36 @@
       transform: translateY(-2px);
     }
 
+    .export-btn {
+      padding: 1rem 2rem;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-decoration: none;
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.8rem;
+      transition: all var(--transition-speed) ease;
+      box-shadow: var(--card-shadow);
+      cursor: pointer;
+      border: none;
+    }
+
+    .export-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+      color: white;
+    }
+
+    .export-btn-excel {
+      background: linear-gradient(45deg, #217346, #1e623c);
+    }
+
+    .export-btn-pdf {
+      background: linear-gradient(45deg, #e74c3c, #c0392b);
+    }
+
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -353,6 +383,17 @@
           class="filter-btn <%= currentStatus === 'COMPLETED' ? 'active' : '' %>">Terminées</a>
         <a href="?page=1&status=CANCELLED"
           class="filter-btn <%= currentStatus === 'CANCELLED' ? 'active' : '' %>">Annulées</a>
+      </div>
+
+      <div class="export-buttons" style="display: flex; gap: 1rem; margin-bottom: 2rem; justify-content: flex-start;">
+        <a href="/admin/orders/export?format=excel<%= currentStatus ? '&status=' + currentStatus : '' %>"
+          class="export-btn export-btn-excel">
+          <i class="fas fa-file-excel"></i> Exporter Excel
+        </a>
+        <a href="/admin/orders/export?format=pdf<%= currentStatus ? '&status=' + currentStatus : '' %>"
+          class="export-btn export-btn-pdf">
+          <i class="fas fa-file-pdf"></i> Exporter PDF
+        </a>
       </div>
 
       <table class="orders-table">
