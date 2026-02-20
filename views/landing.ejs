@@ -452,7 +452,6 @@
 
         .social-icons a {
             color: white;
-            background-color: rgba(255, 255, 255, 0.1);
             width: 45px;
             height: 45px;
             border-radius: 50%;
@@ -461,11 +460,30 @@
             justify-content: center;
             transition: all 0.3s ease;
             font-size: 1.2rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .social-icons a.facebook {
+            background-color: #1877F2;
+        }
+
+        .social-icons a.twitter {
+            background-color: #000000;
+        }
+
+        .social-icons a.instagram {
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+        }
+
+        .social-icons a.whatsapp {
+            background-color: #25D366;
         }
 
         .social-icons a:hover {
-            background-color: var(--primary-color);
-            transform: translateY(-3px);
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            filter: brightness(1.1);
+            color: white;
         }
 
         .copyright {
@@ -632,9 +650,14 @@
                 <h3>Gourmet d'amour</h3>
                 <p>L'excellence de la cuisine sénégalaise, livrée chez vous.</p>
                 <div class="social-icons">
-                    <a href="#"><i class="fab fa-facebook"></i></a>
-                    <a href="#"><i class="fab fa-twitter"></i></a>
-                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="https://facebook.com/gourmetdamour" class="facebook" target="_blank"><i
+                            class="fab fa-facebook-f"></i></a>
+                    <a href="https://x.com/gourmetdamour" class="twitter" target="_blank"><i
+                            class="fab fa-twitter"></i></a>
+                    <a href="https://instagram.com/gourmetdamour" class="instagram" target="_blank"><i
+                            class="fab fa-instagram"></i></a>
+                    <a href="https://wa.me/221707813382" class="whatsapp" target="_blank"><i
+                            class="fab fa-whatsapp"></i></a>
                 </div>
             </div>
             <div class="footer-column animate-on-scroll">
@@ -649,9 +672,9 @@
             <div class="footer-column animate-on-scroll">
                 <h3>Contact</h3>
                 <ul>
-                    <li><i class="fas fa-map-marker-alt"></i> Rue 1, Dakar, Sénégal</li>
-                    <li><i class="fas fa-phone"></i> +221 77 123 45 67</li>
-                    <li><i class="fas fa-envelope"></i> gourmetdamour25@gmail.com</li>
+                    <li><i class="fas fa-map-marker-alt"></i> Liberté 6, Dakar, Sénégal</li>
+                    <li><i class="fas fa-phone"></i> +221 70 781 33 82</li>
+                    <li><i class="fas fa-envelope"></i> support@gourmetdamour.com</li>
                 </ul>
             </div>
         </div>

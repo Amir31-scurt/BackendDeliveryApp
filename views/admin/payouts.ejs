@@ -175,17 +175,24 @@
     }
 
     .btn {
-      padding: 0.5rem 1rem;
-      border-radius: 10px;
-      background: var(--secondary-color);
+      padding: 0.6rem 1.2rem;
+      border-radius: 30px;
+      background: linear-gradient(45deg, var(--secondary-color), #9ac36f);
       color: white;
       font-size: 0.9rem;
+      font-weight: 600;
       text-decoration: none;
-      transition: 0.3s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(171, 210, 126, 0.3);
+      border: none;
     }
 
     .btn:hover {
-      background: #9ac36f;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 15px rgba(171, 210, 126, 0.4);
     }
   </style>
 </head>
@@ -216,17 +223,23 @@
     <div class="stats-grid">
       <div class="stat-card">
         <h3>Total vers Restaurants</h3>
-        <p><%= summary.totalRestaurant || 0 %> F</p>
+        <p>
+          <%= summary.totalRestaurant || 0 %> F
+        </p>
       </div>
 
       <div class="stat-card">
         <h3>Total vers Livreurs</h3>
-        <p><%= summary.totalDeliverer || 0 %> F</p>
+        <p>
+          <%= summary.totalDeliverer || 0 %> F
+        </p>
       </div>
 
       <div class="stat-card">
         <h3>Total Général</h3>
-        <p><%= summary.totalPayouts || 0 %> F</p>
+        <p>
+          <%= summary.totalPayouts || 0 %> F
+        </p>
       </div>
     </div>
 
@@ -245,31 +258,39 @@
       </thead>
 
       <tbody>
-        <% payouts.forEach(p => { %>
-        <tr>
-          <td><%= p.batch_id %></td>
-          <td><%= p.target_type %></td>
-          <td><%= p.receive_amount %> F</td>
+        <% payouts.forEach(p=> { %>
+          <tr>
+            <td>
+              <%= p.batch_id %>
+            </td>
+            <td>
+              <%= p.target_type %>
+            </td>
+            <td>
+              <%= p.receive_amount %> F
+            </td>
 
-          <td>
-            <% if (p.status === 'succeeded') { %>
-            <span class="status-success">Succès</span>
-            <% } else if (p.status === 'failed') { %>
-            <span class="status-failed">Échec</span>
-            <% } else { %>
-            <span class="status-processing">En cours</span>
-            <% } %>
-          </td>
+            <td>
+              <% if (p.status==='succeeded' ) { %>
+                <span class="status-success">Succès</span>
+                <% } else if (p.status==='failed' ) { %>
+                  <span class="status-failed">Échec</span>
+                  <% } else { %>
+                    <span class="status-processing">En cours</span>
+                    <% } %>
+            </td>
 
-          <td><%= p.created_at %></td>
+            <td>
+              <%= p.created_at %>
+            </td>
 
-          <td>
-            <a href="/admin/payouts/<%= p.batch_id %>" class="btn">
-              Voir
-            </a>
-          </td>
-        </tr>
-        <% }) %>
+            <td>
+              <a href="/admin/payouts/<%= p.batch_id %>" class="btn">
+                Voir
+              </a>
+            </td>
+          </tr>
+          <% }) %>
       </tbody>
     </table>
 

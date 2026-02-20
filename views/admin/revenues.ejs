@@ -110,40 +110,42 @@
 
         .filter-link {
             text-decoration: none;
-            padding: 0.8rem 1.5rem;
+            padding: 0.8rem 1.7rem;
             border-radius: 30px;
             transition: all var(--transition-speed) ease;
-            background: var(--primary-color);
+            background: linear-gradient(45deg, var(--primary-color), #c44d68);
             color: white;
             border: none;
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
             font-size: 1rem;
+            box-shadow: var(--card-shadow);
         }
 
         .filter-link:hover {
-            background: var(--primary-color);
             transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(219, 96, 126, 0.2);
             color: white;
         }
 
         .reset-link {
             text-decoration: none;
-            padding: 0.8rem 1.5rem;
+            padding: 0.8rem 1.7rem;
             border-radius: 30px;
             transition: all var(--transition-speed) ease;
             background: white;
             color: var(--primary-color);
             border: 1px solid var(--primary-color);
             cursor: pointer;
-            font-weight: 500;
+            font-weight: 600;
             font-size: 1rem;
         }
 
         .reset-link:hover {
-            background: white;
+            background: var(--background-color);
             transform: translateY(-2px);
-            color: var(--primary-color);
+            border-color: #c44d68;
+            color: #c44d68;
         }
 
         .revenue-grid {
