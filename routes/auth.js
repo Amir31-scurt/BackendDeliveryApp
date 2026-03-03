@@ -136,6 +136,29 @@ router.post("/login", async (req, res) => {
       expiresIn: "60d",
     });
 
+    let delivererInfo = null;
+
+    if (user.role === 'deliverer') {
+      const { data: delivererData, error: delivererError } = await supabase
+        .from('deliverers')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!delivererError && delivererData) {
+        delivererInfo = {
+          id: delivererData.id,
+          userId: delivererData.user_id,
+          vehicleId: delivererData.vehicle_id,
+          isAvailable: delivererData.is_available,
+          currentLocation: delivererData.current_location,
+          zone: delivererData.zone,
+          isActive: delivererData.is_active,
+          isVerified: delivererData.is_verified
+        };
+      }
+    }
+
     res.status(200).json({
       message: "Connexion réussie.",
       user: {
@@ -146,6 +169,7 @@ router.post("/login", async (req, res) => {
         profilePicture: user.profile_picture,
         isVerified: user.is_verified,
       },
+      delivererInfo, // Include in response
       token: token,
     });
   } catch (error) {
@@ -259,7 +283,7 @@ router.post("/forgot-password", async (req, res) => {
     });
 
     // 5. Send push notification via Expo
-    await sendPushNotification(user.id, bodyMessage, supabase);
+    await sendPushNotification(user.id, "Code de réinitialisation", bodyMessage, {}, supabase);
 
     // 6. Return response (you can omit `otp` in production)
     return res.status(200).json({

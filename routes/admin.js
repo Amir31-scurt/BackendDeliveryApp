@@ -9,6 +9,8 @@ import { existsSync } from "fs";
 import { supabase } from "../supabaseClient.js";
 import { graphqlRequest } from "../utils/graphqlClient.js";
 import { authMiddleware, requireRole } from "../middleware/auth.js";
+import { body, validationResult } from "express-validator";
+import { exportToExcel, exportToPdf } from "../utils/exportUtils.js";
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -16,17 +18,26 @@ const ROOT_DIR = path.resolve();
 
 // Public routes (no auth required)
 router.get("/login", (req, res) => {
-  res.render("admin/adminLogin");
+  res.render("admin/adminLogin", { layout: false });
 });
 
 // Admin login POST route
-router.post("/login", async (req, res) => {
+router.post("/login", [
+    body('phoneNumber').notEmpty().withMessage('Le numéro de téléphone est requis'),
+    body('password').notEmpty().withMessage('Le mot de passe est requis')
+], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.render("admin/adminLogin", {
+        errors: errors.array(),
+        csrfToken: req.csrfToken(),
+        phoneNumber: req.body.phoneNumber,
+        layout: false
+    });
+  }
+
   try {
     const { phoneNumber, password } = req.body;
-
-    if (!phoneNumber || !password) {
-      return res.status(400).json({ error: "Phone number and password are required" });
-    }
 
     // Find user by phone number
     const { data: user, error: userError } = await supabase
@@ -36,18 +47,33 @@ router.post("/login", async (req, res) => {
       .single();
 
     if (userError || !user) {
-      return res.status(401).json({ error: "Invalid phone number or password" });
+      return res.render("admin/adminLogin", {
+        error: "Numéro de téléphone ou mot de passe incorrect",
+        csrfToken: req.csrfToken(),
+        phoneNumber,
+        layout: false
+      });
     }
 
     // Verify password
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      return res.status(401).json({ error: "Invalid phone number or password" });
+      return res.render("admin/adminLogin", {
+        error: "Numéro de téléphone ou mot de passe incorrect",
+        csrfToken: req.csrfToken(),
+        phoneNumber,
+        layout: false
+      });
     }
 
     // Check if user is an admin
     if (user.role !== "admin") {
-      return res.status(403).json({ error: "Access denied. Admin privileges required." });
+      return res.render("admin/adminLogin", {
+        error: "Accès refusé. Privilèges administrateur requis.",
+        csrfToken: req.csrfToken(),
+        phoneNumber,
+        layout: false
+      });
     }
 
     // Generate JWT token
@@ -65,26 +91,24 @@ router.post("/login", async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 
-    res.json({
-      success: true,
-      message: "Login successful",
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        phoneNumber: user.phone_number,
-        role: user.role
-      }
-    });
+    // Also populate session for standard MVC (optional if using JWT mainly)
+    req.session.user = user;
+    req.flash('success_msg', 'Connexion réussie');
+
+    res.redirect("/admin/dashboard");
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.render("admin/adminLogin", {
+        error: "Erreur interne du serveur",
+        csrfToken: req.csrfToken(),
+        layout: false
+    });
   }
 });
 
 // Restaurant login routes (should be public)
 router.get("/login/restaurant", (req, res) => {
-  res.render("admin/restaurantLogin", { csrfToken: req.csrfToken() });
+  res.render("admin/restaurantLogin", { csrfToken: req.csrfToken(), layout: false });
 });
 
 router.post("/login/restaurant", async (req, res) => {
@@ -160,6 +184,11 @@ router.post("/login/restaurant", async (req, res) => {
 // Restaurant dashboard route - moved before the catch-all route
 router.get('/restaurant/:id/dashboard', async (req, res) => {
   try {
+    // Prevent caching
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+
     console.log('Dashboard access attempt - ID:', req.params.id);
 
     // Get token from cookie or Authorization header
@@ -312,6 +341,11 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
 // Restaurant menu route
 router.get('/restaurant/:id/menu', async (req, res) => {
   try {
+    // Prevent caching
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+
     console.log('Menu access attempt - ID:', req.params.id);
 
     // Get token from cookie or Authorization header
@@ -379,39 +413,32 @@ router.get('/restaurant/:id/menu', async (req, res) => {
 
 router.get("/restaurant/logout", (req, res) => {
   try {
-    // Clear cookie if any
-    res.clearCookie("token", {
-      path: "/",
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-    });
-
-    // Invalidate cache for this response
+    // Clear cookies
+    res.clearCookie("token", { path: "/", httpOnly: true, secure: process.env.NODE_ENV === "production" });
+    res.clearCookie("restaurant", { path: "/", httpOnly: true, secure: process.env.NODE_ENV === "production" });
+    
+    // Invalidate cache
     res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
 
-    // Send a small HTML snippet that clears browser history and redirects cleanly
+    // Force client-side cleanup and redirect
     res.send(`
       <html>
         <head>
           <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
-          <meta http-equiv="Pragma" content="no-cache">
-          <meta http-equiv="Expires" content="0">
           <script>
-            // Remove JWT token from localStorage
             localStorage.removeItem('token');
-            // Replace history so user can't go back
+            localStorage.removeItem('restaurant');
             window.location.replace('/admin/login/restaurant');
           </script>
         </head>
-        <body></body>
+        <body>Redirecting...</body>
       </html>
     `);
   } catch (error) {
     console.error("Logout error:", error);
-    res.status(500).json({ error: "Internal server error during logout" });
+    res.status(500).send("Error logging out");
   }
 });
 
@@ -441,6 +468,8 @@ router.post("/logout", (req, res) => {
 
 router.get("/logout", (req, res) => {
   try {
+    const role = req.user?.role || req.session?.user?.role;
+    
     // Clear the session
     req.session.destroy((err) => {
       if (err) {
@@ -448,15 +477,24 @@ router.get("/logout", (req, res) => {
       }
     });
 
-    // Clear the JWT cookie
+    // Clear the JWT cookies
     res.clearCookie('token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict'
     });
+    
+    // Clear other cookies to be safe
+    res.clearCookie('restaurant');
+    res.clearCookie('user');
+    res.clearCookie('deliverer');
 
-    // Redirect to login page
-    res.redirect('/admin/login');
+    // Redirect based on role
+    if (role === 'restaurant') {
+      res.redirect('/admin/login/restaurant');
+    } else {
+      res.redirect('/admin/login');
+    }
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ error: 'Internal server error during logout' });
@@ -607,43 +645,123 @@ router.get("/dashboard", async (req, res) => {
 });
 
 // Render the admin restaurants page
+// Render the admin restaurants page
 router.get("/restaurants", async (req, res) => {
   try {
-    console.log("Fetching restaurants...");
-    const query = `
-      query {
-        restaurants {
-          id
-          name
-          description
-          address
-          type
-          phoneNumber
-          email
-          imageUrl
-          isActive
-          createdAt
-          updatedAt
-        }
-      }
-    `;
-    const restaurants = await graphqlRequest(query);
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+    const pageSize = Number(limit);
 
-    if (!restaurants || !restaurants.restaurants) {
-      console.error("No restaurants found or restaurants undefined.");
+    console.log("Fetching restaurants with pagination...", { page, limit, search });
+
+    let query = supabase
+      .from("restaurants")
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range(offset, offset + pageSize - 1);
+
+    if (search) {
+      query = query.ilike("name", `%${search}%`);
+    }
+
+    const { data: restaurants, count, error } = await query;
+
+    if (error) {
+      console.error("Error fetching restaurants:", error);
       throw new Error("Failed to fetch restaurants.");
+    }
+
+    const totalPages = Math.ceil(count / pageSize);
+
+    // If it's an AJAX request (e.g. search), return JSON
+    if (req.xhr || req.headers.accept?.includes('application/json')) {
+       return res.json({
+         restaurants,
+         pagination: {
+           currentPage: Number(page),
+           totalPages,
+           totalCount: count
+         }
+       });
     }
 
     res.render("admin/restaurants", {
       layout: "admin/layout",
       title: "Restaurants",
-      restaurants: restaurants.restaurants,
+      restaurants: restaurants || [],
+      pagination: {
+        currentPage: Number(page),
+        totalPages,
+        pageSize,
+        totalCount: count,
+        hasNext: Number(page) < totalPages,
+        hasPrev: Number(page) > 1
+      },
+      searchQuery: search
     });
   } catch (error) {
     console.error("Error fetching restaurants:", error.message);
     res.status(500).send("An error occurred while fetching restaurants.");
   }
 });
+
+// Export Restaurants
+router.get("/restaurants/export", async (req, res) => {
+  try {
+    const { format = 'excel', search = '' } = req.query;
+    
+    let query = supabase
+      .from("restaurants")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (search) {
+      query = query.ilike("name", `%${search}%`);
+    }
+
+    const { data: restaurants, error } = await query;
+    if (error) throw error;
+
+    const exportData = restaurants.map(r => ({
+      name: r.name || 'N/A',
+      address: r.address || 'N/A',
+      type: r.type || 'N/A',
+      phone: r.phone_number || 'N/A',
+      email: r.email || 'N/A',
+      status: r.is_active ? 'Actif' : 'Inactif',
+      createdAt: new Date(r.created_at).toLocaleDateString('fr-FR')
+    }));
+
+    if (format === 'pdf') {
+      const headers = ['Nom', 'Adresse', 'Type', 'Téléphone', 'Email', 'Statut', 'Date'];
+      const keys = ['name', 'address', 'type', 'phone', 'email', 'status', 'createdAt'];
+      const buffer = await exportToPdf(exportData, headers, keys, 'Liste des Restaurants');
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=restaurants.pdf');
+      return res.send(buffer);
+    } else {
+      const columns = [
+        { header: 'Nom', key: 'name', width: 20 },
+        { header: 'Adresse', key: 'address', width: 30 },
+        { header: 'Type', key: 'type', width: 15 },
+        { header: 'Téléphone', key: 'phone', width: 15 },
+        { header: 'Email', key: 'email', width: 25 },
+        { header: 'Statut', key: 'status', width: 12 },
+        { header: 'Date Inscription', key: 'createdAt', width: 15 }
+      ];
+      const buffer = await exportToExcel(exportData, columns, 'Restaurants');
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=restaurants.xlsx');
+      return res.send(buffer);
+    }
+  } catch (error) {
+    console.error("Export error:", error);
+    res.status(500).send("Erreur lors de l'exportation");
+  }
+});
+
 
 router.get("/payouts", async (req, res) => {
   const { status, target_type, limit = 50, offset = 0 } = req.query;
@@ -929,6 +1047,66 @@ router.get("/orders", async (req, res) => {
   }
 });
 
+// Export Orders
+router.get("/orders/export", async (req, res) => {
+  try {
+    const { format = 'excel', status = '' } = req.query;
+    
+    let query = supabase
+      .from("orders")
+      .select(`
+        *,
+        users!orders_user_id_fkey ( name, phone_number ),
+        restaurants!orders_restaurant_id_fkey ( name )
+      `)
+      .order("created_at", { ascending: false });
+
+    if (status) {
+      query = query.eq("status", status);
+    }
+
+    const { data: orders, error } = await query;
+    if (error) throw error;
+
+    const exportData = orders.map(o => ({
+      id: o.id.substring(0, 8),
+      client: o.users?.name || 'N/A',
+      restaurant: o.restaurants?.name || 'N/A',
+      amount: o.total_amount || 0,
+      status: o.status || 'N/A',
+      date: new Date(o.created_at).toLocaleDateString('fr-FR') + ' ' + new Date(o.created_at).toLocaleTimeString('fr-FR')
+    }));
+
+    if (format === 'pdf') {
+      const headers = ['ID', 'Client', 'Restaurant', 'Montant', 'Statut', 'Date'];
+      const keys = ['id', 'client', 'restaurant', 'amount', 'status', 'date'];
+      const buffer = await exportToPdf(exportData, headers, keys, 'Liste des Commandes');
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=commandes.pdf');
+      return res.send(buffer);
+    } else {
+      const columns = [
+        { header: 'ID', key: 'id', width: 15 },
+        { header: 'Client', key: 'client', width: 25 },
+        { header: 'Restaurant', key: 'restaurant', width: 25 },
+        { header: 'Montant', key: 'amount', width: 15 },
+        { header: 'Statut', key: 'status', width: 15 },
+        { header: 'Date', key: 'date', width: 20 }
+      ];
+      const buffer = await exportToExcel(exportData, columns, 'Commandes');
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=commandes.xlsx');
+      return res.send(buffer);
+    }
+  } catch (error) {
+    console.error("Export error:", error);
+    res.status(500).send("Erreur lors de l'exportation");
+  }
+});
+
+
 // Revenues route
 router.get("/revenues", async (req, res) => {
   try {
@@ -965,12 +1143,17 @@ router.get("/revenues", async (req, res) => {
       gourmet: totalGourmetRevenue
     };
 
+    // Log the data for debugging purposes
+    if (restoRev && restoRev.length > 0) {
+      console.log('Restaurant Revenue Data Sample:', restoRev[0]);
+    }
+
     // Fetch revenue breakdown by restaurant
     const restaurantBreakdown = restoErr ? [] : (restoRev || []).map(r => ({
       restaurantId: r.restaurant_id,
       restaurantName: r.restaurant_name || 'N/A',
       revenue: Number(r.restaurant_revenue || 0),
-      orderCount: Number(r.order_count || 0)
+      orderCount: Number(r.order_count || r.orders || r.count || 0)
     })).sort((a, b) => b.revenue - a.revenue).slice(0, 10); // Top 10
 
     // Fetch revenue breakdown by deliverer
@@ -978,7 +1161,7 @@ router.get("/revenues", async (req, res) => {
       delivererId: d.deliverer_id,
       delivererName: d.deliverer_name || 'N/A',
       revenue: Number(d.deliverer_net_revenue || 0),
-      orderCount: Number(d.order_count || 0)
+      orderCount: Number(d.order_count || d.orders || d.count || 0)
     })).sort((a, b) => b.revenue - a.revenue).slice(0, 10); // Top 10
 
     // Fetch total orders for revenue calculation explanation
@@ -994,6 +1177,10 @@ router.get("/revenues", async (req, res) => {
     const totalOrderValue = totalOrdersData?.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0;
 
     // Fetch per-order revenue breakdown (where it came from)
+    const { page = 1, limit = 20 } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+    const pageSize = Number(limit);
+
     let revenueOrdersQuery = supabase
       .from("orders")
       .select(`
@@ -1009,7 +1196,7 @@ router.get("/revenues", async (req, res) => {
       `)
       .eq("status", "COMPLETED")
       .order("created_at", { ascending: false })
-      .limit(200);
+      .range(offset, offset + pageSize - 1);
 
     if (dateFrom) revenueOrdersQuery = revenueOrdersQuery.gte("created_at", dateFrom.toISOString());
     if (dateTo) revenueOrdersQuery = revenueOrdersQuery.lte("created_at", dateTo.toISOString());
@@ -1029,6 +1216,9 @@ router.get("/revenues", async (req, res) => {
       createdAt: o.created_at
     }));
 
+    const totalCount = totalOrdersData?.length || 0;
+    const totalPages = Math.ceil(totalCount / pageSize);
+
     // Fetch monthly revenue data
     const { data: monthlyData, error: monthlyError } = await supabase.rpc("get_monthly_orders");
 
@@ -1045,6 +1235,14 @@ router.get("/revenues", async (req, res) => {
       delivererBreakdown: delivererBreakdown || [],
       totalOrderValue,
       revenueOrders,
+      pagination: {
+        currentPage: Number(page),
+        totalPages,
+        pageSize,
+        totalCount,
+        hasNext: Number(page) < totalPages,
+        hasPrev: Number(page) > 1
+      },
       filters: {
         from: from || "",
         to: to || ""
@@ -1302,15 +1500,8 @@ router.post("/restaurants/:id/menu/add", async (req, res) => {
 
   try {
     const addMenuItemMutation = `
-      mutation {
-        addMenuItem(input: {
-          name: "${name}",
-          description: "${description}",
-          price: ${parseFloat(price)},
-          category: ${category},
-          imageUrl: ${imageUrl},
-          restaurantId: "${id}"
-        }) {
+      mutation AddMenuItem($input: AddMenuItemInput!) {
+        addMenuItem(input: $input) {
           id
           name
           description
@@ -1321,7 +1512,18 @@ router.post("/restaurants/:id/menu/add", async (req, res) => {
       }
     `;
 
-    const result = await graphqlRequest(addMenuItemMutation);
+    const variables = {
+      input: {
+        name,
+        description,
+        price: parseFloat(price) || 0,
+        category,
+        imageUrl,
+        restaurantId: id,
+      },
+    };
+
+    const result = await graphqlRequest(addMenuItemMutation, variables);
 
     if (result.errors) {
       throw new Error(result.errors[0].message);
@@ -1386,20 +1588,46 @@ router.post("/orders/:id/note", async (req, res) => {
 });
 
 // Render the deliverers page
+// Render the deliverers page
 router.get("/deliverers", async (req, res) => {
   try {
-    console.log("Fetching deliverers...");
-    const { data: deliverers, error } = await supabase
+    const { page = 1, limit = 10, search = "" } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+    const pageSize = Number(limit);
+
+    console.log("Fetching deliverers with pagination...", { page, limit, search });
+
+    let query = supabase
       .from("deliverers")
       .select(`
         *,
-        users (
+        users!inner (
           id,
           name,
           phone_number,
           profile_picture
         )
-      `);
+      `, { count: "exact" })
+      .range(offset, offset + pageSize - 1)
+      .order("created_at", { ascending: false });
+
+    if (search) {
+      // Search by user name (via relation) or zone
+      // Note: Supabase ILIKE on foreign tables is supported with !inner join and special syntax
+      // But simple way is to use "or" filter if possible, or just zone for now.
+      // Searching relations is tricky. For now let's support searching by zone or maybe filter in code?
+      // Filtering in code breaks pagination.
+      // Let's assume search is mainly for zone or filtering by status if needed.
+      // Or we can try: .ilike('users.name', `%${search}%`) if Supabase supports it?
+      // Supabase JS doesn't support nested filtering neatly in one go easily without complications.
+      // Let's stick to simple filters or search on deliverer fields (zone).
+      // Or we can search on User table first then filter Deliverers.
+      // For simplicity let's search zone only or skip complex search for this iteration.
+      // Actually, let's try to search by zone.
+       query = query.ilike("zone", `%${search}%`);
+    }
+
+    const { data: deliverers, count, error } = await query;
 
     if (error) {
       console.error("Error fetching deliverers:", error);
@@ -1407,7 +1635,7 @@ router.get("/deliverers", async (req, res) => {
     }
 
     // Transform the data to match the schema structure
-    const formattedDeliverers = deliverers.map(deliverer => ({
+    const formattedDeliverers = (deliverers || []).map(deliverer => ({
       userId: deliverer.user_id,
       user: deliverer.users,
       vehicleId: deliverer.vehicle_id,
@@ -1420,9 +1648,18 @@ router.get("/deliverers", async (req, res) => {
       isVerified: deliverer.is_verified
     }));
 
+    const totalPages = Math.ceil(count / pageSize);
+
     // Check if it's an AJAX request
     if (req.xhr || req.headers.accept?.includes('application/json')) {
-      return res.json({ deliverers: formattedDeliverers });
+      return res.json({
+        deliverers: formattedDeliverers,
+        pagination: {
+           currentPage: Number(page),
+           totalPages,
+           totalCount: count
+         }
+      });
     }
 
     // Regular page render
@@ -1430,6 +1667,15 @@ router.get("/deliverers", async (req, res) => {
       layout: "admin/layout",
       title: "Livreurs",
       deliverers: formattedDeliverers || [],
+      pagination: {
+        currentPage: Number(page),
+        totalPages,
+        pageSize,
+        totalCount: count,
+        hasNext: Number(page) < totalPages,
+        hasPrev: Number(page) > 1
+      },
+      searchQuery: search
     });
   } catch (error) {
     console.error("Error fetching deliverers:", error.message);
@@ -1439,6 +1685,70 @@ router.get("/deliverers", async (req, res) => {
     res.status(500).send("An error occurred while fetching deliverers.");
   }
 });
+
+// Export Deliverers
+router.get("/deliverers/export", async (req, res) => {
+  try {
+    const { format = 'excel', search = '' } = req.query;
+    
+    let query = supabase
+      .from("deliverers")
+      .select(`
+        *,
+        users (
+          name,
+          phone_number
+        )
+      `)
+      .order("created_at", { ascending: false });
+
+    if (search) {
+      query = query.ilike("zone", `%${search}%`);
+    }
+
+    const { data: deliverers, error } = await query;
+    if (error) throw error;
+
+    const exportData = deliverers.map(d => ({
+      name: d.users?.name || 'N/A',
+      phone: d.users?.phone_number || 'N/A',
+      zone: d.zone || 'N/A',
+      vehicleId: d.vehicle_id || 'N/A',
+      status: d.is_available ? 'Disponible' : 'Occupé',
+      deliveries: d.completed_deliveries || 0,
+      createdAt: new Date(d.created_at).toLocaleDateString('fr-FR')
+    }));
+
+    if (format === 'pdf') {
+      const headers = ['Nom', 'Téléphone', 'Zone', 'Véhicule', 'Statut', 'Livraisons', 'Date'];
+      const keys = ['name', 'phone', 'zone', 'vehicleId', 'status', 'deliveries', 'createdAt'];
+      const buffer = await exportToPdf(exportData, headers, keys, 'Liste des Livreurs');
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=livreurs.pdf');
+      return res.send(buffer);
+    } else {
+      const columns = [
+        { header: 'Nom', key: 'name', width: 20 },
+        { header: 'Téléphone', key: 'phone', width: 15 },
+        { header: 'Zone', key: 'zone', width: 15 },
+        { header: 'Véhicule', key: 'vehicleId', width: 15 },
+        { header: 'Statut', key: 'status', width: 12 },
+        { header: 'Livraisons', key: 'deliveries', width: 12 },
+        { header: 'Date Inscription', key: 'createdAt', width: 15 }
+      ];
+      const buffer = await exportToExcel(exportData, columns, 'Livreurs');
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=livreurs.xlsx');
+      return res.send(buffer);
+    }
+  } catch (error) {
+    console.error("Export error:", error);
+    res.status(500).send("Erreur lors de l'exportation");
+  }
+});
+
 
 // Get single deliverer details
 router.get("/deliverers/:id", async (req, res) => {

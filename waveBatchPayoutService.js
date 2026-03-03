@@ -41,12 +41,15 @@ export async function sendBatchPayout(orderId) {
   }
 
   // 3. Charger le livreur (si payout > 0)
+  let delivererUser = null;
   if (order.deliverer_payout > 0) {
-    const { data: delivererUser } = await supabase
+    const { data } = await supabase
     .from("users")
     .select("id, name, phone_number")
     .eq("id", order.deliverer_id)
     .single();
+
+    delivererUser = data;
 
     if (!delivererUser?.phone_number) {
     throw new Error("Le livreur n'a pas de numéro Wave enregistré.");
@@ -63,7 +66,7 @@ export async function sendBatchPayout(orderId) {
     }
   ];
 
-  if (order.deliverer_payout > 0) {
+  if (order.deliverer_payout > 0 && delivererUser) {
     batch.push({
         currency: "XOF",
         receive_amount: String(order.deliverer_payout),

@@ -10,6 +10,8 @@ import path from "path";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import csrf from 'csurf';
+import flash from "connect-flash";
+import session from "express-session";
 import resolvers from "./resolvers.js";
 import { delivererResolvers } from "./resolvers/delivererResolvers.js";
 import adminRoutes from "./routes/admin.js";
@@ -36,6 +38,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com", "cdnjs.cloudflare.com"],
       fontSrc: ["'self'", "fonts.gstatic.com", "fonts.googleapis.com", "cdnjs.cloudflare.com"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
+      mediaSrc: ["'self'", "data:"],
       connectSrc: ["'self'", "ws:", "wss:", "https:"],
       frameSrc: ["'self'"],
       objectSrc: ["'none'"],
@@ -51,19 +54,26 @@ app.use(cors({
       'http://localhost:4000',
       'http://127.0.0.1:4000',
       'http://localhost:8080',
+      'http://localhost:8081',
       'https://www.gourmetdamour.com',
       'https://gourmetdamour.com',
       'com.gourmetdamour.app'
     ];
 
-    // Allow requests with no origin (like mobile apps)
-    if (!origin) {
+    // Allow requests with no origin (like mobile apps or curl) or "null" origin (redirects/local files)
+    if (!origin || origin === 'null') {
       return callback(null, true);
+    }
+
+    // Allow any localhost origin (for development with various ports)
+    if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:') || origin.startsWith('http://192.168.')) {
+        return callback(null, true);
     }
 
     if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.gourmetdamour.com')) {
       callback(null, true);
     } else {
+      console.log('Blocked by CORS:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -89,6 +99,29 @@ const csrfProtection = csrf({
 // Middleware to parse JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'secret_key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Flash messages
+app.use(flash());
+
+// Global variables for templates
+app.use((req, res, next) => {
+  res.locals.success_msg = req.flash('success_msg');
+  res.locals.error_msg = req.flash('error_msg');
+  res.locals.error = req.flash('error');
+  res.locals.errors = req.flash('errors') || []; 
+  next();
+});
 
 // Setup EJS as the template engine
 app.set("view engine", "ejs");
@@ -248,6 +281,15 @@ app.listen(PORT, () => {
   );
 });
 
+// Health check route
+app.get("/health", (req, res) => {
+  res.status(200).json({ 
+    status: "ok", 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime() 
+  });
+});
+
 // Root route
 app.get("/", (req, res) => {
   res.render('landing', { layout: false });
@@ -271,9 +313,8 @@ app.set("layout", "admin/restaurants");
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({
-    error: process.env.NODE_ENV === 'production'
-      ? 'Internal server error'
-      : err.message
+    error: err.message,
+    stack: process.env.NODE_ENV === 'production' ? null : err.stack
   });
 });
 

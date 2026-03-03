@@ -130,6 +130,36 @@
       box-shadow: 0 15px 30px rgba(219, 96, 126, 0.2);
     }
 
+    .export-btn {
+      padding: 1rem 2rem;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      text-decoration: none;
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.8rem;
+      transition: all var(--transition-speed) ease;
+      box-shadow: var(--card-shadow);
+      cursor: pointer;
+      border: none;
+    }
+
+    .export-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+      color: white;
+    }
+
+    .export-btn-excel {
+      background: linear-gradient(45deg, #217346, #1e623c);
+    }
+
+    .export-btn-pdf {
+      background: linear-gradient(45deg, #e74c3c, #c0392b);
+    }
+
     .restaurants-section {
       background: white;
       padding: 2.5rem;
@@ -207,6 +237,26 @@
 
     .restaurants-table tr:hover .restaurant-image {
       transform: scale(1.1);
+    }
+
+    .status-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-active {
+      background: #d1e7dd;
+      color: #0f5132;
+    }
+
+    .status-inactive {
+      background: #f8d7da;
+      color: #842029;
     }
 
     .action-buttons {
@@ -516,17 +566,32 @@
       <h1>Gourmet d'amour</h1>
       <p>Gestion des Restaurants</p>
       <div class="nav-links">
-        <a href="/admin/dashboard" class="nav-link">Tableau de Bord</a>
+        <a href="/admin/dashboard" class="nav-link">
+          <i class="fa-solid fa-chart-line"></i> Tableau de Bord
+        </a>
         <a href="/admin/deliverers" class="nav-link">
           <i class="fa-solid fa-truck"></i> Livreurs
         </a>
-        <a href="/" class="nav-link">Accueil</a>
+        <a href="/" class="nav-link">
+          <i class="fa-solid fa-house"></i> Accueil
+        </a>
+        <a href="/admin/logout" class="nav-link" style="background-color: var(--accent-color);">
+          <i class="fas fa-sign-out-alt"></i> Déconnexion
+        </a>
       </div>
     </header>
 
-    <button id="addRestaurantBtn" class="add-restaurant-btn">
-      <i class="fas fa-plus"></i> Ajouter un Restaurant
-    </button>
+    <div style="display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 2rem;">
+      <button id="addRestaurantBtn" class="add-restaurant-btn" style="margin-bottom: 0;">
+        <i class="fas fa-plus"></i> Ajouter un Restaurant
+      </button>
+      <a href="/admin/restaurants/export?format=excel" class="export-btn export-btn-excel">
+        <i class="fas fa-file-excel"></i> Exporter Excel
+      </a>
+      <a href="/admin/restaurants/export?format=pdf" class="export-btn export-btn-pdf">
+        <i class="fas fa-file-pdf"></i> Exporter PDF
+      </a>
+    </div>
 
     <div class="restaurants-section">
       <div class="search-container" style="margin-bottom: 1rem;">
@@ -549,7 +614,9 @@
             <% restaurants.forEach((restaurant)=> { %>
               <tr data-restaurant-id="<%= restaurant.id %>">
                 <td>
-                  <img src="<%= restaurant.imageUrl %>" alt="<%= restaurant.name %>" class="restaurant-image" />
+                  <img
+                    src="<%= restaurant.hero_image || restaurant.image_url || restaurant.imageUrl || 'https://placehold.co/600x400?text=No+Image' %>"
+                    alt="<%= restaurant.name %>" class="restaurant-image" />
                 </td>
                 <td>
                   <%= restaurant.name %>
@@ -561,7 +628,12 @@
                   <%= restaurant.type %>
                 </td>
                 <td>
-                  <%= restaurant.isActive ? "Actif" : "Inactif" %>
+                  <span
+                    class="status-badge <%= (restaurant.isActive || restaurant.is_active) ? 'status-active' : 'status-inactive' %>">
+                    <i
+                      class="fas fa-<%= (restaurant.isActive || restaurant.is_active) ? 'check-circle' : 'times-circle' %>"></i>
+                    <%= (restaurant.isActive || restaurant.is_active) ? "Actif" : "Inactif" %>
+                  </span>
                 </td>
                 <td>
                   <div class="action-buttons">
@@ -725,10 +797,6 @@
 
   <script>
     let isEditMode = false;
-    let currentPage = 1;
-    const itemsPerPage = 10;
-    let filteredRestaurants = [];
-    let allRestaurants = [];
 
     // Function to get CSRF token from cookie
     function getCSRFToken() {
@@ -749,16 +817,13 @@
 
     // Function to make GraphQL requests
     async function makeGraphQLRequest(query, variables = {}) {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
+      // We rely on the httpOnly cookie 'token' set by the server. 
+      // The auth middleware checks cookies if the Authorization header is missing.
 
       const response = await fetch("/graphql", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
           "Accept": "application/json",
           "X-CSRF-Token": getCSRFToken()
         },
@@ -791,100 +856,61 @@
       }
     }
 
-    // Initialize the restaurants data
-    window.addEventListener('load', function () {
-      console.log('Initializing restaurants data...');
-      const tableRows = document.querySelectorAll('.restaurants-table tbody tr');
-      console.log('Found table rows:', tableRows.length);
+    // Server-side pagination handling
+    document.addEventListener('DOMContentLoaded', function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      const currentPage = parseInt(urlParams.get('page')) || 1;
+      const limit = parseInt(urlParams.get('limit')) || 10;
+      const totalItems = parseInt('<%= pagination.totalCount %>');
+      const totalPages = parseInt('<%= pagination.totalPages %>');
 
-      allRestaurants = Array.from(tableRows).map(row => ({
-        element: row,
-        name: row.querySelector('td:nth-child(2)').textContent.trim(),
-        address: row.querySelector('td:nth-child(3)').textContent.trim(),
-        type: row.querySelector('td:nth-child(4)').textContent.trim(),
-        status: row.querySelector('td:nth-child(5)').textContent.trim()
-      }));
+      // Update pagination UI
+      const prevBtn = document.getElementById('prevPage');
+      const nextBtn = document.getElementById('nextPage');
+      const currentPageSpan = document.getElementById('currentPage');
+      const startIndexSpan = document.getElementById('startIndex');
+      const endIndexSpan = document.getElementById('endIndex');
+      const totalItemsSpan = document.getElementById('totalItems');
 
-      filteredRestaurants = [...allRestaurants];
-      console.log('Initialized restaurants:', allRestaurants.length);
-      updateTable();
+      if (prevBtn) {
+        prevBtn.disabled = currentPage <= 1;
+        prevBtn.addEventListener('click', () => changePage(currentPage - 1));
+      }
+      if (nextBtn) {
+        nextBtn.disabled = currentPage >= totalPages;
+        nextBtn.addEventListener('click', () => changePage(currentPage + 1));
+      }
+      if (currentPageSpan) currentPageSpan.textContent = `Page ${currentPage} sur ${totalPages}`;
+
+      const start = (currentPage - 1) * limit + 1;
+      const end = Math.min(start + limit - 1, totalItems);
+
+      if (startIndexSpan) startIndexSpan.textContent = totalItems > 0 ? start : 0;
+      if (endIndexSpan) endIndexSpan.textContent = end;
+      if (totalItemsSpan) totalItemsSpan.textContent = totalItems;
+
+      // Search handling
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) {
+        searchInput.value = urlParams.get('search') || '';
+        let debounceTimer;
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            const search = e.target.value;
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('search', search);
+            newUrl.searchParams.set('page', 1); // Reset to page 1 on search
+            window.location.href = newUrl.toString();
+          }, 500);
+        });
+      }
     });
 
-    // Search functionality
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-      searchInput.addEventListener('input', function (e) {
-        console.log('Search input changed:', e.target.value);
-        const searchTerm = e.target.value.toLowerCase();
-        filteredRestaurants = allRestaurants.filter(restaurant =>
-          restaurant.name.toLowerCase().includes(searchTerm) ||
-          restaurant.address.toLowerCase().includes(searchTerm) ||
-          restaurant.type.toLowerCase().includes(searchTerm) ||
-          restaurant.status.toLowerCase().includes(searchTerm)
-        );
-        console.log('Filtered restaurants:', filteredRestaurants.length);
-        currentPage = 1;
-        updateTable();
-      });
-    }
-
-    // Pagination functions
-    function updateTable() {
-      console.log('Updating table...');
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = Math.min(startIndex + itemsPerPage, filteredRestaurants.length);
-
-      // Update pagination info
-      const startIndexElement = document.getElementById('startIndex');
-      const endIndexElement = document.getElementById('endIndex');
-      const totalItemsElement = document.getElementById('totalItems');
-      const currentPageElement = document.getElementById('currentPage');
-      const prevPageButton = document.getElementById('prevPage');
-      const nextPageButton = document.getElementById('nextPage');
-
-      if (startIndexElement) startIndexElement.textContent = filteredRestaurants.length === 0 ? 0 : startIndex + 1;
-      if (endIndexElement) endIndexElement.textContent = endIndex;
-      if (totalItemsElement) totalItemsElement.textContent = filteredRestaurants.length;
-      if (currentPageElement) currentPageElement.textContent = `Page ${currentPage}`;
-
-      // Show/hide pagination buttons
-      if (prevPageButton) prevPageButton.disabled = currentPage === 1;
-      if (nextPageButton) nextPageButton.disabled = endIndex >= filteredRestaurants.length;
-
-      // Hide all rows first
-      allRestaurants.forEach(restaurant => {
-        restaurant.element.style.display = 'none';
-      });
-
-      // Show only the rows for the current page
-      filteredRestaurants.slice(startIndex, endIndex).forEach(restaurant => {
-        restaurant.element.style.display = '';
-      });
-
-      console.log('Table updated. Showing items', startIndex + 1, 'to', endIndex, 'of', filteredRestaurants.length);
-    }
-
-    // Pagination button event listeners
-    const prevPageButton = document.getElementById('prevPage');
-    const nextPageButton = document.getElementById('nextPage');
-
-    if (prevPageButton) {
-      prevPageButton.addEventListener('click', function () {
-        if (currentPage > 1) {
-          currentPage--;
-          updateTable();
-        }
-      });
-    }
-
-    if (nextPageButton) {
-      nextPageButton.addEventListener('click', function () {
-        const maxPage = Math.ceil(filteredRestaurants.length / itemsPerPage);
-        if (currentPage < maxPage) {
-          currentPage++;
-          updateTable();
-        }
-      });
+    function changePage(newPage) {
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.set('page', newPage);
+      window.location.href = newUrl.toString();
     }
 
     // Open Modal for adding
@@ -951,7 +977,7 @@
         document.getElementById("address").value = restaurant.address || "";
         document.getElementById("latitude").value = restaurant.latitude || "";
         document.getElementById("longitude").value = restaurant.longitude || "";
-        document.getElementById("type").value = (restaurant.type || "RESTAURANT").toLowerCase();
+        document.getElementById("type").value = restaurant.type || "RESTAURANT";
         document.getElementById("phoneNumber").value = restaurant.phoneNumber || "";
         document.getElementById("email").value = restaurant.email || "";
         document.getElementById("isActive").value = (restaurant.isActive || false).toString();
@@ -997,12 +1023,8 @@
         const latitudeValue = parseFloat(formData.get("latitude"));
         const longitudeValue = parseFloat(formData.get("longitude"));
 
-        const token = localStorage.getItem('token');
-        if (!token) {
-          alert("Vous devez être connecté pour modifier un restaurant");
-          window.location.href = '/admin/login';
-          return;
-        }
+        // NOTE: No need to check localStorage - admin uses httpOnly cookies
+        // The cookies are automatically sent with fetch requests
 
         // Extract file input
         const imageFile = formData.get("image");
@@ -1017,7 +1039,6 @@
             const uploadResponse = await fetch(storageUrl, {
               method: "POST",
               headers: {
-                'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json',
                 'X-CSRF-Token': getCSRFToken()
               },

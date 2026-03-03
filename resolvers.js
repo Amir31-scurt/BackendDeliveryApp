@@ -4,7 +4,7 @@ import { Expo } from 'expo-server-sdk';
 
 const expo = new Expo();
 
-async function sendPushNotification(userId, messageText, supabase) {
+async function sendPushNotification(userId, title, messageText, data = {}, supabase) {
   // 1. Get the user's saved push token from Supabase
   const { data: tokens, error } = await supabase
     .from('push_tokens')
@@ -16,12 +16,28 @@ async function sendPushNotification(userId, messageText, supabase) {
     return;
   }
 
-  // 2. Create the message(s)
+  // 2. Create the message(s) with Android-specific configuration
   const messages = tokens.map(({ token }) => ({
-    to: token,                     // Expo push token
+    to: token,
     sound: 'default',
-    title: 'Mise à jour de la commande',
-    body: messageText,            // e.g. "Your order is now ready"
+    title: title,
+    body: messageText,
+    data: data,
+    // Android-specific configuration for background notifications
+    priority: 'high',
+    channelId: 'default',
+    // These fields ensure the notification is displayed even when app is killed
+    android: {
+      sound: 'default',
+      priority: 'max',
+      channelId: 'default',
+      vibrate: [0, 250, 250, 250],
+      color: '#DB607E',
+    },
+    // iOS-specific configuration
+    ios: {
+      sound: 'default',
+    },
   }));
 
   // 3. Send messages using Expo SDK
@@ -867,6 +883,58 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
+
+    delivererStats: async (_, { delivererId }, { supabase }) => {
+      try {
+        // Get today's date range (start and end of day)
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0);
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+
+        // Fetch all completed orders for this deliverer
+        const { data: allOrders, error: allError } = await supabase
+          .from('orders')
+          .select('deliverer_payout, created_at')
+          .eq('deliverer_id', delivererId)
+          .eq('status', 'COMPLETED');
+
+        if (allError) {
+          console.error('Error fetching all orders:', allError);
+          throw new Error(`Error fetching orders: ${allError.message}`);
+        }
+
+        // Fetch today's completed orders for this deliverer
+        const { data: todayOrders, error: todayError } = await supabase
+          .from('orders')
+          .select('deliverer_payout')
+          .eq('deliverer_id', delivererId)
+          .eq('status', 'COMPLETED')
+          .gte('created_at', startOfDay.toISOString())
+          .lte('created_at', endOfDay.toISOString());
+
+        if (todayError) {
+          console.error('Error fetching today orders:', todayError);
+          throw new Error(`Error fetching today's orders: ${todayError.message}`);
+        }
+
+        // Calculate totals
+        const totalEarnings = (allOrders || []).reduce((sum, order) => sum + (order.deliverer_payout || 0), 0);
+        const totalDeliveries = (allOrders || []).length;
+
+        const todayEarnings = (todayOrders || []).reduce((sum, order) => sum + (order.deliverer_payout || 0), 0);
+        const todayDeliveries = (todayOrders || []).length;
+
+        return {
+          todayEarnings,
+          todayDeliveries,
+          totalEarnings,
+          totalDeliveries
+        };
+      } catch (err) {
+        console.error('Error in delivererStats query:', err);
+        throw new Error(err.message);
+      }
+    },
   },
   Mutation: {
     createUser: async (_, { input }, { supabase }) => {
@@ -1134,6 +1202,21 @@ const resolvers = {
           { p_order_id: newOrder.id }
         );
 
+        // Notify customer that order was created
+        await supabase.from('notifications').insert({
+          user_id: newOrder.user_id,
+          title: 'Commande créée',
+          body: `Votre commande #${newOrder.id} a été créée avec succès!`,
+        });
+
+        await sendPushNotification(
+          newOrder.user_id,
+          'Commande créée',
+          `Votre commande #${newOrder.id} a été créée avec succès! 🎉`,
+          { type: 'ORDER_CREATED', orderId: newOrder.id, screen: 'OrderTracking' },
+          supabase
+        );
+
         // Notify assigned deliverer if present
         if (newOrder.deliverer_id) {
           // Insert into notifications table
@@ -1146,7 +1229,9 @@ const resolvers = {
           // Send push notification
           await sendPushNotification(
             newOrder.deliverer_id,
+            'Nouvelle commande assignée',
             `Une nouvelle commande #${newOrder.id} vous a été assignée.`,
+            { type: 'NEW_ORDER', orderId: newOrder.id, screen: 'OrderDetails' },
             supabase
           );
         }
@@ -1232,7 +1317,7 @@ const resolvers = {
             body: delivererMessage,
           });
 
-          await sendPushNotification(order.deliverer_id, delivererMessage, supabase);
+          await sendPushNotification(order.deliverer_id, 'Mise à jour de commande', delivererMessage, { type: 'DELIVERER_ORDER_UPDATE', orderId: order.id, screen: 'OrderDetails' }, supabase);
         }
 
         // Insert notification in French
@@ -1242,7 +1327,7 @@ const resolvers = {
           body: `Votre commande #${order.id} est maintenant ${statusFrench}`,
         });
 
-        await sendPushNotification(order.user_id, `Votre commande est maintenant ${statusFrench}`, supabase);
+        await sendPushNotification(order.user_id, 'Mise à jour de commande', `Votre commande est maintenant ${statusFrench}`, { type: 'ORDER_UPDATE', orderId: order.id, screen: 'OrderTracking' }, supabase);
       }
 
       return order;
@@ -1289,7 +1374,7 @@ const resolvers = {
         body: `Votre commande #${order.id} a été livrée avec succès.`,
       });
 
-      await sendPushNotification(order.user_id, `Votre commande #${order.id} est livrée ✅`, supabase);
+      await sendPushNotification(order.user_id, 'Commande livrée', `Votre commande #${order.id} est livrée ✅`, { type: 'ORDER_DELIVERED', orderId: order.id, screen: 'OrderTracking' }, supabase);
 
       return updated;
     },
@@ -1334,9 +1419,56 @@ const resolvers = {
         body: `Votre commande #${order.id} a été confirmée comme livrée.`,
       });
 
-      await sendPushNotification(order.user_id, `Votre commande #${order.id} a été livrée ✅`, supabase);
+      await sendPushNotification(order.user_id, 'Commande livrée', `Votre commande #${order.id} a été livrée ✅`, { type: 'ORDER_DELIVERED', orderId: order.id, screen: 'OrderTracking' }, supabase);
 
       return updated;
+    },
+
+    deleteOrder: async (_, { id }, { supabase }) => {
+      try {
+        // First, check if the order exists and get its status
+        const { data: order, error: fetchError } = await supabase
+          .from("orders")
+          .select("id, status, user_id")
+          .eq("id", id)
+          .single();
+
+        if (fetchError || !order) {
+          throw new Error("Commande introuvable.");
+        }
+
+        // Only allow deletion of completed or cancelled orders
+        if (order.status !== "COMPLETED" && order.status !== "CANCELLED") {
+          throw new Error("Seules les commandes terminées ou annulées peuvent être supprimées.");
+        }
+
+        // Delete associated order items first (due to foreign key constraint)
+        const { error: itemsError } = await supabase
+          .from("order_items")
+          .delete()
+          .eq("order_id", id);
+
+        if (itemsError) {
+          console.error("Error deleting order items:", itemsError);
+          throw new Error("Impossible de supprimer les articles de la commande.");
+        }
+
+        // Delete the order
+        const { error: deleteError } = await supabase
+          .from("orders")
+          .delete()
+          .eq("id", id);
+
+        if (deleteError) {
+          console.error("Error deleting order:", deleteError);
+          throw new Error("Impossible de supprimer la commande.");
+        }
+
+        return true;
+      } catch (err) {
+        console.error("Error in deleteOrder mutation:", err.message);
+        throw new Error(err.message);
+      }
     },
 
     updateUser: async (_, { id, input }, { supabase }) => {
@@ -1724,6 +1856,80 @@ const resolvers = {
         throw new Error(err.message);
       }
     },
+
+    rateOrderComplete: async (_, { input }, { supabase }) => {
+      try {
+        const { orderId, restaurantRating, restaurantComment, delivererRating, delivererComment } = input;
+
+        // Get order details
+        const { data: order, error: orderError } = await supabase
+          .from('orders')
+          .select('id, user_id, restaurant_id, deliverer_id, status')
+          .eq('id', orderId)
+          .single();
+
+        if (orderError || !order) throw new Error('Commande introuvable');
+        if (order.status !== 'COMPLETED') throw new Error('Seules les commandes terminées peuvent être notées');
+
+        // Update order with both ratings
+        const { data: updated, error: updateError } = await supabase
+          .from('orders')
+          .update({
+            rating: restaurantRating,
+            note: restaurantComment,
+            deliverer_rating: delivererRating,
+            deliverer_rating_comment: delivererComment,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', orderId)
+          .select()
+          .single();
+
+        if (updateError) {
+          console.error('Error updating order ratings:', updateError);
+          throw new Error('Impossible de sauvegarder les notes');
+        }
+
+        // Optionally: Create separate deliverer_rating record if table exists
+        // This allows for detailed deliverer analytics
+        if (order.deliverer_id && delivererRating) {
+          try {
+            await supabase.from('deliverer_ratings').insert({
+              deliverer_id: order.deliverer_id,
+              order_id: orderId,
+              user_id: order.user_id,
+              rating: delivererRating,
+              comment: delivererComment
+            });
+          } catch (err) {
+            // Table might not exist yet, just log but don't fail
+            console.log('deliverer_ratings table not found, skipping separate record');
+          }
+        }
+
+        return {
+          id: updated.id,
+          restaurantId: updated.restaurant_id,
+          userId: updated.user_id,
+          totalAmount: updated.total_amount,
+          deliveryAddress: updated.delivery_address,
+          instructions: updated.instructions,
+          note: updated.note,
+          rating: updated.rating,
+          delivererRating: updated.deliverer_rating,
+          delivererRatingComment: updated.deliverer_rating_comment,
+          status: updated.status,
+          isPaid: updated.is_paid,
+          paymentMethod: updated.payment_method,
+          createdAt: updated.created_at,
+          updatedAt: updated.updated_at,
+          delivererId: updated.deliverer_id
+        };
+      } catch (err) {
+        console.error("Error in rateOrderComplete mutation:", err);
+        throw new Error(err.message);
+      }
+    },
   },
   Order: {
     user: (parent) => {
@@ -1798,6 +2004,48 @@ const resolvers = {
         isVerified: data.is_verified,
         createdAt: data.created_at,
       };
+    },
+
+    averageRating: async (parent, _, { supabase }) => {
+      try {
+        // Get all completed orders with deliverer ratings for this deliverer
+        const { data: orders, error } = await supabase
+          .from('orders')
+          .select('deliverer_rating')
+          .eq('deliverer_id', parent.user_id)
+          .eq('status', 'COMPLETED')
+          .not('deliverer_rating', 'is', null);
+
+        if (error) throw new Error(`Error fetching deliverer ratings: ${error.message}`);
+        if (!orders || orders.length === 0) return null;
+
+        const sum = orders.reduce((acc, order) => acc + (order.deliverer_rating || 0), 0);
+        const average = sum / orders.length;
+
+        return Math.round(average * 10) / 10; // Round to 1 decimal place
+      } catch (err) {
+        console.error("Error calculating deliverer average rating:", err);
+        return null;
+      }
+    },
+
+    totalRatings: async (parent, _, { supabase }) => {
+      try {
+        // Count completed orders with deliverer ratings
+        const { count, error } = await supabase
+          .from('orders')
+          .select('deliverer_rating', { count: 'exact' })
+          .eq('deliverer_id', parent.user_id)
+          .eq('status', 'COMPLETED')
+          .not('deliverer_rating', 'is', null);
+
+        if (error) throw new Error(`Error counting deliverer ratings: ${error.message}`);
+
+        return count || 0;
+      } catch (err) {
+        console.error("Error counting deliverer ratings:", err);
+        return 0;
+      }
     }
   },
 };

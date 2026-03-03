@@ -90,19 +90,20 @@
         .login-button {
             width: 100%;
             padding: 15px;
-            background-color: var(--primary-color);
+            background: linear-gradient(45deg, var(--primary-color), #c44d68);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 30px;
             font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(219, 96, 126, 0.2);
         }
 
         .login-button:hover {
-            background-color: #c44d68;
             transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(219, 96, 126, 0.3);
         }
 
         .back-link {
@@ -129,6 +130,29 @@
                 transform: translateY(0);
             }
         }
+
+        .switch-login-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .switch-login-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 5px 15px rgba(219, 96, 126, 0.2);
+        }
     </style>
 </head>
 
@@ -145,6 +169,7 @@
             </div>
             <button type="submit" class="login-button">Se connecter</button>
         </form>
+        <a href="/admin/login" class="switch-login-btn">Se connecter en tant qu'admin</a>
         <a href="/" class="back-link">Retour à l'accueil</a>
     </div>
 
