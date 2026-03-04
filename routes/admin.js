@@ -2352,6 +2352,8 @@ const resolvers = {
 const graphqlServer = new ApolloServer({
   typeDefs,
   resolvers,
+  persistedQueries: false, // Fix memory exhaustion
+  cache: "bounded",       // Use bounded cache
   context: ({ req }) => {
     // Remove the strict token requirement for now
     return {};
