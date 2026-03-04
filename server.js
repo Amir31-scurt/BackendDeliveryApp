@@ -265,6 +265,7 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   delivererResolvers,
+  persistedQueries: false,
   context: { supabase, db: supabase },
 });
 
