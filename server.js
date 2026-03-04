@@ -283,7 +283,7 @@ await server.start();
 server.applyMiddleware({ app, path: '/api/graphql' });
 
 // Health check route
-app.get("/health", (req, res) => {
+app.get("/api/health", (req, res) => {
   res.status(200).json({ 
     status: "ok", 
     timestamp: new Date().toISOString(),
@@ -292,9 +292,8 @@ app.get("/health", (req, res) => {
 });
 
 // Root route
-app.get("/", (req, res) => {
+app.get("/api", (req, res) => {
   res.render('landing', { layout: false });
-  //  res.send("Gourmet d'amour API is running");
 });
 // Admin routes with CSRF protection
 app.use("/api/admin", adminRoutes);
