@@ -2349,18 +2349,19 @@ const resolvers = {
 };
 
 // Setup ApolloServer for GraphQL
+// DISABLED: This is redundant and causes memory exhaustion on cPanel.
+// All GraphQL functionality is handled in server.js
+/*
 const graphqlServer = new ApolloServer({
   typeDefs,
   resolvers,
-  persistedQueries: false, // Fix memory exhaustion
-  cache: "bounded",       // Use bounded cache
+  persistedQueries: false, 
+  cache: "bounded",       
   context: ({ req }) => {
-    // Remove the strict token requirement for now
     return {};
   },
 });
 
-// Initialize GraphQL server
 const initGraphQL = async () => {
   try {
     await graphqlServer.start();
@@ -2371,8 +2372,8 @@ const initGraphQL = async () => {
   }
 };
 
-// Call the initialization function
 initGraphQL();
+*/
 
 // Add more routes for other admin functionalities (e.g., orders, deliverers)
 
