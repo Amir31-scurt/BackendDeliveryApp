@@ -280,7 +280,7 @@ const server = new ApolloServer({
 
 // Apply middleware to the app
 await server.start();
-server.applyMiddleware({ app });
+server.applyMiddleware({ app, path: '/api/graphql' });
 
 // Health check route
 app.get("/health", (req, res) => {
@@ -297,7 +297,7 @@ app.get("/", (req, res) => {
   //  res.send("Gourmet d'amour API is running");
 });
 // Admin routes with CSRF protection
-app.use("/admin", adminRoutes);
+app.use("/api/admin", adminRoutes);
 // Auth routes with CSRF protection
 app.use("/api/auth", authRoutes);
 // Wave routes
