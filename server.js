@@ -12,6 +12,8 @@ import helmet from "helmet";
 import csrf from 'csurf';
 import flash from "connect-flash";
 import session from "express-session";
+import pgSession from "connect-pg-simple"; // Use PostgreSQL for sessions
+import { pool } from "./db.js"; // Import existing pool
 import resolvers from "./resolvers.js";
 import { delivererResolvers } from "./resolvers/delivererResolvers.js";
 import adminRoutes from "./routes/admin.js";
@@ -100,11 +102,17 @@ const csrfProtection = csrf({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration
+const PostgresStore = pgSession(session);
+
+// Session configuration using PostgreSQL to prevent memory leaks in production
 app.use(session({
   secret: process.env.SESSION_SECRET || 'secret_key',
   resave: false,
   saveUninitialized: false,
+  store: new PostgresStore({
+    pool: pool,                // Connection pool
+    tableName: 'session'      // Use another name if you wish
+  }),
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
@@ -265,7 +273,8 @@ const server = new ApolloServer({
   typeDefs,
   resolvers,
   delivererResolvers,
-  persistedQueries: false,
+  persistedQueries: false, // Explicitly disable to save memory
+  cache: "bounded",       // Use bounded cache as recommended
   context: { supabase, db: supabase },
 });
 
