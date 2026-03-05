@@ -295,8 +295,8 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Root route
-app.get("/api", (req, res) => {
+// Root routes
+app.get(["/", "/api"], (req, res) => {
   res.render('landing', { layout: false });
 });
 // Admin routes with CSRF protection
