@@ -7,12 +7,12 @@ dotenv.config();
 export const authMiddleware = async (req, res, next) => {
   try {
     // Skip authentication for login page and login POST request
-    if (req.originalUrl === '/admin/login' || req.originalUrl.startsWith('/admin/login')) {
+    if (req.originalUrl.includes('/admin/login')) {
       return next();
     }
 
-    // Skip CSRF check for API routes and deliverer routes (used by mobile app and admin interface)
-    if (req.originalUrl.startsWith('/api/')) {
+    // Skip CSRF check for deliverer routes and API routes (non-admin)
+    if (req.originalUrl.startsWith('/api/') && !req.originalUrl.includes('/admin')) {
       const authHeader = req.headers.authorization;
       if (!authHeader) {
         return res.status(401).json({ error: "Authorization header must be provided" });
@@ -52,7 +52,8 @@ export const authMiddleware = async (req, res, next) => {
 
       if (!token) {
         console.log("No token found for page render, redirecting to login");
-        return res.redirect('/admin/login/restaurant');
+        const loginPath = req.originalUrl.includes('/api/') ? '/api/admin/login/restaurant' : '/admin/login/restaurant';
+        return res.redirect(loginPath);
       }
 
       try {
@@ -64,7 +65,8 @@ export const authMiddleware = async (req, res, next) => {
         return next();
       } catch (err) {
         console.log("Invalid token for page render, redirecting to login");
-        return res.redirect('/admin/login/restaurant');
+        const loginPath = req.originalUrl.includes('/api/') ? '/api/admin/login/restaurant' : '/admin/login/restaurant';
+        return res.redirect(loginPath);
       }
     }
 
@@ -81,7 +83,8 @@ export const authMiddleware = async (req, res, next) => {
       if (req.xhr || req.headers.accept?.includes('application/json')) {
         return res.status(401).json({ error: "Authentication token must be provided" });
       }
-      return res.redirect('/admin/login');
+      const loginBase = req.originalUrl.includes('/api/') ? '/api/admin/login' : '/admin/login';
+      return res.redirect(loginBase);
     }
 
     try {
@@ -98,7 +101,8 @@ export const authMiddleware = async (req, res, next) => {
         }
         return res.status(401).json({ error: "Invalid token" });
       }
-       return res.redirect('/admin/login');
+      const loginBase = req.originalUrl.includes('/api/') ? '/api/admin/login' : '/admin/login';
+      return res.redirect(loginBase);
     }
   } catch (error) {
     console.error("Auth middleware error:", error);

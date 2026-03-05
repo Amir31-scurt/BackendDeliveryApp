@@ -145,17 +145,17 @@ app.set("views", path.join(__dirname, "views"));
 // Apply CSRF protection to all routes except GraphQL, and mobile API routes
 app.use((req, res, next) => {
   const path = req.path;
-  const isGraphQL = path === '/graphql' || path === '/api/graphql';
-  const isMobileApi = path.startsWith('/api/auth'); // Auth is primarily for mobile
-  const isStorage = path.startsWith('/storage/');
-  const isHealth = path === '/api/health' || path === '/health';
-  const isWave = path.includes('/wave'); // Wave payment webhooks/calls usually don't need SCRF
+  const isGraphQL = path.includes('/graphql');
+  const isMobileApi = path.includes('/auth') && !path.includes('/admin'); // Auth is for mobile, Admin has its own auth
+  const isStorage = path.startsWith('/storage/') || path.includes('/uploads/');
+  const isHealth = path.includes('/health');
+  const isWave = path.includes('/wave');
 
   if (isGraphQL || isMobileApi || isStorage || isHealth || isWave) {
     return next();
   }
 
-  // Admin and other browser routes should have CSRF
+  // Admin panel and other browser-based routes should have CSRF protection
   csrfProtection(req, res, next);
 });
 
@@ -292,8 +292,8 @@ const server = new ApolloServer({
 await server.start();
 server.applyMiddleware({ app, path: '/api/graphql' });
 
-// Health check route
-app.get("/api/health", (req, res) => {
+// Health check route - available at both paths
+app.get(["/health", "/api/health"], (req, res) => {
   res.status(200).json({ 
     status: "ok", 
     timestamp: new Date().toISOString(),
@@ -305,10 +305,11 @@ app.get("/api/health", (req, res) => {
 app.get(["/", "/api", "/index.html", "/api/index.html"], (req, res) => {
   res.render('landing', { layout: false });
 });
-// Admin routes with CSRF protection
-app.use("/api/admin", adminRoutes);
-// Auth routes with CSRF protection
-app.use("/api/auth", authRoutes);
+// Admin routes - mount at both to support hardcoded /admin links and /api/admin entry points
+app.use(["/admin", "/api/admin"], adminRoutes);
+
+// Auth routes - mount at both
+app.use(["/auth", "/api/auth"], authRoutes);
 // Wave routes
 app.use(wavePaymentsRouter);
 app.use(payoutStatusRouter);
