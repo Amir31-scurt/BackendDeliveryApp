@@ -136,16 +136,20 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
 
-// Apply CSRF protection to all routes except GraphQL, API routes, and admin routes
+// Apply CSRF protection to all routes except GraphQL, and mobile API routes
 app.use((req, res, next) => {
-  if (
-    req.path === '/graphql' ||
-    req.path.startsWith('/api/') ||
-    req.path.startsWith('/admin/deliverers/') ||
-    req.path.startsWith('/storage/')
-  ) {
+  const path = req.path;
+  const isGraphQL = path === '/graphql' || path === '/api/graphql';
+  const isMobileApi = path.startsWith('/api/auth'); // Auth is primarily for mobile
+  const isStorage = path.startsWith('/storage/');
+  const isHealth = path === '/api/health' || path === '/health';
+  const isWave = path.includes('/wave'); // Wave payment webhooks/calls usually don't need SCRF
+
+  if (isGraphQL || isMobileApi || isStorage || isHealth || isWave) {
     return next();
   }
+
+  // Admin and other browser routes should have CSRF
   csrfProtection(req, res, next);
 });
 
