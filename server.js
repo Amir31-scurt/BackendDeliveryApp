@@ -31,6 +31,12 @@ const __dirname = path.resolve();
 
 const app = express();
 
+// Request logger for troubleshooting production routes
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  next();
+});
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -295,8 +301,8 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// Root routes
-app.get(["/", "/api"], (req, res) => {
+// Root routes - Handle various ways cPanel/browsers might land here
+app.get(["/", "/api", "/index.html", "/api/index.html"], (req, res) => {
   res.render('landing', { layout: false });
 });
 // Admin routes with CSRF protection
