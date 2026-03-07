@@ -150,8 +150,9 @@ app.use((req, res, next) => {
   const isStorage = path.startsWith('/storage/') || path.includes('/uploads/');
   const isHealth = path.includes('/health');
   const isWave = path.includes('/wave');
+  const isPushToken = path.includes('/push-token');
 
-  if (isGraphQL || isMobileApi || isStorage || isHealth || isWave) {
+  if (isGraphQL || isMobileApi || isStorage || isHealth || isWave || isPushToken) {
     return next();
   }
 
