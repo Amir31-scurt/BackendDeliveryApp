@@ -451,16 +451,23 @@ const resolvers = {
       }));
     },
     allMenuItems: async (_, __, { supabase }) => {
-      const { data, error } = await supabase.from("menu_items").select("*");
-      if (error) throw new Error(error.message);
+      try {
+        const { data, error } = await supabase.from("menu_items").select("*");
+        if (error) throw new Error(error.message);
 
-      return data.map((menuItem) => ({
-        ...menuItem,
-        restaurantId: menuItem.restaurant_id,
-        createdAt: menuItem.created_at || "Not provided",
-        updatedAt: menuItem.updated_at || "Not provided",
-        imageUrl: menuItem.image_url || null,
-      }));
+        return (data || []).map((menuItem) => ({
+          ...menuItem,
+          restaurantId: menuItem.restaurant_id,
+          createdAt: menuItem.created_at || "Not provided",
+          updatedAt: menuItem.updated_at || "Not provided",
+          imageUrl: menuItem.image_url || null,
+          category: menuItem.category || "Non classifié",
+          isAvailable: menuItem.is_available !== undefined ? menuItem.is_available : true,
+        }));
+      } catch (err) {
+        console.error("Error in allMenuItems:", err);
+        return [];
+      }
     },
     menuItem: async (_, { id }, { supabase }) => {
       try {
