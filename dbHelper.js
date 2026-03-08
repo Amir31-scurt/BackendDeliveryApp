@@ -35,6 +35,11 @@ class QueryBuilder {
         return this;
     }
 
+    not(column, operator, value) {
+        this.whereConditions[`${column}__not__${operator}`] = value;
+        return this;
+    }
+
     order(column, options = {}) {
         const ascending = options.ascending !== false;
         this.orderBy = `${column} ${ascending ? 'ASC' : 'DESC'}`;
@@ -92,6 +97,26 @@ class QueryBuilder {
                     const column = key.replace('__ilike', '');
                     clauses.push(`${column} ILIKE $${paramCount++}`);
                     params.push(value);
+                } else if (key.includes('__not__')) {
+                    const parts = key.split('__not__');
+                    const column = parts[0];
+                    const op = parts[1];
+                    if (op === 'is' && (value === null || value === 'null')) {
+                        clauses.push(`${column} IS NOT NULL`);
+                    } else if (op === 'eq') {
+                        clauses.push(`${column} != $${paramCount++}`);
+                        params.push(value);
+                    } else if (op === 'in') {
+                        if (Array.isArray(value) && value.length > 0) {
+                            const placeholders = value.map(() => `$${paramCount++}`).join(', ');
+                            clauses.push(`${column} NOT IN (${placeholders})`);
+                            params.push(...value);
+                        }
+                    } else {
+                        // Default fallback for other operators if needed
+                        clauses.push(`${column} != $${paramCount++}`);
+                        params.push(value);
+                    }
                 } else {
                     clauses.push(`${key} = $${paramCount++}`);
                     params.push(value);
@@ -154,43 +179,72 @@ class QueryBuilder {
         const result = await query(sql, params);
 
         // Handle count option
-        if (this.countOption === 'exact' && this.headOption) {
+        if (this.countOption === 'exact') {
             let countSql = `SELECT COUNT(*) as count FROM ${this.tableName}`;
             const countParams = [];
             let countParamCount = 1;
 
-            if (clauses.length > 0) {
-                const countClauses = [];
-                for (const [key, value] of Object.entries(this.whereConditions)) {
-                    if (value !== undefined && value !== null) {
-                        if (key.endsWith('__neq')) {
-                            const column = key.replace('__neq', '');
+            // Build WHERE clause for count (consistent with main query)
+            const countClauses = [];
+            for (const [key, value] of Object.entries(this.whereConditions)) {
+                if (value !== undefined && value !== null) {
+                    if (key.endsWith('__neq')) {
+                        const column = key.replace('__neq', '');
+                        countClauses.push(`${column} != $${countParamCount++}`);
+                        countParams.push(value);
+                    } else if (key.endsWith('__in')) {
+                        const column = key.replace('__in', '');
+                        if (Array.isArray(value) && value.length > 0) {
+                            const placeholders = value.map(() => `$${countParamCount++}`).join(', ');
+                            countClauses.push(`${column} IN (${placeholders})`);
+                            countParams.push(...value);
+                        }
+                    } else if (key.endsWith('__ilike')) {
+                        const column = key.replace('__ilike', '');
+                        countClauses.push(`${column} ILIKE $${countParamCount++}`);
+                        countParams.push(value);
+                    } else if (key.includes('__not__')) {
+                        const parts = key.split('__not__');
+                        const column = parts[0];
+                        const op = parts[1];
+                        if (op === 'is' && (value === null || value === 'null')) {
+                            countClauses.push(`${column} IS NOT NULL`);
+                        } else if (op === 'eq') {
                             countClauses.push(`${column} != $${countParamCount++}`);
                             countParams.push(value);
-                        } else if (key.endsWith('__in')) {
-                            const column = key.replace('__in', '');
+                        } else if (op === 'in') {
                             if (Array.isArray(value) && value.length > 0) {
                                 const placeholders = value.map(() => `$${countParamCount++}`).join(', ');
-                                countClauses.push(`${column} IN (${placeholders})`);
+                                countClauses.push(`${column} NOT IN (${placeholders})`);
                                 countParams.push(...value);
                             }
-                        } else {
-                            countClauses.push(`${key} = $${countParamCount++}`);
-                            countParams.push(value);
                         }
+                    } else {
+                        countClauses.push(`${key} = $${countParamCount++}`);
+                        countParams.push(value);
                     }
-                }
-                if (countClauses.length > 0) {
-                    countSql += ` WHERE ${countClauses.join(' AND ')}`;
                 }
             }
 
+            if (countClauses.length > 0) {
+                countSql += ` WHERE ${countClauses.join(' AND ')}`;
+            }
+
             const countResult = await query(countSql, countParams);
-            return {
-                data: null,
-                error: result.error,
-                count: parseInt(countResult.data?.[0]?.count || 0)
-            };
+            const totalCount = parseInt(countResult.data?.[0]?.count || 0);
+
+            if (this.headOption) {
+                return {
+                    data: null,
+                    error: result.error,
+                    count: totalCount
+                };
+            } else {
+                return {
+                    ...result,
+                    count: totalCount
+                };
+            }
         }
 
         return result;
