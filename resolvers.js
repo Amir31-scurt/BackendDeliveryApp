@@ -1195,6 +1195,9 @@ const resolvers = {
           return total + itemPrice * item.quantity;
         }, 0);
 
+        // Generate a random 6-digit delivery token
+        const deliveryToken = Math.floor(100000 + Math.random() * 900000).toString();
+
         const { data: newOrder, error: orderError } = await supabase
           .from("orders")
           .insert([
@@ -1208,6 +1211,7 @@ const resolvers = {
               is_paid: input.isPaid || false,
               payment_method: input.paymentMethod || "CASH",
               deliverer_id: input.delivererId || null,
+              delivery_token: deliveryToken,
             },
           ])
           .select()
