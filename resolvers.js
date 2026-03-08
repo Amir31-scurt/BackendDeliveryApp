@@ -79,8 +79,8 @@ const transformRestaurantData = (restaurant) => {
     phoneNumber: restaurant.phone_number,
     imageUrl: restaurant.image_url,
     isActive: restaurant.is_active,
-    createdAt: restaurant.created_at,
-    updatedAt: restaurant.updated_at,
+    createdAt: restaurant.created_at ? new Date(restaurant.created_at).toISOString() : null,
+    updatedAt: restaurant.updated_at ? new Date(restaurant.updated_at).toISOString() : null,
     distance: restaurant.distance,
     openingHours: {
       monday: openingHours?.monday || { open: "09:00", close: "22:00" },
@@ -105,7 +105,7 @@ const resolvers = {
         ...user,
         name: user.name || "Not provided", // Fallback value
         phoneNumber: user.phone_number || "Not provided", // Fallback value
-        createdAt: user.created_at || "Not provided", // Fallback value
+        createdAt: user.created_at ? new Date(user.created_at).toISOString() : "Not provided", // Fallback value
         isVerified: user.is_verified,
         role: user.role || "Not provided", // Fallback value
       }));
@@ -131,7 +131,7 @@ const resolvers = {
         phoneNumber: data.phone_number,
         role: data.role,
         isVerified: data.is_verified,
-        createdAt: data.created_at,
+        createdAt: data.created_at ? new Date(data.created_at).toISOString() : null,
       };
     },
     deliverer: async (_, { userId }, { supabase }) => {
@@ -232,8 +232,8 @@ const resolvers = {
           return {
             ...restaurant,
             phoneNumber: restaurant.phone_number || "Not provided",
-            createdAt: restaurant.created_at || "Not provided",
-            updatedAt: restaurant.updated_at || "Not provided",
+            createdAt: restaurant.created_at ? new Date(restaurant.created_at).toISOString() : "Not provided",
+            updatedAt: restaurant.updated_at ? new Date(restaurant.updated_at).toISOString() : "Not provided",
             isActive: restaurant.is_active,
             rating: averageRating,
             totalRatings: validRatings.length,
@@ -305,7 +305,7 @@ const resolvers = {
           userId: order.user_id,
           rating: order.rating,
           userName: userMap[order.user_id] || "Utilisateur inconnu",
-          createdAt: order.created_at
+          createdAt: order.created_at ? new Date(order.created_at).toISOString() : null
         }));
 
       if (!data.opening_hours) {
@@ -328,8 +328,8 @@ const resolvers = {
         phoneNumber: data.phone_number || "Not provided",
         imageUrl: data.image_url || null,
         isActive: data.is_active,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
+        createdAt: data.created_at ? new Date(data.created_at).toISOString() : null,
+        updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : null,
       };
     },
 
@@ -413,7 +413,7 @@ const resolvers = {
               userId: order.user_id,
               rating: order.rating,
               userName: userMap[order.user_id] || "Utilisateur inconnu",
-              createdAt: order.created_at
+              createdAt: order.created_at ? new Date(order.created_at).toISOString() : null
             }));
 
           return {
@@ -450,8 +450,8 @@ const resolvers = {
           name: menuItem.name || "Menu sans nom",
           category: menuItem.category || "Non classifié",
           restaurantId: menuItem.restaurant_id,
-          createdAt: menuItem.created_at || "Not provided",
-          updatedAt: menuItem.updated_at || "Not provided",
+          createdAt: menuItem.created_at ? new Date(menuItem.created_at).toISOString() : "Not provided",
+          updatedAt: menuItem.updated_at ? new Date(menuItem.updated_at).toISOString() : "Not provided",
           imageUrl: menuItem.image_url || null,
           isAvailable: menuItem.is_available !== undefined ? menuItem.is_available : true,
         }));
@@ -827,7 +827,7 @@ const resolvers = {
           status: x.status,
           errorCode: x.error_code,
           errorMessage: x.error_message,
-          createdAt: x.created_at
+          createdAt: x.created_at ? new Date(x.created_at).toISOString() : null
         }));
       } catch (error) {
         console.error("Error in payoutItems query:", error);
@@ -883,8 +883,8 @@ const resolvers = {
             } : null,
             rating: rating.rating,
             comment: rating.comment,
-            createdAt: rating.created_at,
-            updatedAt: rating.updated_at
+            createdAt: rating.created_at ? new Date(rating.created_at).toISOString() : null,
+            updatedAt: rating.updated_at ? new Date(rating.updated_at).toISOString() : null
           };
         });
       } catch (err) {
@@ -911,8 +911,8 @@ const resolvers = {
           userId: data.user_id,
           rating: data.rating,
           comment: data.comment,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at
+          createdAt: data.created_at ? new Date(data.created_at).toISOString() : null,
+          updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : null
         };
       } catch (err) {
         console.error("Error in userRestaurantRating query:", err);
@@ -1105,8 +1105,8 @@ const resolvers = {
       return {
         ...data,
         imageUrl: data.image_url || "Not provided", // Fallback value
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
+        createdAt: data.created_at ? new Date(data.created_at).toISOString() : null,
+        updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : null,
       };
     },
     updateMenuItem: async (_, { id, input }, { supabase }) => {
@@ -1147,8 +1147,8 @@ const resolvers = {
           restaurantId: data.restaurant_id,
           imageUrl: data.image_url,
           isAvailable: data.is_available,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at
+          createdAt: data.created_at ? new Date(data.created_at).toISOString() : null,
+          updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : null
         };
       } catch (error) {
         console.error(`Error in updateMenuItem: ${error.message}`);
@@ -1537,7 +1537,7 @@ const resolvers = {
       return {
         ...data,
         phoneNumber: data.phone_number,
-        createdAt: data.created_at,
+        createdAt: data.created_at ? new Date(data.created_at).toISOString() : null,
         profilePicture: data.profile_picture,
       };
     },
@@ -1563,7 +1563,7 @@ const resolvers = {
           title: data.title,
           body: data.body,
           read: data.read,
-          createdAt: data.created_at
+          createdAt: data.created_at ? new Date(data.created_at).toISOString() : null
         };
       } catch (err) {
         console.error("Error marking notification as read:", err);
@@ -1714,8 +1714,8 @@ const resolvers = {
           userId: data.user_id,
           rating: data.rating,
           comment: data.comment,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at
+          createdAt: data.created_at ? new Date(data.created_at).toISOString() : null,
+          updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : null
         };
       } catch (err) {
         console.error("Error in addRestaurantRating mutation:", err);
@@ -1744,8 +1744,8 @@ const resolvers = {
           userId: data.user_id,
           rating: data.rating,
           comment: data.comment,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at
+          createdAt: data.created_at ? new Date(data.created_at).toISOString() : null,
+          updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : null
         };
       } catch (err) {
         console.error("Error in updateRestaurantRating mutation:", err);
@@ -1792,8 +1792,8 @@ const resolvers = {
           status: data.status,
           isPaid: data.is_paid,
           paymentMethod: data.payment_method,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
+          createdAt: data.created_at ? new Date(data.created_at).toISOString() : null,
+          updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : null,
           delivererId: data.deliverer_id
         };
       } catch (err) {
@@ -1839,8 +1839,8 @@ const resolvers = {
           status: data.status,
           isPaid: data.is_paid,
           paymentMethod: data.payment_method,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
+          createdAt: data.created_at ? new Date(data.created_at).toISOString() : null,
+          updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : null,
           delivererId: data.deliverer_id
         };
       } catch (err) {
@@ -1887,8 +1887,8 @@ const resolvers = {
           status: data.status,
           isPaid: data.is_paid,
           paymentMethod: data.payment_method,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
+          createdAt: data.created_at ? new Date(data.created_at).toISOString() : null,
+          updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : null,
           delivererId: data.deliverer_id
         };
       } catch (err) {
@@ -1961,8 +1961,8 @@ const resolvers = {
           status: updated.status,
           isPaid: updated.is_paid,
           paymentMethod: updated.payment_method,
-          createdAt: updated.created_at,
-          updatedAt: updated.updated_at,
+          createdAt: updated.created_at ? new Date(updated.created_at).toISOString() : null,
+          updatedAt: updated.updated_at ? new Date(updated.updated_at).toISOString() : null,
           delivererId: updated.deliverer_id
         };
       } catch (err) {
@@ -1977,7 +1977,7 @@ const resolvers = {
       return {
         ...parent.user,
         phoneNumber: parent.user.phoneNumber || parent.user.phone_number || "Not provided",
-        createdAt: parent.user.created_at,
+        createdAt: parent.user.created_at ? new Date(parent.user.created_at).toISOString() : null,
       };
     },
     rating: (parent) => parent.rating || null
@@ -2042,7 +2042,7 @@ const resolvers = {
         phoneNumber: data.phone_number,
         role: data.role,
         isVerified: data.is_verified,
-        createdAt: data.created_at,
+        createdAt: data.created_at ? new Date(data.created_at).toISOString() : null,
       };
     },
 
