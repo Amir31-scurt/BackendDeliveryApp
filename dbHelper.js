@@ -11,6 +11,9 @@ class QueryBuilder {
         this.offsetValue = null;
         this.countOption = null;
         this.headOption = false;
+        this.action = 'select'; // select, insert, update, delete
+        this.actionData = null;
+        this.orFilters = [];
     }
 
     select(columns = '*', options = {}) {
@@ -70,16 +73,22 @@ class QueryBuilder {
     }
 
     async execute() {
-        const selectClause = Array.isArray(this.columns)
-            ? this.columns.join(', ')
-            : (this.columns === '*' ? '*' : this.columns);
+        if (this.action === 'select') {
+            return this._executeSelect();
+        } else if (this.action === 'insert') {
+            return this._executeInsert();
+        } else if (this.action === 'update') {
+            return this._executeUpdate();
+        } else if (this.action === 'delete') {
+            return this._executeDelete();
+        }
+    }
 
-        let sql = `SELECT ${selectClause} FROM ${this.tableName}`;
-        const params = [];
-        let paramCount = 1;
-
-        // Build WHERE clause
+    _buildWhere(startParamCount = 1) {
         const clauses = [];
+        const params = [];
+        let paramCount = startParamCount;
+
         for (const [key, value] of Object.entries(this.whereConditions)) {
             if (value !== undefined && value !== null) {
                 if (key.endsWith('__neq')) {
@@ -112,10 +121,6 @@ class QueryBuilder {
                             clauses.push(`${column} NOT IN (${placeholders})`);
                             params.push(...value);
                         }
-                    } else {
-                        // Default fallback for other operators if needed
-                        clauses.push(`${column} != $${paramCount++}`);
-                        params.push(value);
                     }
                 } else {
                     clauses.push(`${key} = $${paramCount++}`);
@@ -124,11 +129,10 @@ class QueryBuilder {
             }
         }
 
-        // Handle OR filters (from .or() calls) - parse Supabase-style filter strings
+        // Handle OR filters
         if (this.orFilters && this.orFilters.length > 0) {
             const orClauses = [];
             for (const filterStr of this.orFilters) {
-                // Parse patterns like "name.ilike.%foo%,address.ilike.%foo%"
                 const parts = filterStr.split(',');
                 const parsedParts = parts.map(part => {
                     const segments = part.trim().split('.');
@@ -155,22 +159,31 @@ class QueryBuilder {
             }
         }
 
+        return { clauses, params, nextParamCount: paramCount };
+    }
+
+    async _executeSelect() {
+        const selectClause = Array.isArray(this.columns)
+            ? this.columns.join(', ')
+            : (this.columns === '*' ? '*' : this.columns);
+
+        let sql = `SELECT ${selectClause} FROM ${this.tableName}`;
+        const { clauses, params, nextParamCount } = this._buildWhere(1);
+        let paramCount = nextParamCount;
+
         if (clauses.length > 0) {
             sql += ` WHERE ${clauses.join(' AND ')}`;
         }
 
-        // Handle order by
         if (this.orderBy) {
             sql += ` ORDER BY ${this.orderBy}`;
         }
 
-        // Handle limit
         if (this.limitValue) {
             sql += ` LIMIT $${paramCount++}`;
             params.push(this.limitValue);
         }
 
-        // Handle offset
         if (this.offsetValue) {
             sql += ` OFFSET $${paramCount++}`;
             params.push(this.offsetValue);
@@ -178,53 +191,9 @@ class QueryBuilder {
 
         const result = await query(sql, params);
 
-        // Handle count option
         if (this.countOption === 'exact') {
             let countSql = `SELECT COUNT(*) as count FROM ${this.tableName}`;
-            const countParams = [];
-            let countParamCount = 1;
-
-            // Build WHERE clause for count (consistent with main query)
-            const countClauses = [];
-            for (const [key, value] of Object.entries(this.whereConditions)) {
-                if (value !== undefined && value !== null) {
-                    if (key.endsWith('__neq')) {
-                        const column = key.replace('__neq', '');
-                        countClauses.push(`${column} != $${countParamCount++}`);
-                        countParams.push(value);
-                    } else if (key.endsWith('__in')) {
-                        const column = key.replace('__in', '');
-                        if (Array.isArray(value) && value.length > 0) {
-                            const placeholders = value.map(() => `$${countParamCount++}`).join(', ');
-                            countClauses.push(`${column} IN (${placeholders})`);
-                            countParams.push(...value);
-                        }
-                    } else if (key.endsWith('__ilike')) {
-                        const column = key.replace('__ilike', '');
-                        countClauses.push(`${column} ILIKE $${countParamCount++}`);
-                        countParams.push(value);
-                    } else if (key.includes('__not__')) {
-                        const parts = key.split('__not__');
-                        const column = parts[0];
-                        const op = parts[1];
-                        if (op === 'is' && (value === null || value === 'null')) {
-                            countClauses.push(`${column} IS NOT NULL`);
-                        } else if (op === 'eq') {
-                            countClauses.push(`${column} != $${countParamCount++}`);
-                            countParams.push(value);
-                        } else if (op === 'in') {
-                            if (Array.isArray(value) && value.length > 0) {
-                                const placeholders = value.map(() => `$${countParamCount++}`).join(', ');
-                                countClauses.push(`${column} NOT IN (${placeholders})`);
-                                countParams.push(...value);
-                            }
-                        }
-                    } else {
-                        countClauses.push(`${key} = $${countParamCount++}`);
-                        countParams.push(value);
-                    }
-                }
-            }
+            const { clauses: countClauses, params: countParams } = this._buildWhere(1);
 
             if (countClauses.length > 0) {
                 countSql += ` WHERE ${countClauses.join(' AND ')}`;
@@ -234,16 +203,9 @@ class QueryBuilder {
             const totalCount = parseInt(countResult.data?.[0]?.count || 0);
 
             if (this.headOption) {
-                return {
-                    data: null,
-                    error: result.error,
-                    count: totalCount
-                };
+                return { data: null, error: result.error, count: totalCount };
             } else {
-                return {
-                    ...result,
-                    count: totalCount
-                };
+                return { ...result, count: totalCount };
             }
         }
 
@@ -251,15 +213,26 @@ class QueryBuilder {
     }
 
     async single() {
-        this.limitValue = 1;
+        // For selects, we can optimize with LIMIT 1
+        if (this.action === 'select') {
+            this.limitValue = 1;
+        }
+        
         const result = await this.execute();
         return {
-            data: result.data?.[0] || null,
+            data: (Array.isArray(result.data) ? result.data[0] : result.data) || null,
             error: result.error
         };
     }
 
-    async insert(data, options = {}) {
+    insert(data) {
+        this.action = 'insert';
+        this.actionData = data;
+        return this;
+    }
+
+    async _executeInsert() {
+        const data = this.actionData;
         const isArray = Array.isArray(data);
         const records = isArray ? data : [data];
 
@@ -274,31 +247,34 @@ class QueryBuilder {
         }).join(', ');
 
         const values = records.flatMap(record => keys.map(key => {
-            // Handle JSONB fields
             if (typeof record[key] === 'object' && record[key] !== null && !Array.isArray(record[key])) {
                 return JSON.stringify(record[key]);
             }
             return record[key];
         }));
 
-        const returning = options.returning || '*';
-        const sql = `INSERT INTO ${this.tableName} (${keys.join(', ')}) VALUES ${placeholders} RETURNING ${returning}`;
-
+        const sql = `INSERT INTO ${this.tableName} (${keys.join(', ')}) VALUES ${placeholders} RETURNING *`;
         const result = await query(sql, values);
         return {
-            data: isArray ? result.data : (result.data?.[0] || null),
+            data: result.data,
             error: result.error
         };
     }
 
-    async update(data) {
+    update(data) {
+        this.action = 'update';
+        this.actionData = data;
+        return this;
+    }
+
+    async _executeUpdate() {
+        const data = this.actionData;
         const keys = Object.keys(data).filter(k => k !== 'id');
         if (keys.length === 0) {
             return { data: null, error: new Error('No fields to update') };
         }
 
         const setClause = keys.map((key, idx) => {
-            // Handle JSONB fields
             if (typeof data[key] === 'object' && data[key] !== null && !Array.isArray(data[key])) {
                 return `${key} = $${idx + 1}::jsonb`;
             }
@@ -312,73 +288,34 @@ class QueryBuilder {
             return data[key];
         });
 
-        // Build WHERE clause from whereConditions
-        const whereClauses = [];
-        let paramCount = keys.length + 1;
-        for (const [key, value] of Object.entries(this.whereConditions)) {
-            if (value !== undefined && value !== null) {
-                if (key.endsWith('__neq')) {
-                    const column = key.replace('__neq', '');
-                    whereClauses.push(`${column} != $${paramCount++}`);
-                    values.push(value);
-                } else if (key.endsWith('__in')) {
-                    const column = key.replace('__in', '');
-                    if (Array.isArray(value) && value.length > 0) {
-                        const placeholders = value.map(() => `$${paramCount++}`).join(', ');
-                        whereClauses.push(`${column} IN (${placeholders})`);
-                        values.push(...value);
-                    }
-                } else {
-                    whereClauses.push(`${key} = $${paramCount++}`);
-                    values.push(value);
-                }
-            }
-        }
+        const { clauses, params } = this._buildWhere(keys.length + 1);
+        values.push(...params);
 
-        if (whereClauses.length === 0) {
+        if (clauses.length === 0) {
             return { data: null, error: new Error('Update requires WHERE conditions') };
         }
 
-        const sql = `UPDATE ${this.tableName} SET ${setClause} WHERE ${whereClauses.join(' AND ')} RETURNING *`;
-
+        const sql = `UPDATE ${this.tableName} SET ${setClause} WHERE ${clauses.join(' AND ')} RETURNING *`;
         const result = await query(sql, values);
         return {
-            data: result.data?.[0] || null,
+            data: result.data,
             error: result.error
         };
     }
 
-    async delete() {
-        // Build WHERE clause from whereConditions
-        const whereClauses = [];
-        const params = [];
-        let paramCount = 1;
+    delete() {
+        this.action = 'delete';
+        return this;
+    }
 
-        for (const [key, value] of Object.entries(this.whereConditions)) {
-            if (value !== undefined && value !== null) {
-                if (key.endsWith('__neq')) {
-                    const column = key.replace('__neq', '');
-                    whereClauses.push(`${column} != $${paramCount++}`);
-                    params.push(value);
-                } else if (key.endsWith('__in')) {
-                    const column = key.replace('__in', '');
-                    if (Array.isArray(value) && value.length > 0) {
-                        const placeholders = value.map(() => `$${paramCount++}`).join(', ');
-                        whereClauses.push(`${column} IN (${placeholders})`);
-                        params.push(...value);
-                    }
-                } else {
-                    whereClauses.push(`${key} = $${paramCount++}`);
-                    params.push(value);
-                }
-            }
-        }
+    async _executeDelete() {
+        const { clauses, params } = this._buildWhere(1);
 
-        if (whereClauses.length === 0) {
+        if (clauses.length === 0) {
             return { data: null, error: new Error('Delete requires WHERE conditions') };
         }
 
-        const sql = `DELETE FROM ${this.tableName} WHERE ${whereClauses.join(' AND ')} RETURNING *`;
+        const sql = `DELETE FROM ${this.tableName} WHERE ${clauses.join(' AND ')} RETURNING *`;
         const result = await query(sql, params);
         return { data: result.data, error: result.error };
     }
