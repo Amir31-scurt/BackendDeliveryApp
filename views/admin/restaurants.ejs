@@ -820,7 +820,7 @@
       // We rely on the httpOnly cookie 'token' set by the server. 
       // The auth middleware checks cookies if the Authorization header is missing.
 
-      const response = await fetch("/graphql", {
+      const response = await fetch("/api/graphql", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -965,7 +965,7 @@
     function openEditModal(restaurant) {
       try {
         isEditMode = true;
-        
+
 
         document.getElementById("modalTitle").textContent = "Modifier le Restaurant";
         document.getElementById("submitButton").textContent = "Mettre à jour";

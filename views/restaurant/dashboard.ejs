@@ -1258,7 +1258,7 @@
         // Function to make GraphQL requests
         async function makeGraphQLRequest(query, variables = {}) {
             // NOTE: No need to check localStorage - cookies are sent automatically
-            const response = await fetch("/graphql", {
+            const response = await fetch("/api/graphql", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
