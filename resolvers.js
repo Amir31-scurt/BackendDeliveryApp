@@ -66,45 +66,32 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 // Helper function to transform restaurant data
-const transformRestaurantData = (restaurant) => ({
-  ...restaurant,
-  phoneNumber: restaurant.phone_number,
-  imageUrl: restaurant.image_url,
-  isActive: restaurant.is_active,
-  createdAt: restaurant.created_at,
-  updatedAt: restaurant.updated_at,
-  distance: restaurant.distance,
-  openingHours: {
-    monday: restaurant.opening_hours?.monday || {
-      open: "09:00",
-      close: "22:00",
+const transformRestaurantData = (restaurant) => {
+  // cPanel PostgreSQL may return JSONB columns as strings - parse them if needed
+  let openingHours = restaurant.opening_hours;
+  if (typeof openingHours === 'string') {
+    try { openingHours = JSON.parse(openingHours); } catch { openingHours = null; }
+  }
+
+  return {
+    ...restaurant,
+    phoneNumber: restaurant.phone_number,
+    imageUrl: restaurant.image_url,
+    isActive: restaurant.is_active,
+    createdAt: restaurant.created_at,
+    updatedAt: restaurant.updated_at,
+    distance: restaurant.distance,
+    openingHours: {
+      monday: openingHours?.monday || { open: "09:00", close: "22:00" },
+      tuesday: openingHours?.tuesday || { open: "09:00", close: "22:00" },
+      wednesday: openingHours?.wednesday || { open: "09:00", close: "22:00" },
+      thursday: openingHours?.thursday || { open: "09:00", close: "22:00" },
+      friday: openingHours?.friday || { open: "09:00", close: "22:00" },
+      saturday: openingHours?.saturday || { open: "09:00", close: "22:00" },
+      sunday: openingHours?.sunday || { open: "09:00", close: "22:00" },
     },
-    tuesday: restaurant.opening_hours?.tuesday || {
-      open: "09:00",
-      close: "22:00",
-    },
-    wednesday: restaurant.opening_hours?.wednesday || {
-      open: "09:00",
-      close: "22:00",
-    },
-    thursday: restaurant.opening_hours?.thursday || {
-      open: "09:00",
-      close: "22:00",
-    },
-    friday: restaurant.opening_hours?.friday || {
-      open: "09:00",
-      close: "22:00",
-    },
-    saturday: restaurant.opening_hours?.saturday || {
-      open: "09:00",
-      close: "22:00",
-    },
-    sunday: restaurant.opening_hours?.sunday || {
-      open: "09:00",
-      close: "22:00",
-    },
-  },
-});
+  };
+};
 
 const resolvers = {
   Query: {
@@ -196,25 +183,34 @@ const resolvers = {
 
         if (error) throw new Error(error.message);
 
+        if (!restaurants || restaurants.length === 0) return [];
+
         // Fetch all completed orders with ratings and notes for all restaurants
         const { data: orders, error: ordersError } = await supabase
           .from("orders")
           .select("id, rating, note, user_id, restaurant_id, created_at")
           .eq("status", "COMPLETED");
 
-        if (ordersError) throw new Error(ordersError.message);
+        if (ordersError) {
+          console.error("Error fetching orders for restaurants:", ordersError.message);
+          // Continue without order data rather than crashing
+        }
 
-        // Fetch all users for feedbacks
-        const userIds = [...new Set(orders.map(order => order.user_id))];
-        const { data: users, error: usersError } = await supabase
-          .from("users")
-          .select("id, name")
-          .in("id", userIds);
+        // Fetch all users for feedbacks - guard against empty array
+        const userIds = [...new Set((orders || []).map(order => order.user_id).filter(Boolean))];
+        let userMap = {};
+        if (userIds.length > 0) {
+          const { data: users, error: usersError } = await supabase
+            .from("users")
+            .select("id, name")
+            .in("id", userIds);
 
-        const userMap = {};
-        (users || []).forEach(user => {
-          userMap[user.id] = user.name;
-        });
+          if (!usersError && users) {
+            users.forEach(user => {
+              userMap[user.id] = user.name;
+            });
+          }
+        }
 
         // Calculate average ratings for each restaurant
         const restaurantsWithRatings = (restaurants || []).map(restaurant => {
@@ -228,6 +224,10 @@ const resolvers = {
             ? validRatings.reduce((sum, rating) => sum + rating, 0) / validRatings.length
             : null;
 
+          // Parse opening_hours if returned as string (plain PostgreSQL vs Supabase)
+          let oh = restaurant.opening_hours;
+          if (typeof oh === 'string') { try { oh = JSON.parse(oh); } catch { oh = null; } }
+
           return {
             ...restaurant,
             phoneNumber: restaurant.phone_number || "Not provided",
@@ -237,34 +237,13 @@ const resolvers = {
             rating: averageRating,
             totalRatings: validRatings.length,
             openingHours: {
-              monday: restaurant.opening_hours?.monday || {
-                open: "09:00",
-                close: "22:00",
-              },
-              tuesday: restaurant.opening_hours?.tuesday || {
-                open: "09:00",
-                close: "22:00",
-              },
-              wednesday: restaurant.opening_hours?.wednesday || {
-                open: "09:00",
-                close: "22:00",
-              },
-              thursday: restaurant.opening_hours?.thursday || {
-                open: "09:00",
-                close: "22:00",
-              },
-              friday: restaurant.opening_hours?.friday || {
-                open: "09:00",
-                close: "22:00",
-              },
-              saturday: restaurant.opening_hours?.saturday || {
-                open: "09:00",
-                close: "22:00",
-              },
-              sunday: restaurant.opening_hours?.sunday || {
-                open: "09:00",
-                close: "22:00",
-              },
+              monday: oh?.monday || { open: "09:00", close: "22:00" },
+              tuesday: oh?.tuesday || { open: "09:00", close: "22:00" },
+              wednesday: oh?.wednesday || { open: "09:00", close: "22:00" },
+              thursday: oh?.thursday || { open: "09:00", close: "22:00" },
+              friday: oh?.friday || { open: "09:00", close: "22:00" },
+              saturday: oh?.saturday || { open: "09:00", close: "22:00" },
+              sunday: oh?.sunday || { open: "09:00", close: "22:00" },
             },
             imageUrl: restaurant.image_url || "Not provided",
           };
@@ -279,7 +258,7 @@ const resolvers = {
         });
       } catch (err) {
         console.error("Error in restaurants query:", err);
-        throw new Error(err.message);
+        return []; // Return empty array instead of throwing, so other query fields still work
       }
     },
     restaurant: async (_, { id }, { supabase }) => {

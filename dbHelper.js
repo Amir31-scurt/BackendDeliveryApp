@@ -1,4 +1,5 @@
 import { query } from './db.js';
+import crypto from 'crypto';
 
 // Chainable query builder that mimics Supabase API
 class QueryBuilder {
@@ -234,7 +235,12 @@ class QueryBuilder {
     async _executeInsert() {
         const data = this.actionData;
         const isArray = Array.isArray(data);
-        const records = isArray ? data : [data];
+        const records = (isArray ? data : [data]).map(record => {
+            if (!record.id) {
+                return { id: crypto.randomUUID(), ...record };
+            }
+            return record;
+        });
 
         if (records.length === 0) {
             return { data: null, error: new Error('No data to insert') };
