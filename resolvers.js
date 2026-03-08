@@ -437,18 +437,27 @@ const resolvers = {
       return data;
     },
     menuItems: async (_, { restaurantId }, { supabase }) => {
-      const { data, error } = await supabase
-        .from("menu_items")
-        .select("*")
-        .eq("restaurant_id", restaurantId);
-      if (error) throw new Error(error.message);
+      try {
+        const { data, error } = await supabase
+          .from("menu_items")
+          .select("*")
+          .eq("restaurant_id", restaurantId);
+        if (error) throw new Error(error.message);
 
-      return data.map((menuItem) => ({
-        ...menuItem,
-        createdAt: menuItem.created_at || "Not provided",
-        updatedAt: menuItem.updated_at || "Not provided",
-        imageUrl: menuItem.image_url || null,
-      }));
+        return (data || []).map((menuItem) => ({
+          ...menuItem,
+          name: menuItem.name || "Menu sans nom",
+          category: menuItem.category || "Non classifié",
+          restaurantId: menuItem.restaurant_id,
+          createdAt: menuItem.created_at || "Not provided",
+          updatedAt: menuItem.updated_at || "Not provided",
+          imageUrl: menuItem.image_url || null,
+          isAvailable: menuItem.is_available !== undefined ? menuItem.is_available : true,
+        }));
+      } catch (err) {
+        console.error("Error in menuItems:", err);
+        return [];
+      }
     },
     allMenuItems: async (_, __, { supabase }) => {
       try {
@@ -457,6 +466,7 @@ const resolvers = {
 
         return (data || []).map((menuItem) => ({
           ...menuItem,
+          name: menuItem.name || "Menu sans nom",
           restaurantId: menuItem.restaurant_id,
           createdAt: menuItem.created_at || "Not provided",
           updatedAt: menuItem.updated_at || "Not provided",
@@ -494,11 +504,13 @@ const resolvers = {
         return {
           ...data,
           id: data.id,
+          name: data.name || "Menu sans nom",
+          category: data.category || "Non classifié",
           restaurantId: data.restaurant_id,
           createdAt: data.created_at || "Not provided",
           updatedAt: data.updated_at || "Not provided",
           imageUrl: data.image_url || null,
-          isAvailable: data.is_available || true,
+          isAvailable: data.is_available !== undefined ? data.is_available : true,
         };
       } catch (error) {
         console.error(`Error in menuItem resolver: ${error.message}`);
