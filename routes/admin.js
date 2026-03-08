@@ -867,140 +867,48 @@ router.get("/orders", async (req, res) => {
 
     const { count: totalCount } = await countQuery;
 
-    // Fetch orders with user and restaurant relationships
-    let query = supabase
+    // Fetch orders with plain queries + manual join (no Supabase nested syntax)
+    let plainQuery = supabase
       .from("orders")
-      .select(`
-        *,
-        users!orders_user_id_fkey (
-          id,
-          name,
-          phone_number
-        ),
-        restaurants!orders_restaurant_id_fkey (
-          id,
-          name,
-          address
-        ),
-        order_items (
-          quantity,
-          price,
-          menu_items (
-            id,
-            name,
-            image_url,
-            description
-          )
-        )
-      `)
+      .select("*")
       .order("created_at", { ascending: false })
       .range(currentOffset, currentOffset + pageSize - 1);
 
     if (status) {
-      query = query.eq("status", status);
+      plainQuery = plainQuery.eq("status", status);
     }
 
-    const { data: orders, error } = await query;
+    const { data: rawOrders, error: rawOrdersError } = await plainQuery;
 
-    if (error) {
-      console.error("Error fetching orders:", error);
-      // Fallback: fetch orders without relationships and join manually
-      let simpleQuery = supabase
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .range(currentOffset, currentOffset + pageSize - 1);
+    if (rawOrdersError) {
+      console.error("Error fetching orders:", rawOrdersError);
+      throw new Error("Failed to fetch orders.");
+    }
 
-      if (status) {
-        simpleQuery = simpleQuery.eq("status", status);
-      }
+    // Enrich each order with related data
+    const orders = await Promise.all((rawOrders || []).map(async (order) => {
+      const [userResult, restaurantResult, itemsResult, delivererResult] = await Promise.all([
+        supabase.from("users").select("id, name, phone_number").eq("id", order.user_id).single(),
+        supabase.from("restaurants").select("id, name, address").eq("id", order.restaurant_id).single(),
+        supabase.from("order_items").select("quantity, price, menu_item_id").eq("order_id", order.id),
+        order.deliverer_id ? supabase.from("deliverers").select("user_id").eq("user_id", order.deliverer_id).single() : Promise.resolve({ data: null })
+      ]);
 
-      const { data: simpleOrders, error: simpleError } = await simpleQuery;
-
-      if (simpleError) {
-        console.error("Error with simple query:", simpleError);
-        throw new Error("Failed to fetch orders.");
-      }
-
-      // Fetch related data separately
-      const ordersWithRelations = await Promise.all((simpleOrders || []).map(async (order) => {
-        const [userResult, restaurantResult, itemsResult, delivererResult] = await Promise.all([
-          supabase.from("users").select("id, name, phone_number").eq("id", order.user_id).single(),
-          supabase.from("restaurants").select("id, name, address").eq("id", order.restaurant_id).single(),
-          supabase.from("order_items")
-            .select("quantity, price, menu_items(id, name, image_url, description)")
-            .eq("order_id", order.id),
-          order.deliverer_id ? supabase.from("deliverers").select("id, user_id").eq("id", order.deliverer_id).single() : Promise.resolve({ data: null })
-        ]);
-
-        return {
-          ...order,
-          user: userResult.data,
-          restaurant: restaurantResult.data,
-          order_items: itemsResult.data || [],
-          deliverer: delivererResult.data
-        };
+      // Enrich order_items with menu_item data
+      const enrichedItems = await Promise.all((itemsResult.data || []).map(async (item) => {
+        const { data: menuItem } = await supabase.from('menu_items').select('id, name, image_url, description').eq('id', item.menu_item_id).single();
+        return { ...item, menu_items: menuItem || {} };
       }));
 
-      // Calculate summary statistics
-      const { data: allOrders } = await supabase
-        .from("orders")
-        .select("status, total_amount");
-
-      const summary = {
-        total: allOrders?.length || 0,
-        pending: allOrders?.filter(o => o.status === "Pending").length || 0,
-        preparing: allOrders?.filter(o => o.status === "PREPARING").length || 0,
-        delivering: allOrders?.filter(o => o.status === "DELIVERING").length || 0,
-        completed: allOrders?.filter(o => o.status === "COMPLETED").length || 0,
-        cancelled: allOrders?.filter(o => o.status === "CANCELLED").length || 0,
-        totalRevenue: allOrders?.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0
-      };
-
-      const totalPages = Math.ceil((totalCount || 0) / pageSize);
-
-      return res.render("admin/orders", {
-        layout: "admin/layout",
-        title: "Commandes",
-        orders: ordersWithRelations || [],
-        summary,
-        pagination: {
-          currentPage,
-          totalPages,
-          pageSize,
-          totalCount: totalCount || 0,
-          hasNext: currentPage < totalPages,
-          hasPrev: currentPage > 1
-        },
-        currentStatus: status || ''
-      });
-    }
-
-    // Normalize data structure and fetch deliverers separately
-    const ordersWithDeliverers = await Promise.all((orders || []).map(async (order) => {
-      // Normalize user and restaurant fields (Supabase might return as plural)
-      const normalizedOrder = {
+      return {
         ...order,
-        user: order.user || order.users || null,
-        restaurant: order.restaurant || order.restaurants || null
+        user: userResult.data,
+        restaurant: restaurantResult.data,
+        order_items: enrichedItems,
+        deliverer: delivererResult.data
       };
-
-      // Remove plural versions if they exist
-      if (normalizedOrder.users) delete normalizedOrder.users;
-      if (normalizedOrder.restaurants) delete normalizedOrder.restaurants;
-
-      // Fetch deliverer if needed
-      if (normalizedOrder.deliverer_id) {
-        const { data: deliverer } = await supabase
-          .from("deliverers")
-          .select("id, user_id")
-          .eq("id", normalizedOrder.deliverer_id)
-          .single();
-        normalizedOrder.deliverer = deliverer;
-      }
-
-      return normalizedOrder;
     }));
+
 
     // Calculate summary statistics
     const { data: allOrders } = await supabase
@@ -1022,7 +930,7 @@ router.get("/orders", async (req, res) => {
     res.render("admin/orders", {
       layout: "admin/layout",
       title: "Commandes",
-      orders: ordersWithDeliverers || [],
+      orders: orders || [],
       summary,
       pagination: {
         currentPage,
@@ -1067,21 +975,26 @@ router.get("/orders/export", async (req, res) => {
   try {
     const { format = 'excel', status = '' } = req.query;
     
-    let query = supabase
+    let exportQuery = supabase
       .from("orders")
-      .select(`
-        *,
-        users!orders_user_id_fkey ( name, phone_number ),
-        restaurants!orders_restaurant_id_fkey ( name )
-      `)
+      .select("*")
       .order("created_at", { ascending: false });
 
     if (status) {
-      query = query.eq("status", status);
+      exportQuery = exportQuery.eq("status", status);
     }
 
-    const { data: orders, error } = await query;
+    const { data: rawExportOrders, error } = await exportQuery;
     if (error) throw error;
+
+    // Enrich with user and restaurant data
+    const orders = await Promise.all((rawExportOrders || []).map(async (o) => {
+      const [uRes, rRes] = await Promise.all([
+        supabase.from('users').select('name, phone_number').eq('id', o.user_id).single(),
+        supabase.from('restaurants').select('name').eq('id', o.restaurant_id).single()
+      ]);
+      return { ...o, users: uRes.data || {}, restaurants: rRes.data || {} };
+    }));
 
     const exportData = orders.map(o => ({
       id: o.id.substring(0, 8),
@@ -1612,55 +1525,43 @@ router.get("/deliverers", async (req, res) => {
 
     console.log("Fetching deliverers with pagination...", { page, limit, search });
 
-    let query = supabase
+    // Fetch deliverers with plain query (no Supabase nested syntax)
+    let rawQuery = supabase
       .from("deliverers")
-      .select(`
-        *,
-        users!inner (
-          id,
-          name,
-          phone_number,
-          profile_picture
-        )
-      `, { count: "exact" })
+      .select('*', { count: "exact" })
       .range(offset, offset + pageSize - 1)
       .order("created_at", { ascending: false });
 
     if (search) {
-      // Search by user name (via relation) or zone
-      // Note: Supabase ILIKE on foreign tables is supported with !inner join and special syntax
-      // But simple way is to use "or" filter if possible, or just zone for now.
-      // Searching relations is tricky. For now let's support searching by zone or maybe filter in code?
-      // Filtering in code breaks pagination.
-      // Let's assume search is mainly for zone or filtering by status if needed.
-      // Or we can try: .ilike('users.name', `%${search}%`) if Supabase supports it?
-      // Supabase JS doesn't support nested filtering neatly in one go easily without complications.
-      // Let's stick to simple filters or search on deliverer fields (zone).
-      // Or we can search on User table first then filter Deliverers.
-      // For simplicity let's search zone only or skip complex search for this iteration.
-      // Actually, let's try to search by zone.
-       query = query.ilike("zone", `%${search}%`);
+      rawQuery = rawQuery.ilike("zone", `%${search}%`);
     }
 
-    const { data: deliverers, count, error } = await query;
+    const { data: rawDeliverers, count, error } = await rawQuery;
 
     if (error) {
       console.error("Error fetching deliverers:", error);
       throw new Error("Failed to fetch deliverers.");
     }
 
-    // Transform the data to match the schema structure
-    const formattedDeliverers = (deliverers || []).map(deliverer => ({
-      userId: deliverer.user_id,
-      user: deliverer.users,
-      vehicleId: deliverer.vehicle_id,
-      isAvailable: deliverer.is_available,
-      currentLocation: deliverer.current_location,
-      zone: deliverer.zone,
-      profilePicture: deliverer.profile_picture,
-      completedDeliveries: deliverer.completed_deliveries,
-      isActive: deliverer.is_active,
-      isVerified: deliverer.is_verified
+    // Enrich with user data (manual join)
+    const formattedDeliverers = await Promise.all((rawDeliverers || []).map(async (deliverer) => {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id, name, phone_number, profile_picture')
+        .eq('id', deliverer.user_id)
+        .single();
+      return {
+        userId: deliverer.user_id,
+        user: userData || {},
+        vehicleId: deliverer.vehicle_id,
+        isAvailable: deliverer.is_available,
+        currentLocation: deliverer.current_location,
+        zone: deliverer.zone,
+        profilePicture: deliverer.profile_picture,
+        completedDeliveries: deliverer.completed_deliveries,
+        isActive: deliverer.is_active,
+        isVerified: deliverer.is_verified
+      };
     }));
 
     const totalPages = Math.ceil(count / pageSize);
@@ -1706,23 +1607,23 @@ router.get("/deliverers/export", async (req, res) => {
   try {
     const { format = 'excel', search = '' } = req.query;
     
-    let query = supabase
+    let rawExportQuery = supabase
       .from("deliverers")
-      .select(`
-        *,
-        users (
-          name,
-          phone_number
-        )
-      `)
+      .select('*')
       .order("created_at", { ascending: false });
 
     if (search) {
-      query = query.ilike("zone", `%${search}%`);
+      rawExportQuery = rawExportQuery.ilike("zone", `%${search}%`);
     }
 
-    const { data: deliverers, error } = await query;
+    const { data: rawExportDeliverers, error } = await rawExportQuery;
     if (error) throw error;
+
+    // Enrich with user data
+    const deliverers = await Promise.all((rawExportDeliverers || []).map(async (d) => {
+      const { data: u } = await supabase.from('users').select('name, phone_number').eq('id', d.user_id).single();
+      return { ...d, users: u || {} };
+    }));
 
     const exportData = deliverers.map(d => ({
       name: d.users?.name || 'N/A',
@@ -1772,18 +1673,10 @@ router.get("/deliverers/:id", async (req, res) => {
   try {
     console.log("Fetching deliverer with ID:", id);
 
-    // Fetch deliverer with user information - use user_id since that's the primary key
-    const { data: deliverer, error: delivererError } = await supabase
+    // Fetch deliverer with plain query then join user data
+    const { data: rawDeliverer, error: delivererError } = await supabase
       .from("deliverers")
-      .select(`
-        *,
-        users (
-          id,
-          name,
-          phone_number,
-          profile_picture
-        )
-      `)
+      .select('*')
       .eq("user_id", id)
       .single();
 
@@ -1797,28 +1690,31 @@ router.get("/deliverers/:id", async (req, res) => {
       });
     }
 
+    // Fetch user info separately
+    const { data: delivererUser } = await supabase
+      .from('users')
+      .select('id, name, phone_number, profile_picture')
+      .eq('id', rawDeliverer.user_id)
+      .single();
+
+    const deliverer = { ...rawDeliverer, users: delivererUser || {} };
     console.log("Found deliverer:", deliverer);
 
-    // Fetch deliverer's orders
-    const { data: orders, error: ordersError } = await supabase
+    // Fetch deliverer's orders with plain query, then join user data
+    const { data: rawOrders, error: ordersError } = await supabase
       .from("orders")
-      .select(`
-        id,
-        total_amount,
-        status,
-        created_at,
-        delivery_address,
-        users (
-          name,
-          phone_number
-        )
-      `)
+      .select('id, total_amount, status, created_at, delivery_address, user_id')
       .eq("deliverer_id", deliverer.user_id)
       .order('created_at', { ascending: false });
 
+    let orders = [];
     if (ordersError) {
       console.error("Error fetching orders:", ordersError);
-      // Continue without orders
+    } else {
+      orders = await Promise.all((rawOrders || []).map(async (o) => {
+        const { data: orderUser } = await supabase.from('users').select('name, phone_number').eq('id', o.user_id).single();
+        return { ...o, users: orderUser || {} };
+      }));
     }
 
     // Transform the data to match the template structure
