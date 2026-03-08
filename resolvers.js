@@ -468,8 +468,8 @@ const resolvers = {
           ...menuItem,
           name: menuItem.name || "Menu sans nom",
           restaurantId: menuItem.restaurant_id,
-          createdAt: menuItem.created_at || "Not provided",
-          updatedAt: menuItem.updated_at || "Not provided",
+          createdAt: menuItem.created_at ? new Date(menuItem.created_at).toISOString() : "Not provided",
+          updatedAt: menuItem.updated_at ? new Date(menuItem.updated_at).toISOString() : "Not provided",
           imageUrl: menuItem.image_url || null,
           category: menuItem.category || "Non classifié",
           isAvailable: menuItem.is_available !== undefined ? menuItem.is_available : true,
@@ -507,8 +507,8 @@ const resolvers = {
           name: data.name || "Menu sans nom",
           category: data.category || "Non classifié",
           restaurantId: data.restaurant_id,
-          createdAt: data.created_at || "Not provided",
-          updatedAt: data.updated_at || "Not provided",
+          createdAt: data.created_at ? new Date(data.created_at).toISOString() : "Not provided",
+          updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : "Not provided",
           imageUrl: data.image_url || null,
           isAvailable: data.is_available !== undefined ? data.is_available : true,
         };
@@ -657,8 +657,8 @@ const resolvers = {
             status: order.status,
             isPaid: order.is_paid || false,
             paymentMethod: order.payment_method || "CASH",
-            createdAt: order.created_at || null,
-            updatedAt: order.updated_at || null,
+            createdAt: order.created_at ? new Date(order.created_at).toISOString() : null,
+            updatedAt: order.updated_at ? new Date(order.updated_at).toISOString() : null,
             delivererId: order.deliverer_id,
             deliverer
           };
@@ -762,8 +762,8 @@ const resolvers = {
           status: order.status,
           isPaid: order.is_paid || false,
           paymentMethod: order.payment_method || "CASH",
-          createdAt: order.created_at || null,
-          updatedAt: order.updated_at || null,
+          createdAt: order.created_at ? new Date(order.created_at).toISOString() : null,
+          updatedAt: order.updated_at ? new Date(order.updated_at).toISOString() : null,
           delivererId: order.deliverer_id,
           deliverer
         };
@@ -799,7 +799,7 @@ const resolvers = {
           title: notification.title,
           body: notification.body,
           read: notification.read || false,
-          createdAt: notification.created_at
+          createdAt: notification.created_at ? new Date(notification.created_at).toISOString() : null
         }));
       } catch (err) {
         console.error("Error in notifications query:", err);
