@@ -1286,7 +1286,7 @@ const resolvers = {
           status: newOrder.status,
           isPaid: newOrder.is_paid || false,
           paymentMethod: newOrder.payment_method || "CASH",
-          delivererID: newOrder.deliverer_id,
+          delivererId: newOrder.deliverer_id,
         };
       } catch (err) {
         console.error("Error in createOrder function:", err.message);
