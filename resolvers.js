@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import { validateEmail } from "./utils/validators.js";
 import { Expo } from 'expo-server-sdk';
 
@@ -1195,8 +1196,8 @@ const resolvers = {
           return total + itemPrice * item.quantity;
         }, 0);
 
-        // Generate a random 6-digit delivery token
-        const deliveryToken = Math.floor(100000 + Math.random() * 900000).toString();
+        // Generate a random UUID for the delivery token
+        const deliveryToken = crypto.randomUUID();
 
         const { data: newOrder, error: orderError } = await supabase
           .from("orders")
