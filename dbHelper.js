@@ -52,6 +52,18 @@ class QueryBuilder {
         return this;
     }
 
+    ilike(column, pattern) {
+        this.whereConditions[`${column}__ilike`] = pattern;
+        return this;
+    }
+
+    or(filterString) {
+        // Store raw OR filter strings for building the WHERE clause
+        if (!this.orFilters) this.orFilters = [];
+        this.orFilters.push(filterString);
+        return this;
+    }
+
     async execute() {
         const selectClause = Array.isArray(this.columns)
             ? this.columns.join(', ')
@@ -76,10 +88,45 @@ class QueryBuilder {
                         clauses.push(`${column} IN (${placeholders})`);
                         params.push(...value);
                     }
+                } else if (key.endsWith('__ilike')) {
+                    const column = key.replace('__ilike', '');
+                    clauses.push(`${column} ILIKE $${paramCount++}`);
+                    params.push(value);
                 } else {
                     clauses.push(`${key} = $${paramCount++}`);
                     params.push(value);
                 }
+            }
+        }
+
+        // Handle OR filters (from .or() calls) - parse Supabase-style filter strings
+        if (this.orFilters && this.orFilters.length > 0) {
+            const orClauses = [];
+            for (const filterStr of this.orFilters) {
+                // Parse patterns like "name.ilike.%foo%,address.ilike.%foo%"
+                const parts = filterStr.split(',');
+                const parsedParts = parts.map(part => {
+                    const segments = part.trim().split('.');
+                    if (segments.length >= 3) {
+                        const col = segments[0];
+                        const op = segments[1];
+                        const val = segments.slice(2).join('.');
+                        if (op === 'ilike') {
+                            params.push(val);
+                            return `${col} ILIKE $${paramCount++}`;
+                        } else if (op === 'eq') {
+                            params.push(val);
+                            return `${col} = $${paramCount++}`;
+                        }
+                    }
+                    return null;
+                }).filter(Boolean);
+                if (parsedParts.length > 0) {
+                    orClauses.push(`(${parsedParts.join(' OR ')})`);
+                }
+            }
+            if (orClauses.length > 0) {
+                clauses.push(orClauses.join(' AND '));
             }
         }
 

@@ -226,29 +226,44 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
         return res.status(404).send('Restaurant not found');
       }
 
-      // Fetch orders for the restaurant
-      const { data: orders, error: ordersError } = await supabase
+      // Fetch orders for the restaurant (plain SQL - no Supabase nested syntax)
+      const { data: rawOrders, error: ordersError } = await supabase
         .from('orders')
-        .select(`
-          *,
-          user:users (
-            name,
-            phone_number
-          ),
-          items:order_items (
-            quantity,
-            price,
-            menuItem:menu_items ( name, image_url, description )
-          )
-        `)
+        .select('*')
         .eq('restaurant_id', req.params.id)
         .order('created_at', { ascending: false });
-
 
       if (ordersError) {
         console.error('Error fetching orders:', ordersError);
         return res.status(500).send('Error fetching orders');
       }
+
+      // Enrich each order with user info and order items (manual join)
+      const orders = await Promise.all((rawOrders || []).map(async (order) => {
+        // Fetch user info
+        const { data: userData } = await supabase
+          .from('users')
+          .select('name, phone_number')
+          .eq('id', order.user_id)
+          .single();
+
+        // Fetch order items with menu item details
+        const { data: rawItems } = await supabase
+          .from('order_items')
+          .select('quantity, price, menu_item_id')
+          .eq('order_id', order.id);
+
+        const items = await Promise.all((rawItems || []).map(async (item) => {
+          const { data: menuItem } = await supabase
+            .from('menu_items')
+            .select('name, image_url, description')
+            .eq('id', item.menu_item_id)
+            .single();
+          return { ...item, menuItem: menuItem || {} };
+        }));
+
+        return { ...order, user: userData || {}, items };
+      }));
 
       console.log(orders)
 

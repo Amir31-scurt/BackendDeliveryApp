@@ -246,11 +246,16 @@ app.post('/api/push-token', async (req, res) => {
     // Upsert push token (insert or update)
     const { data: existing, error: checkError } = await supabase
       .from('push_tokens')
-      .select('id')
+      .select('user_id')
       .eq('user_id', userId)
       .single();
 
-    if (checkError || !existing) {
+    if (checkError) {
+      console.error("Error checking push token:", checkError);
+      return res.status(500).json({ message: 'Failed to verify token existence', error: checkError });
+    }
+
+    if (!existing) {
       // Insert new token
       const { error: insertError } = await supabase.from('push_tokens').insert({ user_id: userId, token });
       if (insertError) {
