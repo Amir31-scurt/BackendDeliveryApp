@@ -192,13 +192,7 @@ const resolvers = {
         // First get all restaurants
         const { data: restaurants, error } = await supabase
           .from("restaurants")
-          .select(`
-            *,
-            orders(
-              rating,
-              status
-            )
-          `);
+          .select("*");
 
         if (error) throw new Error(error.message);
 
@@ -223,10 +217,11 @@ const resolvers = {
         });
 
         // Calculate average ratings for each restaurant
-        const restaurantsWithRatings = restaurants.map(restaurant => {
-          // Filter for completed orders with ratings
-          const validRatings = restaurant.orders
-            .filter(order => order.status === 'COMPLETED' && order.rating !== null)
+        const restaurantsWithRatings = (restaurants || []).map(restaurant => {
+          // Filter for completed orders with ratings for this restaurant
+          const restaurantOrders = (orders || []).filter(o => o.restaurant_id === restaurant.id);
+          const validRatings = restaurantOrders
+            .filter(order => order.rating !== null)
             .map(order => order.rating);
 
           const averageRating = validRatings.length > 0
@@ -528,12 +523,8 @@ const resolvers = {
       try {
         let query = supabase
           .from("orders")
-          .select(
-            `*, 
-            order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), 
-            user:users(id, name, phone_number), 
-            restaurant:restaurants(id, name, description, address, type, opening_hours, phone_number, email, image_url, is_active, created_at, updated_at, latitude, longitude)`
-          );
+          .select("*")
+          .order("created_at", { ascending: false });
 
         if (userId) query = query.eq("user_id", userId);
         if (restaurantId) query = query.eq("restaurant_id", restaurantId);
@@ -544,82 +535,121 @@ const resolvers = {
 
         if (error) throw new Error(`Failed to fetch orders: ${error.message}`);
 
-        // For each order, fetch deliverer info if deliverer_id exists
-        const ordersWithDeliverer = await Promise.all((orders || []).map(async (order) => {
+        if (!orders || orders.length === 0) return [];
+
+        // Fetch related data
+        const orderIds = orders.map(o => o.id);
+        const userIds = [...new Set(orders.map(o => o.user_id))].filter(Boolean);
+        const restIds = [...new Set(orders.map(o => o.restaurant_id))].filter(Boolean);
+        const delivIds = [...new Set(orders.map(o => o.deliverer_id))].filter(Boolean);
+
+        // Fetch order items with menu items
+        const { data: orderItems, error: itemsError } = await supabase
+          .from("order_items")
+          .select("*")
+          .in("order_id", orderIds);
+
+        const menuItemIds = [...new Set((orderItems || []).map(oi => oi.menu_item_id))].filter(Boolean);
+        const { data: menuItems, error: menuErr } = await supabase
+          .from("menu_items")
+          .select("*")
+          .in("id", menuItemIds);
+
+        // Fetch users
+        const { data: users, error: usersError } = await supabase
+          .from("users")
+          .select("id, name, phone_number")
+          .in("id", userIds);
+
+        // Fetch restaurants
+        const { data: restaurants, error: restError } = await supabase
+          .from("restaurants")
+          .select("*")
+          .in("id", restIds);
+
+        // Fetch deliverers
+        const { data: deliverers, error: delivError } = await supabase
+          .from("deliverers")
+          .select("*")
+          .in("user_id", delivIds);
+
+        // Fetch deliverer users
+        const { data: delivUsers, error: delivUsersError } = await supabase
+          .from("users")
+          .select("id, name, phone_number")
+          .in("id", delivIds);
+
+        // Create lookup maps
+        const userMap = Object.fromEntries((users || []).map(u => [u.id, u]));
+        const restMap = Object.fromEntries((restaurants || []).map(r => [r.id, r]));
+        const delivMap = Object.fromEntries((deliverers || []).map(d => [d.user_id, d]));
+        const delivUserMap = Object.fromEntries((delivUsers || []).map(u => [u.id, u]));
+        const menuMap = Object.fromEntries((menuItems || []).map(m => [m.id, m]));
+        const itemsMap = {};
+        (orderItems || []).forEach(item => {
+          if (!itemsMap[item.order_id]) itemsMap[item.order_id] = [];
+          itemsMap[item.order_id].push({
+            ...item,
+            menuItem: menuMap[item.menu_item_id]
+          });
+        });
+
+        return orders.map((order) => {
+          const delivererData = delivMap[order.deliverer_id];
+          const delivererUser = delivUserMap[order.deliverer_id];
+          
           let deliverer = null;
-          if (order.deliverer_id) {
-            const { data: delivererData, error: delivererError } = await supabase
-              .from("deliverers")
-              .select("*")
-              .eq("user_id", order.deliverer_id)
-              .single();
-
-            let userData = null;
-            if (delivererData && delivererData.user_id) {
-              const { data: userRow, error: userError } = await supabase
-                .from("users")
-                .select("id, name, phone_number")
-                .eq("id", delivererData.user_id)
-                .single();
-
-              if (!userError && userRow) {
-                userData = {
-                  id: userRow.id,
-                  name: userRow.name,
-                  phoneNumber: userRow.phone_number
-                };
-              } else {
-                userData = null;
-              }
-            }
-
-            if (!delivererError && delivererData) {
-              deliverer = {
-                userId: delivererData.user_id,
-                user_id: delivererData.user_id, // for Deliverer.user resolver
-                user: userData,
-                vehicleId: delivererData.vehicle_id,
-                isAvailable: delivererData.is_available,
-                currentLocation: typeof delivererData.current_location === "string"
-                  ? JSON.parse(delivererData.current_location)
-                  : delivererData.current_location,
-                zone: delivererData.zone,
-                profilePicture: delivererData.profile_picture,
-                isActive: delivererData.is_active,
-                isVerified: delivererData.is_verified
-              };
-            }
+          if (delivererData) {
+            deliverer = {
+              userId: delivererData.user_id,
+              user_id: delivererData.user_id,
+              user: delivererUser ? {
+                id: delivererUser.id,
+                name: delivererUser.name,
+                phoneNumber: delivererUser.phone_number
+              } : null,
+              vehicleId: delivererData.vehicle_id,
+              isAvailable: delivererData.is_available,
+              currentLocation: typeof delivererData.current_location === "string"
+                ? JSON.parse(delivererData.current_location)
+                : delivererData.current_location,
+              zone: delivererData.zone,
+              profilePicture: delivererData.profile_picture,
+              isActive: delivererData.is_active,
+              isVerified: delivererData.is_verified
+            };
           }
+
+          const user = userMap[order.user_id];
+          const restaurant = restMap[order.restaurant_id];
 
           return {
             id: order.id,
             restaurantId: order.restaurant_id,
             userId: order.user_id,
-            user: order.user ? {
-              id: order.user.id,
-              name: order.user.name,
-              phoneNumber: order.user.phone_number
+            user: user ? {
+              id: user.id,
+              name: user.name,
+              phoneNumber: user.phone_number
             } : null,
-            restaurant: order.restaurant ? {
-              id: order.restaurant.id,
-              name: order.restaurant.name,
-              description: order.restaurant.description,
-              phoneNumber: order.restaurant.phone_number,
-              address: order.restaurant.address,
-              latitude: order.restaurant.latitude,
-              longitude: order.restaurant.longitude
+            restaurant: restaurant ? {
+              id: restaurant.id,
+              name: restaurant.name,
+              description: restaurant.description,
+              phoneNumber: restaurant.phone_number,
+              address: restaurant.address,
+              latitude: restaurant.latitude,
+              longitude: restaurant.longitude
             } : null,
-            items: (order.order_items || []).map((item) => ({
+            items: (itemsMap[order.id] || []).map((item) => ({
               menuItemId: item.menu_item_id,
-              menuItem: item.menu_item
-                ? {
-                  id: item.menu_item.id,
-                  name: item.menu_item.name,
-                  description: item.menu_item.description,
-                  price: item.menu_item.price,
-                  imageUrl: item.menu_item.image_url || null
-                }
-                : null,
+              menuItem: item.menuItem ? {
+                id: item.menuItem.id,
+                name: item.menuItem.name,
+                description: item.menuItem.description,
+                price: item.menuItem.price,
+                imageUrl: item.menuItem.image_url || null
+              } : null,
               quantity: item.quantity,
               price: item.price
             })),
@@ -634,9 +664,7 @@ const resolvers = {
             delivererId: order.deliverer_id,
             deliverer
           };
-        }));
-
-        return ordersWithDeliverer;
+        });
       } catch (err) {
         console.error("Error fetching orders:", err.message);
         throw new Error(err.message);
@@ -644,97 +672,92 @@ const resolvers = {
     },
     order: async (_, { id }, { supabase }) => {
       try {
-        // Fetch the order by ID
         const { data: order, error } = await supabase
           .from("orders")
-          .select(
-            `*, 
-        order_items(menu_item_id, quantity, price, menu_item:menu_items(id, name, description, price, image_url)), 
-        user:users(id, name, phone_number), 
-        restaurant:restaurants(id, name, description, address, type, opening_hours, phone_number, email, image_url, is_active, created_at, updated_at, latitude, longitude)`
-          )
+          .select("*")
           .eq("id", id)
           .single();
 
         if (error) throw new Error(`Failed to fetch order: ${error.message}`);
         if (!order) throw new Error("Order not found");
 
-        // Prepare deliverer info
+        // Fetch related data
+        const [itemsResult, userResult, restResult, delivResult] = await Promise.all([
+          supabase.from("order_items").select("*").eq("order_id", id),
+          supabase.from("users").select("id, name, phone_number").eq("id", order.user_id).single(),
+          supabase.from("restaurants").select("*").eq("id", order.restaurant_id).single(),
+          order.deliverer_id ? supabase.from("deliverers").select("*").eq("user_id", order.deliverer_id).single() : Promise.resolve({ data: null }),
+        ]);
+
+        const orderItems = itemsResult.data || [];
+        const userRow = userResult.data;
+        const restaurantRow = restResult.data;
+        const delivererData = delivResult.data;
+
+        // Fetch menu items for the order items
+        const menuItemIds = [...new Set(orderItems.map(oi => oi.menu_item_id))].filter(Boolean);
+        const { data: menuItems } = await supabase.from("menu_items").select("*").in("id", menuItemIds);
+        const menuMap = Object.fromEntries((menuItems || []).map(m => [m.id, m]));
+
+        // Fetch deliverer user if needed
+        let delivererUser = null;
+        if (delivererData) {
+          const { data } = await supabase.from("users").select("id, name, phone_number").eq("id", delivererData.user_id).single();
+          delivererUser = data;
+        }
+
         let deliverer = null;
-
-        if (order.deliverer_id) {
-          const { data: delivererData, error: delivererError } = await supabase
-            .from("deliverers")
-            .select("*")
-            .eq("user_id", order.deliverer_id)
-            .single();
-
-          let userData = null;
-          if (delivererData && delivererData.user_id) {
-            const { data: userRow, error: userError } = await supabase
-              .from("users")
-              .select("id, name, phone_number")
-              .eq("id", delivererData.user_id)
-              .single();
-
-            if (!userError && userRow) {
-              userData = {
-                id: userRow.id,
-                name: userRow.name,
-                phoneNumber: userRow.phone_number
-              };
-            } else {
-              userData = null;
-            }
-          }
-
-          if (!delivererError && delivererData) {
-            deliverer = {
-              userId: delivererData.user_id,
-              user: userData,
-              vehicleId: delivererData.vehicle_id,
-              isAvailable: delivererData.is_available,
-              currentLocation: typeof delivererData.current_location === "string"
-                ? JSON.parse(delivererData.current_location)
-                : delivererData.current_location,
-              zone: delivererData.zone,
-              profilePicture: delivererData.profile_picture,
-              isActive: delivererData.is_active,
-              isVerified: delivererData.is_verified
-            };
-          }
+        if (delivererData) {
+          deliverer = {
+            userId: delivererData.user_id,
+            user: delivererUser ? {
+              id: delivererUser.id,
+              name: delivererUser.name,
+              phoneNumber: delivererUser.phone_number
+            } : null,
+            vehicleId: delivererData.vehicle_id,
+            isAvailable: delivererData.is_available,
+            currentLocation: typeof delivererData.current_location === "string"
+              ? JSON.parse(delivererData.current_location)
+              : delivererData.current_location,
+            zone: delivererData.zone,
+            profilePicture: delivererData.profile_picture,
+            isActive: delivererData.is_active,
+            isVerified: delivererData.is_verified
+          };
         }
 
         return {
           id: order.id,
           restaurantId: order.restaurant_id,
           userId: order.user_id,
-          user: {
-            id: order.user.id,
-            name: order.user.name,
-            phoneNumber: order.user.phone_number
-          },
-          restaurant: {
-            id: order.restaurant.id,
-            name: order.restaurant.name,
-            description: order.restaurant.description,
-            phoneNumber: order.restaurant.phone_number,
-            address: order.restaurant.address
-          },
-          items: order.order_items.map((item) => ({
-            menuItemId: item.menu_item_id,
-            menuItem: item.menu_item
-              ? {
-                id: item.menu_item.id,
-                name: item.menu_item.name,
-                description: item.menu_item.description,
-                price: item.menu_item.price,
-                imageUrl: item.menu_item.image_url || null
-              }
-              : null,
-            quantity: item.quantity,
-            price: item.price
-          })),
+          user: userRow ? {
+            id: userRow.id,
+            name: userRow.name,
+            phoneNumber: userRow.phone_number
+          } : null,
+          restaurant: restaurantRow ? {
+            id: restaurantRow.id,
+            name: restaurantRow.name,
+            description: restaurantRow.description,
+            phoneNumber: restaurantRow.phone_number,
+            address: restaurantRow.address
+          } : null,
+          items: orderItems.map((item) => {
+            const mi = menuMap[item.menu_item_id];
+            return {
+              menuItemId: item.menu_item_id,
+              menuItem: mi ? {
+                id: mi.id,
+                name: mi.name,
+                description: mi.description,
+                price: mi.price,
+                imageUrl: mi.image_url || null
+              } : null,
+              quantity: item.quantity,
+              price: item.price
+            };
+          }),
           totalAmount: order.total_amount,
           deliveryAddress: order.delivery_address,
           instructions: order.instructions,
@@ -830,27 +853,41 @@ const resolvers = {
     },
     restaurantRatings: async (_, { restaurantId }, { supabase }) => {
       try {
-        const { data, error } = await supabase
+        const { data: ratings, error } = await supabase
           .from('restaurant_ratings')
-          .select(`
-            *,
-            user:users(id, name, phone_number)
-          `)
+          .select('*')
           .eq('restaurant_id', restaurantId)
           .order('created_at', { ascending: false });
 
         if (error) throw new Error(`Error fetching ratings: ${error.message}`);
 
-        return data.map(rating => ({
-          id: rating.id,
-          restaurantId: rating.restaurant_id,
-          userId: rating.user_id,
-          user: rating.user,
-          rating: rating.rating,
-          comment: rating.comment,
-          createdAt: rating.created_at,
-          updatedAt: rating.updated_at
-        }));
+        if (!ratings || ratings.length === 0) return [];
+
+        const userIds = [...new Set(ratings.map(r => r.user_id))].filter(Boolean);
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, name, phone_number')
+          .in('id', userIds);
+        
+        const userMap = Object.fromEntries((users || []).map(u => [u.id, u]));
+
+        return ratings.map(rating => {
+          const user = userMap[rating.user_id];
+          return {
+            id: rating.id,
+            restaurantId: rating.restaurant_id,
+            userId: rating.user_id,
+            user: user ? {
+              id: user.id,
+              name: user.name,
+              phoneNumber: user.phone_number
+            } : null,
+            rating: rating.rating,
+            comment: rating.comment,
+            createdAt: rating.created_at,
+            updatedAt: rating.updated_at
+          };
+        });
       } catch (err) {
         console.error("Error in restaurantRatings query:", err);
         throw new Error(err.message);
