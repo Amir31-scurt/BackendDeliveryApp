@@ -187,11 +187,11 @@
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
-            console.log('Attempting login with email:', email);
+            
 
             try {
                 const csrfToken = getCsrfToken();
-                console.log('Using CSRF token:', csrfToken);
+                
 
                 const response = await fetch('/admin/login/restaurant', {
                     method: 'POST',
@@ -203,16 +203,16 @@
                     credentials: 'include' // Important for cookies
                 });
 
-                console.log('Response status:', response.status);
+                
                 const data = await response.json();
-                console.log('Response data:', data);
+                
 
                 if (response.ok) {
                     // Store token and restaurant data in localStorage
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('restaurant', JSON.stringify(data.restaurant));
 
-                    console.log('Login successful, redirecting to:', data.redirectUrl);
+                    
                     window.location.href = data.redirectUrl;
                 } else {
                     console.error('Login failed:', data.error);

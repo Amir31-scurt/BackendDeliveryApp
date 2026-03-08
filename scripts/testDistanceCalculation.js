@@ -2,15 +2,15 @@ import { supabase } from '../supabaseClient.js';
 
 async function testDistanceCalculation() {
     try {
-        console.log('Testing distance calculation...');
+        
 
         // Test coordinates (Paris center)
         const testLat = 48.8566;
         const testLon = 2.3522;
         const maxDistance = 5.0; // 5km
 
-        console.log(`Testing with coordinates: ${testLat}, ${testLon}`);
-        console.log(`Max distance: ${maxDistance}km`);
+        
+        
 
         // Test the nearby restaurants function
         const { data, error } = await supabase
@@ -25,24 +25,24 @@ async function testDistanceCalculation() {
             return;
         }
 
-        console.log(`\nFound ${data.length} restaurants within ${maxDistance}km:`);
+        
 
         if (data.length === 0) {
-            console.log('No restaurants found. Make sure you have restaurants with coordinates in the database.');
-            console.log('You can add sample restaurants using: node scripts/addSampleRestaurants.js');
+            
+            
             return;
         }
 
         data.forEach((restaurant, index) => {
-            console.log(`\n${index + 1}. ${restaurant.name}`);
-            console.log(`   Address: ${restaurant.address}`);
-            console.log(`   Coordinates: ${restaurant.latitude}, ${restaurant.longitude}`);
-            console.log(`   Distance: ${restaurant.distance.toFixed(2)}km`);
-            console.log(`   Type: ${restaurant.type}`);
+            
+            
+            
+            
+            
         });
 
         // Test manual distance calculation
-        console.log('\n--- Manual Distance Calculation Test ---');
+        
 
         const { data: allRestaurants } = await supabase
             .from('restaurants')
@@ -52,7 +52,7 @@ async function testDistanceCalculation() {
             .limit(3);
 
         if (allRestaurants && allRestaurants.length > 0) {
-            console.log('Manual distance calculation for first 3 restaurants:');
+            
 
             allRestaurants.forEach((restaurant, index) => {
                 const distance = calculateHaversineDistance(
@@ -60,7 +60,7 @@ async function testDistanceCalculation() {
                     restaurant.latitude, restaurant.longitude
                 );
 
-                console.log(`${index + 1}. ${restaurant.name}: ${distance.toFixed(2)}km`);
+                
             });
         }
 

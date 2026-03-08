@@ -100,7 +100,7 @@ const sampleRestaurants = [
 
 async function addSampleRestaurants() {
     try {
-        console.log('Adding sample restaurants...');
+        
 
         for (const restaurant of sampleRestaurants) {
             const { data, error } = await supabase
@@ -111,11 +111,11 @@ async function addSampleRestaurants() {
             if (error) {
                 console.error(`Error adding ${restaurant.name}:`, error);
             } else {
-                console.log(`✅ Added ${restaurant.name}`);
+                
             }
         }
 
-        console.log('Sample restaurants added successfully!');
+        
 
     } catch (error) {
         console.error('Script error:', error);

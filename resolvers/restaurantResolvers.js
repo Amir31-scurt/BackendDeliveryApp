@@ -84,7 +84,7 @@ export const restaurantResolvers = {
         }
 
         if (!allRestaurants || allRestaurants.length === 0) {
-          console.log('No restaurants with coordinates found');
+          
           return [];
         }
 
@@ -97,7 +97,7 @@ export const restaurantResolvers = {
           .filter(restaurant => restaurant.distance <= maxDistance)
           .sort((a, b) => a.distance - b.distance);
 
-        console.log(`Found ${restaurantsWithDistance.length} restaurants within ${maxDistance}km of (${latitude}, ${longitude})`);
+        
 
         return restaurantsWithDistance.map(transformRestaurantData);
 

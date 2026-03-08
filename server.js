@@ -33,7 +33,7 @@ const app = express();
 
 // Request logger for troubleshooting production routes
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  
   next();
 });
 
@@ -81,7 +81,7 @@ app.use(cors({
     if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.gourmetdamour.com')) {
       callback(null, true);
     } else {
-      console.log('Blocked by CORS:', origin);
+      
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -196,7 +196,7 @@ app.post("/storage/upload", upload.single("image"), async (req, res) => {
     // Generate the public URL (relative to public directory)
     const publicUrl = `/uploads/restaurants/${fileName}`;
 
-    console.log("File uploaded successfully:", publicUrl);
+    
 
     res.status(200).json({ publicUrl });
   } catch (error) {
@@ -225,7 +225,7 @@ app.post("/storage/profilePictures/upload", upload.single("image"), async (req, 
     // Generate the public URL (relative to public directory)
     const publicUrl = `/uploads/profiles/${fileName}`;
 
-    console.log("File uploaded successfully:", publicUrl);
+    
 
     res.status(200).json({ publicUrl });
   } catch (error) {
@@ -338,8 +338,6 @@ app.use((err, req, res, next) => {
 // Start the server
 const PORT = process.env.SERVER_PORT;
 app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log(
-    `GraphQL endpoint: http://localhost:${PORT}${server.graphqlPath}`
-  );
+  
+  
 });

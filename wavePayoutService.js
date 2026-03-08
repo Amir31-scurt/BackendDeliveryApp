@@ -70,7 +70,7 @@ export async function sendWavePayoutToRestaurant(orderId) {
   }
 
   if (!order.restaurant_payout || order.restaurant_payout <= 0) {
-    console.log('No restaurant_payout for this order; skipping payout.');
+    
     return;
   }
 

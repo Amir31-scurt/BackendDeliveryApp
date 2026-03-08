@@ -113,18 +113,18 @@ router.get("/login/restaurant", (req, res) => {
 
 router.post("/login/restaurant", async (req, res) => {
   try {
-    console.log("Login attempt with body:", req.body);
+    
     const { email } = req.body;
 
     // --- CSRF token check ---
     const csrfToken = req.body._csrf || req.headers["x-csrf-token"];
 
     if (!email) {
-      console.log("No email provided");
+      
       return res.status(400).json({ error: "Email is required" });
     }
 
-    console.log("Searching for restaurant with email:", email);
+    
     const { data: restaurant, error } = await supabase
       .from("restaurants")
       .select("*")
@@ -137,11 +137,11 @@ router.post("/login/restaurant", async (req, res) => {
     }
 
     if (!restaurant) {
-      console.log("Restaurant not found");
+      
       return res.status(404).json({ error: "Restaurant not found" });
     }
 
-    console.log("Restaurant found:", restaurant);
+    
 
     // --- JWT token creation ---
     const token = jwt.sign(
@@ -150,7 +150,7 @@ router.post("/login/restaurant", async (req, res) => {
       { expiresIn: "24h" }
     );
 
-    console.log("Generated token for restaurant:", restaurant.id);
+    
 
     // --- Secure cookie setup ---
     res.cookie("token", token, {
@@ -189,23 +189,23 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
 
-    console.log('Dashboard access attempt - ID:', req.params.id);
+    
 
     // Get token from cookie or Authorization header
     const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
-    console.log('Token present:', !!token);
+    
 
     if (!token) {
-      console.log('No token found, redirecting to login');
+      
       return res.redirect('/admin/login/restaurant');
     }
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log('Token decoded:', decoded);
+      
 
       if (decoded.role !== 'restaurant' || decoded.id !== req.params.id) {
-        console.log('Invalid token role or ID');
+        
         return res.redirect('/admin/login/restaurant');
       }
 
@@ -222,7 +222,7 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
       }
 
       if (!restaurant) {
-        console.log('Restaurant not found');
+        
         return res.status(404).send('Restaurant not found');
       }
 
@@ -264,8 +264,6 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
 
         return { ...order, user: userData || {}, items };
       }));
-
-      console.log(orders)
 
       // Fetch restaurant-level revenue from the view
       const { data: revenueData, error: revenueError } = await supabase
@@ -361,23 +359,23 @@ router.get('/restaurant/:id/menu', async (req, res) => {
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
 
-    console.log('Menu access attempt - ID:', req.params.id);
+    
 
     // Get token from cookie or Authorization header
     const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
-    console.log('Token present:', !!token);
+    
 
     if (!token) {
-      console.log('No token found, redirecting to login');
+      
       return res.redirect('/admin/login/restaurant');
     }
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log('Token decoded:', decoded);
+      
 
       if (decoded.role !== 'restaurant' || decoded.id !== req.params.id) {
-        console.log('Invalid token role or ID');
+        
         return res.redirect('/admin/login/restaurant');
       }
 
@@ -394,7 +392,7 @@ router.get('/restaurant/:id/menu', async (req, res) => {
       }
 
       if (!restaurant) {
-        console.log('Restaurant not found');
+        
         return res.status(404).send('Restaurant not found');
       }
 
@@ -410,7 +408,7 @@ router.get('/restaurant/:id/menu', async (req, res) => {
         return res.status(500).send('Error fetching menu items');
       }
 
-      console.log('Rendering menu with restaurant and menu items data');
+      
       res.render('restaurant/menu', {
         restaurant,
         menuItems: menuItems || [],
@@ -667,7 +665,7 @@ router.get("/restaurants", async (req, res) => {
     const offset = (Number(page) - 1) * Number(limit);
     const pageSize = Number(limit);
 
-    console.log("Fetching restaurants with pagination...", { page, limit, search });
+    
 
     let query = supabase
       .from("restaurants")
@@ -1073,7 +1071,7 @@ router.get("/revenues", async (req, res) => {
 
     // Log the data for debugging purposes
     if (restoRev && restoRev.length > 0) {
-      console.log('Restaurant Revenue Data Sample:', restoRev[0]);
+      
     }
 
     // Fetch revenue breakdown by restaurant
@@ -1367,7 +1365,7 @@ router.post("/restaurants/add", requireRole(['admin']), async (req, res) => {
       throw new Error(errors[0].message);
     }
 
-    console.log(data);
+    
 
     res.redirect("/admin/restaurants");
   } catch (error) {
@@ -1424,7 +1422,7 @@ router.post("/restaurants/:id/menu/add", async (req, res) => {
   const { id } = req.params;
   const { name, description, price, category, imageUrl } = req.body;
 
-  console.log(req.body);
+  
 
   try {
     const addMenuItemMutation = `
@@ -1523,7 +1521,7 @@ router.get("/deliverers", async (req, res) => {
     const offset = (Number(page) - 1) * Number(limit);
     const pageSize = Number(limit);
 
-    console.log("Fetching deliverers with pagination...", { page, limit, search });
+    
 
     // Fetch deliverers with plain query (no Supabase nested syntax)
     let rawQuery = supabase
@@ -1671,7 +1669,7 @@ router.get("/deliverers/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    console.log("Fetching deliverer with ID:", id);
+    
 
     // Fetch deliverer with plain query then join user data
     const { data: rawDeliverer, error: delivererError } = await supabase
@@ -1698,7 +1696,7 @@ router.get("/deliverers/:id", async (req, res) => {
       .single();
 
     const deliverer = { ...rawDeliverer, users: delivererUser || {} };
-    console.log("Found deliverer:", deliverer);
+    
 
     // Fetch deliverer's orders with plain query, then join user data
     const { data: rawOrders, error: ordersError } = await supabase
@@ -1732,7 +1730,7 @@ router.get("/deliverers/:id", async (req, res) => {
       orders: orders || []
     };
 
-    console.log("Formatted deliverer:", formattedDeliverer);
+    
 
     // Check if it's an AJAX request
     if (req.xhr || req.headers.accept?.includes('application/json')) {
@@ -1760,7 +1758,7 @@ router.get("/deliverers/:id", async (req, res) => {
 router.post("/deliverers/add", requireRole(['admin']), async (req, res) => {
   try {
     const { name, phoneNumber, vehicleId, zone, profilePicture, isAvailable } = req.body;
-    console.log("Adding new deliverer:", req.body);
+    
 
     // Validate required fields
     if (!name || !phoneNumber || !zone) {
@@ -2277,7 +2275,7 @@ const initGraphQL = async () => {
   try {
     await graphqlServer.start();
     graphqlServer.applyMiddleware({ app: router, path: "/graphql" });
-    console.log("GraphQL server initialized successfully");
+    
   } catch (error) {
     console.error("Error initializing GraphQL server:", error);
   }

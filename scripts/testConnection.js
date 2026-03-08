@@ -2,7 +2,7 @@ import { supabase } from '../supabaseClient.js';
 
 async function testConnection() {
     try {
-        console.log('Testing Supabase connection...');
+        
 
         // Test basic connection
         const { data, error } = await supabase
@@ -15,7 +15,7 @@ async function testConnection() {
             return;
         }
 
-        console.log('✅ Supabase connection successful');
+        
 
         // Test getting restaurants count
         const { count, error: countError } = await supabase
@@ -25,7 +25,7 @@ async function testConnection() {
         if (countError) {
             console.error('Count error:', countError);
         } else {
-            console.log(`Total restaurants: ${count}`);
+            
         }
 
         // Test getting a few restaurants
@@ -37,12 +37,12 @@ async function testConnection() {
         if (fetchError) {
             console.error('Fetch error:', fetchError);
         } else {
-            console.log(`\nSample restaurants:`);
+            
             restaurants.forEach((restaurant, index) => {
-                console.log(`${index + 1}. ${restaurant.name || 'No name'}`);
-                console.log(`   Address: ${restaurant.address || 'No address'}`);
-                console.log(`   Coordinates: ${restaurant.latitude || 'No lat'}, ${restaurant.longitude || 'No lon'}`);
-                console.log('');
+                
+                
+                
+                
             });
         }
 

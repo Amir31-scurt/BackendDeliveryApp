@@ -51,7 +51,7 @@ export const authMiddleware = async (req, res, next) => {
       const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
 
       if (!token) {
-        console.log("No token found for page render, redirecting to login");
+        
         const loginPath = req.originalUrl.includes('/api/') ? '/api/admin/login/restaurant' : '/admin/login/restaurant';
         return res.redirect(loginPath);
       }
@@ -64,7 +64,7 @@ export const authMiddleware = async (req, res, next) => {
         };
         return next();
       } catch (err) {
-        console.log("Invalid token for page render, redirecting to login");
+        
         const loginPath = req.originalUrl.includes('/api/') ? '/api/admin/login/restaurant' : '/admin/login/restaurant';
         return res.redirect(loginPath);
       }

@@ -1037,84 +1037,84 @@
 
         // Event Listeners
         document.addEventListener('DOMContentLoaded', function () {
-            console.log('=== DOM CONTENT LOADED ===');
+            
 
             try {
                 // Add deliverer button
                 const addDelivererBtn = document.getElementById('addDelivererBtn');
                 if (addDelivererBtn) {
                     addDelivererBtn.addEventListener('click', openModal);
-                    console.log('Add deliverer button listener added');
+                    
                 } else {
-                    console.log('Add deliverer button not found');
+                    
                 }
 
                 // Close modal button
                 const closeModalBtn = document.getElementById('closeModalBtn');
                 if (closeModalBtn) {
                     closeModalBtn.addEventListener('click', closeModal);
-                    console.log('Close modal button listener added');
+                    
                 } else {
-                    console.log('Close modal button not found');
+                    
                 }
 
                 // Cancel button
                 const cancelButton = document.getElementById('cancelButton');
                 if (cancelButton) {
                     cancelButton.addEventListener('click', closeModal);
-                    console.log('Cancel button listener added');
+                    
                 } else {
-                    console.log('Cancel button not found');
+                    
                 }
 
                 // Submit button
                 const submitButton = document.getElementById('submitButton');
                 if (submitButton) {
                     submitButton.addEventListener('click', submitDeliverer);
-                    console.log('Submit button listener added');
+                    
                 } else {
-                    console.log('Submit button not found');
+                    
                 }
 
                 // Zone select change
                 const zoneSelect = document.getElementById('zone');
                 if (zoneSelect) {
                     zoneSelect.addEventListener('change', updateZoneInfo);
-                    console.log('Zone select listener added');
+                    
                 } else {
-                    console.log('Zone select not found');
+                    
                 }
 
                 // Use event delegation for table buttons
                 const deliverersTable = document.querySelector('.deliverers-table');
                 if (deliverersTable) {
-                    console.log('Deliverers table found, adding event delegation');
+                    
 
                     // Test: Check if buttons exist
                     const allButtons = deliverersTable.querySelectorAll('.view-deliverer-btn, .edit-deliverer-btn, .delete-deliverer-btn');
-                    console.log('Total buttons found in table:', allButtons.length);
+                    
                     allButtons.forEach((btn, index) => {
-                        console.log(`Button ${index}:`, btn.classList.toString(), 'ID:', btn.getAttribute('data-deliverer-id'));
+                        
 
                         // Also attach direct event listeners as a fallback
                         btn.addEventListener('click', function (e) {
-                            console.log('Direct button click detected!');
+                            
                             e.preventDefault();
                             e.stopPropagation();
 
                             const delivererId = this.getAttribute('data-deliverer-id');
-                            console.log('Direct click - Deliverer ID:', delivererId);
+                            
 
                             if (this.classList.contains('view-deliverer-btn')) {
-                                console.log('Direct view button click!');
+                                
                                 viewDeliverer(delivererId);
                             }
                             else if (this.classList.contains('edit-deliverer-btn')) {
-                                console.log('Direct edit button click!');
+                                
                                 editDeliverer(delivererId);
                             }
                             else if (this.classList.contains('delete-deliverer-btn')) {
-                                console.log('Direct delete button click!');
+                                
                                 const delivererName = this.getAttribute('data-deliverer-name');
                                 confirmDelete(delivererId, delivererName);
                             }
@@ -1160,7 +1160,7 @@
                                 if (x >= btnX && x <= btnX + btnRect.width &&
                                     y >= btnY && y <= btnY + btnRect.height) {
                                     button = btn;
-                                    console.log('Button found by position:', btn.classList.toString());
+                                    
                                 }
                             });
                         }
@@ -1183,11 +1183,11 @@
                                 confirmDelete(delivererId, delivererName);
                             }
                         } else {
-                            console.log('No button found in click target');
+                            
                         }
                     });
                 } else {
-                    console.log('Deliverers table not found');
+                    
                 }
 
                 // Close modal when clicking outside
@@ -1199,7 +1199,7 @@
                         }
                     });
                 } else {
-                    console.log('Modal not found');
+                    
                 }
 
                 // Pagination and Search Logic

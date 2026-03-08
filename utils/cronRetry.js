@@ -3,7 +3,7 @@ import { supabase } from "../supabaseClient.js";
 import { sendBatchPayout } from "./waveBatchPayoutService.js";
 
 cron.schedule("*/20 * * * *", async () => {
-  console.log("Cron retry Wave payouts...");
+  
 
   const { data: failed } = await supabase
     .from("payout_batch_items")
@@ -15,9 +15,9 @@ cron.schedule("*/20 * * * *", async () => {
   for (const orderId of uniqueOrders) {
     try {
       await sendBatchPayout(orderId);
-      console.log(`Retried payout for order ${orderId}`);
+      
     } catch (err) {
-      console.log(`Retry failed for ${orderId}:`, err.message);
+      
     }
   }
 });

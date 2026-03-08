@@ -447,7 +447,7 @@
                                     <%= new Date(order.created_at).toLocaleDateString('fr-FR') %>
                                 </td>
                                 <td>
-                                    <%= order.total_amount.toFixed(2) %> FCFA
+                                    <%= Number(order.total_amount).toFixed(2) %> FCFA
                                 </td>
                                 <td>
                                     <%= order.status %>

@@ -100,3 +100,28 @@ BEGIN
         AND (p_to IS NULL OR o.created_at <= p_to);
 END;
 $$ LANGUAGE plpgsql;
+
+-- Function to get monthly restaurant revenue for a specific restaurant (for dashboard charts)
+-- This function expects a UUID as restaurant_id. 
+DROP FUNCTION IF EXISTS get_monthly_restaurant_revenue(UUID);
+DROP FUNCTION IF EXISTS get_monthly_restaurant_revenue(INTEGER);
+DROP FUNCTION IF EXISTS get_monthly_restaurant_revenue();
+
+CREATE FUNCTION get_monthly_restaurant_revenue(restaurant_id UUID)
+RETURNS TABLE (
+    month TEXT,
+    revenue DECIMAL(10,2)
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        TO_CHAR(o.created_at, 'Mon YYYY')::TEXT as month,
+        COALESCE(SUM(o.products_total), 0)::DECIMAL(10,2) as revenue
+    FROM orders o
+    WHERE o.restaurant_id = get_monthly_restaurant_revenue.restaurant_id
+      AND o.status = 'COMPLETED'
+      AND o.created_at >= NOW() - INTERVAL '12 months'
+    GROUP BY TO_CHAR(o.created_at, 'Mon YYYY')
+    ORDER BY MIN(o.created_at);
+END;
+$$ LANGUAGE plpgsql;

@@ -889,8 +889,6 @@
 
                     const name = item.menuItem?.name || "Article";
                     const desc = item.menuItem?.description || "";
-                    console.log(item)
-
                     return `
                                     <li style="display:flex; gap:12px; margin-bottom:15px; align-items:flex-start;">
                                         <img src="${img}" 
@@ -963,8 +961,6 @@
             const itemsPerPage = 10;
             let currentPage = 1;
             let filteredOrders = [...orders];
-
-            console.log(orders)
 
             attachOrderDetailsListeners();
 

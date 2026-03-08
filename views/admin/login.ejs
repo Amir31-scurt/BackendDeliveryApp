@@ -150,7 +150,7 @@
 
         if (response.ok) {
           const { user } = result;
-          console.log("Logged-in user:", user);
+          
           localStorage.setItem("authToken", result.token);
 
           if (user.role === "admin") {

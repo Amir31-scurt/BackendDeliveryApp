@@ -29,7 +29,7 @@ export async function sendPushNotification(userId, title, messageText, data = {}
   for (const chunk of chunks) {
     try {
       const receipts = await expo.sendPushNotificationsAsync(chunk);
-      console.log('Sent:', receipts);
+      
     } catch (err) {
       console.error('Error sending push:', err);
     }

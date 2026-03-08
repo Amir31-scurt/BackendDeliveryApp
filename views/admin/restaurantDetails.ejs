@@ -754,7 +754,7 @@
                   <%= item.description %>
                 </td>
                 <td>
-                  <%= item.price.toFixed(2) %> Fcfa
+                  <%= Number(item.price).toFixed(2) %> Fcfa
                 </td>
                 <td>
                   <%= item.createdAt %>
@@ -870,7 +870,7 @@
     // Edit Menu Item
     async function editMenuItem(id) {
       try {
-        console.log("Fetching menu item with ID:", id);
+
 
         // Fetch menu item data from server
         const query = `
@@ -886,7 +886,7 @@
           }
         `;
 
-        console.log("Sending GraphQL query:", query);
+
 
         const response = await fetch("/graphql", {
           method: "POST",
@@ -897,7 +897,7 @@
         });
 
         const result = await response.json();
-        console.log("GraphQL response:", result);
+
 
         if (result.errors) {
           console.error("GraphQL errors:", result.errors);
@@ -910,7 +910,7 @@
         }
 
         const menuItem = result.data.menuItem;
-        console.log("Menu item data:", menuItem);
+
 
         openEditMenuItemModal(menuItem);
       } catch (error) {
@@ -1027,12 +1027,12 @@
           });
 
           const uploadResult = await uploadResponse.json();
-          console.log(uploadResponse);
-          console.log("uploadResult", uploadResult);
+
+
 
           if (uploadResponse.ok && uploadResult.publicUrl) {
             imageUrl = uploadResult.publicUrl;
-            console.log("Image téléchargée avec succès:", imageUrl);
+
           } else {
             throw new Error("Échec du téléchargement de l'image");
           }
@@ -1111,7 +1111,7 @@
           body: JSON.stringify({ query }),
         });
 
-        console.log(JSON.stringify({ query }));
+
 
         const result = await response.json();
         if (result.errors) {

@@ -46,7 +46,7 @@ async function sendPushNotification(userId, title, messageText, data = {}, supab
   for (const chunk of chunks) {
     try {
       const receipts = await expo.sendPushNotificationsAsync(chunk);
-      console.log('Sent:', receipts);
+      
     } catch (err) {
       console.error('Error sending push:', err);
     }
@@ -374,7 +374,7 @@ const resolvers = {
         }
 
         if (!allRestaurants || allRestaurants.length === 0) {
-          console.log('No restaurants with coordinates found');
+          
           return [];
         }
 
@@ -387,7 +387,7 @@ const resolvers = {
           .filter(restaurant => restaurant.distance <= maxDistance)
           .sort((a, b) => a.distance - b.distance);
 
-        console.log(`Found ${restaurantsWithDistance.length} restaurants within ${maxDistance}km of (${latitude}, ${longitude})`);
+        
 
         // Get all restaurant IDs
         const restaurantIds = restaurantsWithDistance.map(r => r.id);
@@ -490,7 +490,7 @@ const resolvers = {
     },
     menuItem: async (_, { id }, { supabase }) => {
       try {
-        console.log(`Fetching menu item with id: ${id}`);
+        
 
         const { data, error } = await supabase
           .from("menu_items")
@@ -508,7 +508,7 @@ const resolvers = {
           throw new Error(`Menu item with id ${id} not found`);
         }
 
-        console.log(`Found menu item: ${JSON.stringify(data)}`);
+        
 
         return {
           ...data,
@@ -951,8 +951,8 @@ const resolvers = {
       };
       // Remove the phoneNumber field to avoid duplication
       delete dbInput.phoneNumber;
-      console.log("Input:", input);
-      console.log("DB Input:", dbInput);
+      
+      
 
       // Check if the phone number already exists in the users table
       const { data: existingUser, error: existingUserError } = await supabase
@@ -1075,7 +1075,7 @@ const resolvers = {
     },
     updateMenuItem: async (_, { id, input }, { supabase }) => {
       try {
-        console.log(`Updating menu item with id: ${id}, input:`, input);
+        
 
         // Map GraphQL fields to database column names
         const dbInput = {};
@@ -1089,7 +1089,7 @@ const resolvers = {
         // Map imageUrl to image_url
         if (input.imageUrl !== undefined) dbInput.image_url = input.imageUrl;
 
-        console.log("Mapped database input:", dbInput);
+        
 
         const { data, error } = await supabase
           .from("menu_items")
@@ -1103,7 +1103,7 @@ const resolvers = {
           throw new Error(error.message);
         }
 
-        console.log("Updated menu item data:", data);
+        
 
         return {
           ...data,
@@ -1121,7 +1121,7 @@ const resolvers = {
     },
     deleteMenuItem: async (_, { id }, { supabase }) => {
       try {
-        console.log(`Attempting to delete menu item with id: ${id}`);
+        
 
         const { error } = await supabase.from("menu_items").delete().eq("id", id);
 
@@ -1130,7 +1130,7 @@ const resolvers = {
           throw new Error(error.message);
         }
 
-        console.log(`Successfully deleted menu item with id: ${id}`);
+        
         return true;
       } catch (error) {
         console.error(`Error in deleteMenuItem: ${error.message}`);
@@ -1903,7 +1903,7 @@ const resolvers = {
             });
           } catch (err) {
             // Table might not exist yet, just log but don't fail
-            console.log('deliverer_ratings table not found, skipping separate record');
+            
           }
         }
 

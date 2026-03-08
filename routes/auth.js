@@ -123,7 +123,7 @@ router.post("/signup", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { phoneNumber, password } = req.body;
-    console.log(req.body);
+    
 
     if (!phoneNumber || !password) {
       return res.status(400).json({

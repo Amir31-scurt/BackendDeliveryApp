@@ -5,7 +5,7 @@ dotenv.config();
 
 async function testConnection() {
     try {
-        console.log('Testing PostgreSQL connection...');
+        
 
         // Check for required environment variables (matching db.js which uses HOST, DB, USER, PASSWORD)
         const requiredVars = ['HOST', 'DB', 'USER', 'PASSWORD'];
@@ -19,14 +19,7 @@ async function testConnection() {
             process.exit(1);
         }
 
-        console.log('Database config:', {
-            host: process.env.HOST,
-            port: process.env.PORT || 5432,
-            database: process.env.DB,
-            user: process.env.USER,
-            ssl: process.env.SSL === 'true',
-            password: process.env.PASSWORD ? '***' : 'NOT SET'
-        });
+        
 
         // Test basic connection
         const result = await query('SELECT NOW() as current_time, version() as version');
@@ -62,9 +55,9 @@ async function testConnection() {
             return;
         }
 
-        console.log('✅ PostgreSQL connection successful');
-        console.log('Server time:', result.data[0].current_time);
-        console.log('PostgreSQL version:', result.data[0].version.split('\n')[0]);
+        
+        
+        
 
         // Test getting restaurants count
         const countResult = await query('SELECT COUNT(*) as count FROM restaurants');
@@ -72,7 +65,7 @@ async function testConnection() {
         if (countResult.error) {
             console.error('❌ Count error:', countResult.error);
         } else {
-            console.log(`✅ Total restaurants: ${countResult.data[0].count}`);
+            
         }
 
         // Test getting a few restaurants
@@ -83,25 +76,25 @@ async function testConnection() {
         if (restaurantsResult.error) {
             console.error('❌ Fetch error:', restaurantsResult.error);
         } else {
-            console.log(`\n✅ Sample restaurants (${restaurantsResult.data.length}):`);
+            
             restaurantsResult.data.forEach((restaurant, index) => {
-                console.log(`${index + 1}. ${restaurant.name || 'No name'}`);
-                console.log(`   Address: ${restaurant.address || 'No address'}`);
-                console.log(`   Coordinates: ${restaurant.latitude || 'No lat'}, ${restaurant.longitude || 'No lon'}`);
-                console.log('');
+                
+                
+                
+                
             });
         }
 
         // Test RPC functions
-        console.log('Testing RPC functions...');
+        
         const monthlyOrdersResult = await query('SELECT * FROM get_monthly_orders()');
         if (monthlyOrdersResult.error) {
             console.error('❌ RPC function error:', monthlyOrdersResult.error);
         } else {
-            console.log(`✅ get_monthly_orders() returned ${monthlyOrdersResult.data.length} rows`);
+            
         }
 
-        console.log('\n✅ All tests passed! Database is working correctly.');
+        
 
     } catch (error) {
         console.error('❌ Test error:', error);

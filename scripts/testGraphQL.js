@@ -2,15 +2,15 @@ import { supabase } from '../supabaseClient.js';
 
 async function testGraphQLQuery() {
     try {
-        console.log('Testing GraphQL restaurantsNearby query...');
+        
 
         // Test coordinates (Paris center)
         const testLat = 48.8566;
         const testLon = 2.3522;
         const maxDistance = 10.0;
 
-        console.log(`Testing with coordinates: ${testLat}, ${testLon}`);
-        console.log(`Max distance: ${maxDistance}km`);
+        
+        
 
         // First, let's check what restaurants exist
         const { data: allRestaurants, error: fetchError } = await supabase
@@ -22,10 +22,10 @@ async function testGraphQLQuery() {
             return;
         }
 
-        console.log(`\nTotal restaurants in database: ${allRestaurants.length}`);
+        
 
         if (allRestaurants.length === 0) {
-            console.log('No restaurants found. Adding sample data...');
+            
 
             // Add sample restaurants
             const sampleRestaurants = [
@@ -80,7 +80,7 @@ async function testGraphQLQuery() {
                 if (error) {
                     console.error(`Error adding ${restaurant.name}:`, error);
                 } else {
-                    console.log(`✅ Added ${restaurant.name}`);
+                    
                 }
             }
 
@@ -89,7 +89,7 @@ async function testGraphQLQuery() {
                 .from("restaurants")
                 .select("*");
 
-            console.log(`\nRestaurants after adding samples: ${newRestaurants.length}`);
+            
         }
 
         // Now test the distance calculation logic
@@ -105,10 +105,10 @@ async function testGraphQLQuery() {
             return;
         }
 
-        console.log(`\nRestaurants with coordinates: ${restaurantsWithCoords.length}`);
+        
 
         if (restaurantsWithCoords.length === 0) {
-            console.log('No restaurants with coordinates found. This is why the query returns empty.');
+            
             return;
         }
 
@@ -133,14 +133,14 @@ async function testGraphQLQuery() {
             .filter(restaurant => restaurant.distance <= maxDistance)
             .sort((a, b) => a.distance - b.distance);
 
-        console.log(`\nFound ${restaurantsWithDistance.length} restaurants within ${maxDistance}km:`);
+        
 
         restaurantsWithDistance.forEach((restaurant, index) => {
-            console.log(`${index + 1}. ${restaurant.name}`);
-            console.log(`   Address: ${restaurant.address}`);
-            console.log(`   Coordinates: ${restaurant.latitude}, ${restaurant.longitude}`);
-            console.log(`   Distance: ${restaurant.distance.toFixed(2)}km`);
-            console.log('');
+            
+            
+            
+            
+            
         });
 
     } catch (error) {

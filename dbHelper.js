@@ -354,7 +354,7 @@ export const db = {
             return { data: result.data, error: result.error };
         }
 
-        const placeholders = paramNames.map((_, idx) => `$${idx + 1}`).join(', ');
+        const placeholders = paramNames.map((name, idx) => `${name} := $${idx + 1}`).join(', ');
         const sql = `SELECT * FROM ${functionName}(${placeholders})`;
 
         const result = await query(sql, paramValues);
