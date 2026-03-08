@@ -1116,9 +1116,7 @@ router.get("/revenues", async (req, res) => {
         deliverer_payout,
         gourmet_payout,
         created_at,
-        restaurants!orders_restaurant_id_fkey (
-          name
-        )
+        restaurant_id
       `)
       .eq("status", "COMPLETED")
       .order("created_at", { ascending: false })
@@ -1132,13 +1130,27 @@ router.get("/revenues", async (req, res) => {
       console.error("Error fetching revenue orders:", revenueOrdersError);
     }
 
+    // Manual join to get restaurant names
+    const restIds = [...new Set((revenueOrdersRaw || []).map(o => o.restaurant_id))].filter(Boolean);
+    let restaurantMap = {};
+    if (restIds.length > 0) {
+      const { data: restaurantsData } = await supabase
+        .from("restaurants")
+        .select("id, name")
+        .in("id", restIds);
+      
+      (restaurantsData || []).forEach(r => {
+        restaurantMap[r.id] = r.name;
+      });
+    }
+
     const revenueOrders = (revenueOrdersRaw || []).map(o => ({
       id: o.id,
       total: Number(o.total_amount || 0),
       restaurantShare: Number(o.restaurant_payout || 0),
       delivererShare: Number(o.deliverer_payout || 0),
       gourmetShare: Number(o.gourmet_payout || 0),
-      restaurantName: o.restaurants?.name || "N/A",
+      restaurantName: restaurantMap[o.restaurant_id] || "N/A",
       createdAt: o.created_at
     }));
 

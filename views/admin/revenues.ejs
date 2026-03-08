@@ -668,10 +668,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Chart initialization (existing)
-            const monthlyData = `${JSON.stringify(monthlyData || [])}`;
-
-            // ... (keep chart logic implicitly or explicitly if needed, but the tool replaces blocks)
-            // Wait, I am replacing the block. I need to keep the chart logic.
+            const monthlyData = <% - JSON.stringify(monthlyData || []) %>;
 
             const ctx = document.getElementById('revenueChart').getContext('2d');
             new Chart(ctx, {
@@ -741,8 +738,8 @@
             const currentPage = parseInt(urlParams.get('page')) || 1;
             const limit = parseInt(urlParams.get('limit')) || 20;
             // Use EJS to inject values
-            const totalItems = `${pagination ? pagination.totalCount : 0}`;
-            const totalPages = `${pagination ? pagination.totalPages : 1}`;
+            const totalItems = <%= pagination ?pagination.totalCount: 0 %>;
+            const totalPages = <%= pagination ?pagination.totalPages: 1 %>;
 
             // Update UI
             const startIndex = (currentPage - 1) * limit + 1;
