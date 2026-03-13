@@ -311,6 +311,11 @@ app.get(["/health", "/api/health"], (req, res) => {
 app.get(["/", "/api", "/index.html", "/api/index.html"], (req, res) => {
   res.render('landing', { layout: false });
 });
+
+// Privacy Policy and Terms
+app.get(["/privacy", "/api/privacy"], (req, res) => {
+  res.render('privacy', { layout: false });
+});
 // Admin routes - mount at both to support hardcoded /admin links and /api/admin entry points
 app.use(["/admin", "/api/admin"], adminRoutes);
 
