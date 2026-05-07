@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { addMinutes } from "date-fns";
 import express from "express";
 import jwt from "jsonwebtoken";
-import { supabase } from "../supabaseClient.js";
+import { supabase, query } from "../supabaseClient.js";
 import { signIn } from "../utils/auth.js";
 import { sendPushNotification } from "../utils/sendNotifications.js";
 
@@ -246,53 +246,53 @@ router.post("/forgot-password", async (req, res) => {
       return res.status(400).json({ error: "Le numéro de téléphone est requis." });
     }
 
-    // 1. Check if user exists
-    const { data: user, error } = await supabase
-      .from("users")
-      .select("id, name")
-      .eq("phone_number", phoneNumber)
-      .single();
+    // 1. Check if user exists — raw SQL
+    const { data: users, error: userError } = await query(
+      "SELECT id, name FROM users WHERE phone_number = $1 LIMIT 1",
+      [phoneNumber]
+    );
 
-    if (error || !user) {
+    if (userError || !users || users.length === 0) {
       return res.status(404).json({ error: "Utilisateur introuvable." });
     }
+    const user = users[0];
 
-    // 2. Delete any previous OTPs for this number (avoids stale records being matched)
-    await supabase.from("otps").delete().eq("phone_number", phoneNumber);
+    // 2. Delete any previous OTPs for this number
+    await query("DELETE FROM otps WHERE phone_number = $1", [phoneNumber]);
 
     // 3. Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit
-    const expiresAt = addMinutes(new Date(), 10); // 10 mins — explicit UTC ISO string
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    const expiresAt = addMinutes(new Date(), 10); // 10 minutes
 
-    // 4. Store OTP with explicit UTC timestamp to avoid timezone issues
-    const { error: insertError } = await supabase.from("otps").insert({
-      phone_number: phoneNumber,
-      otp,
-      expires_at: expiresAt.toISOString(),
-    });
+    // 4. Store OTP
+    const { error: insertError } = await query(
+      "INSERT INTO otps (phone_number, otp, expires_at) VALUES ($1, $2, $3)",
+      [phoneNumber, otp, expiresAt.toISOString()]
+    );
 
     if (insertError) {
+      console.error("[forgot-password] Insert OTP error:", insertError);
       return res.status(500).json({ error: "Erreur lors de la création de l'OTP." });
     }
 
     const bodyMessage = `Votre code OTP est : ${otp}`;
 
     // 5. Insert notification
-    await supabase.from("notifications").insert({
-      user_id: user.id,
-      title: "Code de réinitialisation",
-      body: bodyMessage,
-    });
+    await query(
+      "INSERT INTO notifications (user_id, title, body) VALUES ($1, $2, $3)",
+      [user.id, "Code de réinitialisation", bodyMessage]
+    );
 
-    // 6. Send push notification via Expo
+    // 6. Send push notification (may silently fail if no push token)
     await sendPushNotification(user.id, "Code de réinitialisation", bodyMessage, {}, supabase);
 
-    // 7. Return response (remove otp in production)
+    // 7. Return OTP in response (remove in production)
     return res.status(200).json({
       message: "Code OTP envoyé avec succès.",
       otp, // ⚠️ Remove in production
     });
   } catch (error) {
+    console.error("[forgot-password] Unexpected error:", error);
     return res.status(500).json({ error: "Erreur interne du serveur." });
   }
 });
@@ -305,49 +305,52 @@ router.post("/reset-password", async (req, res) => {
       return res.status(400).json({ error: "Tous les champs sont requis." });
     }
 
-    // Cast otp to number (DB stores it as integer, req.body may send a string)
     const otpNumber = Number(otp);
-    if (isNaN(otpNumber)) {
+    if (isNaN(otpNumber) || otpNumber === 0) {
       return res.status(400).json({ error: "Code OTP invalide." });
     }
 
-    // Find the OTP record — filter expired ones on the DB side using server time
-    const now = new Date().toISOString();
-    const { data: otpRecord, error } = await supabase
-      .from("otps")
-      .select("*")
-      .eq("phone_number", phoneNumber)
-      .eq("otp", otpNumber)
-      .gt("expires_at", now)   // ← DB-side expiry check: only return non-expired rows
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+    // Find valid non-expired OTP — raw SQL with all conditions in one query
+    const { data: otpRows, error: otpError } = await query(
+      "SELECT * FROM otps WHERE phone_number = $1 AND otp = $2 AND expires_at > NOW() LIMIT 1",
+      [phoneNumber, otpNumber]
+    );
 
-    if (error || !otpRecord) {
-      // Could be invalid OTP OR already expired — give a clear user message
+    console.log("[reset-password] OTP query:", { otpRows, otpError });
+
+    if (otpError) {
+      console.error("[reset-password] DB error:", otpError);
+      return res.status(500).json({ error: "Erreur lors de la vérification de l'OTP." });
+    }
+
+    if (!otpRows || otpRows.length === 0) {
       return res.status(400).json({
         error: "Code OTP invalide ou expiré. Veuillez en demander un nouveau.",
       });
     }
 
+    const otpRecord = otpRows[0];
+
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update user password
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({ password: hashedPassword })
-      .eq("phone_number", phoneNumber);
+    const { error: updateError } = await query(
+      "UPDATE users SET password = $1 WHERE phone_number = $2",
+      [hashedPassword, phoneNumber]
+    );
 
     if (updateError) {
+      console.error("[reset-password] Update error:", updateError);
       return res.status(500).json({ error: "Erreur lors de la mise à jour du mot de passe." });
     }
 
     // Delete used OTP
-    await supabase.from("otps").delete().eq("id", otpRecord.id);
+    await query("DELETE FROM otps WHERE id = $1", [otpRecord.id]);
 
     return res.status(200).json({ message: "Mot de passe réinitialisé avec succès." });
   } catch (error) {
+    console.error("[reset-password] Unexpected error:", error);
     return res.status(500).json({ error: "Erreur interne du serveur." });
   }
 });
