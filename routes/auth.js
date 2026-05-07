@@ -260,14 +260,13 @@ router.post("/forgot-password", async (req, res) => {
 
     // 2. Delete any previous OTPs for this number
     await query("DELETE FROM otps WHERE phone_number = $1", [phoneNumber]);
-
-    // 3. Generate OTP
+    // 3. Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
     const expiresAt = addMinutes(new Date(), 10); // 10 minutes
 
-    // 4. Store OTP
+    // 4. Store OTP — include id explicitly since the table has no DEFAULT for it
     const { error: insertError } = await query(
-      "INSERT INTO otps (phone_number, otp, expires_at) VALUES ($1, $2, $3)",
+      "INSERT INTO otps (id, phone_number, otp, expires_at) VALUES (gen_random_uuid(), $1, $2, $3)",
       [phoneNumber, otp, expiresAt.toISOString()]
     );
 
@@ -277,6 +276,7 @@ router.post("/forgot-password", async (req, res) => {
     }
 
     const bodyMessage = `Votre code OTP est : ${otp}`;
+
 
     // 5. Insert notification
     await query(
