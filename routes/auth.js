@@ -247,7 +247,7 @@ router.post("/forgot-password", async (req, res) => {
       return res.status(400).json({ error: "Le numéro de téléphone est requis." });
     }
 
-    // 1. Check if user exists — raw SQL
+    // 1. Check if user exists
     const { data: users, error: userError } = await query(
       "SELECT id, name FROM users WHERE phone_number = $1 LIMIT 1",
       [phoneNumber]
@@ -260,14 +260,15 @@ router.post("/forgot-password", async (req, res) => {
 
     // 2. Delete any previous OTPs for this number
     await query("DELETE FROM otps WHERE phone_number = $1", [phoneNumber]);
-    // 3. Generate OTP
-    const otp = Math.floor(100000 + Math.random() * 900000);
-    const expiresAt = addMinutes(new Date(), 10); // 10 minutes
 
-    // 4. Store OTP — include id explicitly since the table has no DEFAULT for it
+    // 3. Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
+
+    // 4. Store OTP — use DB's NOW() so expires_at and the comparison clock are identical
+    console.log("[forgot-password] Inserting OTP:", { phoneNumber, otp });
     const { error: insertError } = await query(
-      "INSERT INTO otps (id, phone_number, otp, expires_at) VALUES (gen_random_uuid(), $1, $2, $3)",
-      [phoneNumber, otp, expiresAt.toISOString()]
+      "INSERT INTO otps (id, phone_number, otp, expires_at) VALUES (gen_random_uuid(), $1, $2, NOW() + INTERVAL '10 minutes')",
+      [phoneNumber, otp]
     );
 
     if (insertError) {
@@ -276,7 +277,6 @@ router.post("/forgot-password", async (req, res) => {
     }
 
     const bodyMessage = `Votre code OTP est : ${otp}`;
-
 
     // 5. Insert notification
     await query(
@@ -311,13 +311,14 @@ router.post("/reset-password", async (req, res) => {
       return res.status(400).json({ error: "Code OTP invalide." });
     }
 
-    // Find valid non-expired OTP — raw SQL with all conditions in one query
+    // Find valid non-expired OTP — uses DB's NOW() so timezone is always consistent
+    console.log("[reset-password] Searching OTP:", { phoneNumber, otpNumber });
     const { data: otpRows, error: otpError } = await query(
       "SELECT * FROM otps WHERE phone_number = $1 AND otp = $2 AND expires_at > NOW() LIMIT 1",
       [phoneNumber, otpNumber]
     );
 
-    console.log("[reset-password] OTP query:", { otpRows, otpError });
+    console.log("[reset-password] OTP query result:", { otpRows, otpError });
 
     if (otpError) {
       console.error("[reset-password] DB error:", otpError);
