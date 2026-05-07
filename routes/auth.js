@@ -2,7 +2,8 @@ import bcrypt from "bcrypt";
 import { addMinutes } from "date-fns";
 import express from "express";
 import jwt from "jsonwebtoken";
-import { supabase, query } from "../supabaseClient.js";
+import { supabase } from "../supabaseClient.js";
+import { query } from "../db.js";
 import { signIn } from "../utils/auth.js";
 import { sendPushNotification } from "../utils/sendNotifications.js";
 
