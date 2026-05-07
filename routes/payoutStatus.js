@@ -20,7 +20,7 @@ router.get("/payout/status/order/:orderId", async (req, res) => {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error(error);
+
       return res
         .status(500)
         .json({ message: "Erreur lors de la récupération des payouts." });
@@ -28,7 +28,7 @@ router.get("/payout/status/order/:orderId", async (req, res) => {
 
     return res.json({ orderId, payouts: data });
   } catch (err) {
-    console.error(err);
+
     return res
       .status(500)
       .json({ message: "Erreur interne du serveur (payouts)." });
@@ -46,7 +46,7 @@ router.get("/payout/status/batch/:batchId", async (req, res) => {
       .eq("batch_id", batchId);
 
     if (error) {
-      console.error(error);
+
       return res
         .status(500)
         .json({ message: "Erreur lors de la récupération du batch." });
@@ -54,7 +54,7 @@ router.get("/payout/status/batch/:batchId", async (req, res) => {
 
     return res.json({ batchId, payouts: data });
   } catch (err) {
-    console.error(err);
+
     return res
       .status(500)
       .json({ message: "Erreur interne du serveur (batch)." });

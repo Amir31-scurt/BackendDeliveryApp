@@ -25,7 +25,7 @@ router.get('/payment/wave/success', async (req, res) => {
       .single();
 
     if (orderErr || !order) {
-      console.error('Error: Order not found for orderId:', orderId, orderErr);
+
       return res.status(500).send('Failed to find order');
     }
 
@@ -41,7 +41,7 @@ router.get('/payment/wave/success', async (req, res) => {
       .single();
 
     if (updateErr || !updatedOrder) {
-      console.error('Error updating order as paid:', updateErr);
+
       return res.status(500).send('Failed to update order');
     }
 
@@ -53,7 +53,7 @@ router.get('/payment/wave/success', async (req, res) => {
     );
 
     if (computeErr) {
-      console.error('Error computing order revenue:', computeErr);
+
       // Don't fail the request, just log it
     }
 
@@ -61,7 +61,7 @@ router.get('/payment/wave/success', async (req, res) => {
     try {
       await sendWavePayoutToRestaurant(updatedOrder.id);
     } catch (payoutErr) {
-      console.error('Wave payout error (restaurant):', payoutErr);
+
       // Don't fail - payout can be retried later
     }
 
@@ -70,7 +70,7 @@ router.get('/payment/wave/success', async (req, res) => {
 
     return res.send('Payement effectué. Vous pouvez fermer cette page.');
   } catch (err) {
-    console.error('Wave success handler error:', err);
+
     return res.status(500).send('Internal server error');
   }
 });

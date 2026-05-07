@@ -130,7 +130,7 @@ export const createDeliverer = async (delivererData) => {
     .single();
 
   if (error) {
-    console.error("Error creating deliverer profile:", error.message);
+
     throw new Error("Failed to create deliverer profile.");
   }
 

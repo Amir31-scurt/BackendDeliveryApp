@@ -13,7 +13,7 @@ async function sendPushNotification(userId, title, messageText, data = {}, supab
     .eq('user_id', userId);
 
   if (error || !tokens || tokens.length === 0) {
-    console.warn('No push token found for user');
+
     return;
   }
 
@@ -49,7 +49,7 @@ async function sendPushNotification(userId, title, messageText, data = {}, supab
       const receipts = await expo.sendPushNotificationsAsync(chunk);
       
     } catch (err) {
-      console.error('Error sending push:', err);
+
     }
   }
 }
@@ -193,7 +193,7 @@ const resolvers = {
           .eq("status", "COMPLETED");
 
         if (ordersError) {
-          console.error("Error fetching orders for restaurants:", ordersError.message);
+
           // Continue without order data rather than crashing
         }
 
@@ -258,7 +258,7 @@ const resolvers = {
           return b.rating - a.rating;
         });
       } catch (err) {
-        console.error("Error in restaurants query:", err);
+
         return []; // Return empty array instead of throwing, so other query fields still work
       }
     },
@@ -344,7 +344,7 @@ const resolvers = {
           .eq('is_active', true);
 
         if (error) {
-          console.error('Error fetching restaurants:', error);
+
           return [];
         }
 
@@ -375,7 +375,7 @@ const resolvers = {
           .eq("status", "COMPLETED");
 
         if (ordersError) {
-          console.error('Error fetching orders:', ordersError);
+
           // Continue without orders data
         }
 
@@ -424,7 +424,7 @@ const resolvers = {
         });
 
       } catch (error) {
-        console.error('Error in restaurantsNearby:', error);
+
         // Return empty array instead of null to satisfy GraphQL non-null constraint
         return [];
       }
@@ -456,7 +456,7 @@ const resolvers = {
           isAvailable: menuItem.is_available !== undefined ? menuItem.is_available : true,
         }));
       } catch (err) {
-        console.error("Error in menuItems:", err);
+
         return [];
       }
     },
@@ -476,7 +476,7 @@ const resolvers = {
           isAvailable: menuItem.is_available !== undefined ? menuItem.is_available : true,
         }));
       } catch (err) {
-        console.error("Error in allMenuItems:", err);
+
         return [];
       }
     },
@@ -491,12 +491,12 @@ const resolvers = {
           .single();
 
         if (error) {
-          console.error(`Error fetching menu item: ${error.message}`);
+
           throw new Error(error.message);
         }
 
         if (!data) {
-          console.error(`Menu item with id ${id} not found`);
+
           throw new Error(`Menu item with id ${id} not found`);
         }
 
@@ -514,7 +514,7 @@ const resolvers = {
           isAvailable: data.is_available !== undefined ? data.is_available : true,
         };
       } catch (error) {
-        console.error(`Error in menuItem resolver: ${error.message}`);
+
         throw new Error(`Error fetching menu item: ${error.message}`);
       }
     },
@@ -665,7 +665,7 @@ const resolvers = {
           };
         });
       } catch (err) {
-        console.error("Error fetching orders:", err.message);
+
         throw new Error(err.message);
       }
     },
@@ -769,7 +769,7 @@ const resolvers = {
           deliverer
         };
       } catch (err) {
-        console.error("Error fetching order:", err.message);
+
         throw new Error(err.message);
       }
     },
@@ -803,7 +803,7 @@ const resolvers = {
           createdAt: notification.created_at ? new Date(notification.created_at).toISOString() : null
         }));
       } catch (err) {
-        console.error("Error in notifications query:", err);
+
         throw new Error(err.message);
       }
     },
@@ -830,7 +830,7 @@ const resolvers = {
           createdAt: x.created_at ? new Date(x.created_at).toISOString() : null
         }));
       } catch (error) {
-        console.error("Error in payoutItems query:", error);
+
         throw new Error(error.message);
       }
     },
@@ -846,7 +846,7 @@ const resolvers = {
         if (data.some(p => p.status === "failed")) return "partial";
         return "processing";
       } catch (err) {
-        console.error("Error in payoutItems query:", err);
+
         throw new Error(err.message);
       }
     },
@@ -888,7 +888,7 @@ const resolvers = {
           };
         });
       } catch (err) {
-        console.error("Error in restaurantRatings query:", err);
+
         throw new Error(err.message);
       }
     },
@@ -915,7 +915,7 @@ const resolvers = {
           updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : null
         };
       } catch (err) {
-        console.error("Error in userRestaurantRating query:", err);
+
         throw new Error(err.message);
       }
     },
@@ -935,7 +935,7 @@ const resolvers = {
           .eq('status', 'COMPLETED');
 
         if (allError) {
-          console.error('Error fetching all orders:', allError);
+
           throw new Error(`Error fetching orders: ${allError.message}`);
         }
 
@@ -949,7 +949,7 @@ const resolvers = {
           .lte('created_at', endOfDay.toISOString());
 
         if (todayError) {
-          console.error('Error fetching today orders:', todayError);
+
           throw new Error(`Error fetching today's orders: ${todayError.message}`);
         }
 
@@ -967,7 +967,7 @@ const resolvers = {
           totalDeliveries
         };
       } catch (err) {
-        console.error('Error in delivererStats query:', err);
+
         throw new Error(err.message);
       }
     },
@@ -1002,7 +1002,7 @@ const resolvers = {
       }
 
       if (existingUserError && existingUserError.code !== "PGRST116") {
-        console.error("Erreur de vérification du numéro:", existingUserError);
+
         throw new Error("Erreur interne du serveur.");
       }
 
@@ -1135,7 +1135,7 @@ const resolvers = {
           .single();
 
         if (error) {
-          console.error(`Error updating menu item: ${error.message}`);
+
           throw new Error(error.message);
         }
 
@@ -1151,7 +1151,7 @@ const resolvers = {
           updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : null
         };
       } catch (error) {
-        console.error(`Error in updateMenuItem: ${error.message}`);
+
         throw new Error(`Failed to update menu item: ${error.message}`);
       }
     },
@@ -1162,14 +1162,14 @@ const resolvers = {
         const { error } = await supabase.from("menu_items").delete().eq("id", id);
 
         if (error) {
-          console.error(`Error deleting menu item: ${error.message}`);
+
           throw new Error(error.message);
         }
 
         
         return true;
       } catch (error) {
-        console.error(`Error in deleteMenuItem: ${error.message}`);
+
         throw new Error(`Failed to delete menu item: ${error.message}`);
       }
     },
@@ -1290,7 +1290,7 @@ const resolvers = {
           delivererId: newOrder.deliverer_id,
         };
       } catch (err) {
-        console.error("Error in createOrder function:", err.message);
+
         throw new Error(err.message);
       }
     },
@@ -1489,7 +1489,7 @@ const resolvers = {
           .eq("order_id", id);
 
         if (itemsError) {
-          console.error("Error deleting order items:", itemsError);
+
           throw new Error("Impossible de supprimer les articles de la commande.");
         }
 
@@ -1500,13 +1500,13 @@ const resolvers = {
           .eq("id", id);
 
         if (deleteError) {
-          console.error("Error deleting order:", deleteError);
+
           throw new Error("Impossible de supprimer la commande.");
         }
 
         return true;
       } catch (err) {
-        console.error("Error in deleteOrder mutation:", err.message);
+
         throw new Error(err.message);
       }
     },
@@ -1566,7 +1566,7 @@ const resolvers = {
           createdAt: data.created_at ? new Date(data.created_at).toISOString() : null
         };
       } catch (err) {
-        console.error("Error marking notification as read:", err);
+
         throw new Error(err.message);
       }
     },
@@ -1582,7 +1582,7 @@ const resolvers = {
 
         return true;
       } catch (err) {
-        console.error("Error marking all notifications as read:", err);
+
         throw new Error(err.message);
       }
     },
@@ -1596,7 +1596,7 @@ const resolvers = {
         if (error) throw new Error(`Error deleting notification: ${error.message}`);
         return true;
       } catch (err) {
-        console.error('Error deleting notification:', err);
+
         throw new Error(err.message);
       }
     },
@@ -1629,7 +1629,7 @@ const resolvers = {
           isVerified: deliverer.is_verified
         };
       } catch (error) {
-        console.error("Error updating deliverer location:", error);
+
         throw new Error(error.message);
       }
     },
@@ -1656,7 +1656,7 @@ const resolvers = {
           isVerified: deliverer.is_verified
         };
       } catch (error) {
-        console.error("Error updating deliverer status:", error);
+
         throw new Error(error.message);
       }
     },
@@ -1718,7 +1718,7 @@ const resolvers = {
           updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : null
         };
       } catch (err) {
-        console.error("Error in addRestaurantRating mutation:", err);
+
         throw new Error(err.message);
       }
     },
@@ -1748,7 +1748,7 @@ const resolvers = {
           updatedAt: data.updated_at ? new Date(data.updated_at).toISOString() : null
         };
       } catch (err) {
-        console.error("Error in updateRestaurantRating mutation:", err);
+
         throw new Error(err.message);
       }
     },
@@ -1764,7 +1764,7 @@ const resolvers = {
 
         return true;
       } catch (err) {
-        console.error("Error in deleteRestaurantRating mutation:", err);
+
         throw new Error(err.message);
       }
     },
@@ -1797,7 +1797,7 @@ const resolvers = {
           delivererId: data.deliverer_id
         };
       } catch (err) {
-        console.error("Error in updateOrderNote mutation:", err);
+
         throw new Error(err.message);
       }
     },
@@ -1844,7 +1844,7 @@ const resolvers = {
           delivererId: data.deliverer_id
         };
       } catch (err) {
-        console.error("Error in updateOrderRating mutation:", err);
+
         throw new Error(err.message);
       }
     },
@@ -1892,7 +1892,7 @@ const resolvers = {
           delivererId: data.deliverer_id
         };
       } catch (err) {
-        console.error("Error in updateOrderFeedback mutation:", err);
+
         throw new Error(err.message);
       }
     },
@@ -1926,7 +1926,7 @@ const resolvers = {
           .single();
 
         if (updateError) {
-          console.error('Error updating order ratings:', updateError);
+
           throw new Error('Impossible de sauvegarder les notes');
         }
 
@@ -1966,7 +1966,7 @@ const resolvers = {
           delivererId: updated.deliverer_id
         };
       } catch (err) {
-        console.error("Error in rateOrderComplete mutation:", err);
+
         throw new Error(err.message);
       }
     },
@@ -2001,7 +2001,7 @@ const resolvers = {
         const totalRating = orders.reduce((sum, order) => sum + order.rating, 0);
         return totalRating / orders.length;
       } catch (err) {
-        console.error("Error calculating restaurant rating:", err);
+
         return null;
       }
     },
@@ -2019,7 +2019,7 @@ const resolvers = {
 
         return count || 0;
       } catch (err) {
-        console.error("Error counting restaurant ratings:", err);
+
         return 0;
       }
     }
@@ -2064,7 +2064,7 @@ const resolvers = {
 
         return Math.round(average * 10) / 10; // Round to 1 decimal place
       } catch (err) {
-        console.error("Error calculating deliverer average rating:", err);
+
         return null;
       }
     },
@@ -2083,7 +2083,7 @@ const resolvers = {
 
         return count || 0;
       } catch (err) {
-        console.error("Error counting deliverer ratings:", err);
+
         return 0;
       }
     }

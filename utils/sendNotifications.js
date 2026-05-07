@@ -10,7 +10,7 @@ export async function sendPushNotification(userId, title, messageText, data = {}
     .eq('user_id', userId);
 
   if (error || !tokens || tokens.length === 0) {
-    console.warn('No push token found for user');
+
     return;
   }
 
@@ -31,7 +31,7 @@ export async function sendPushNotification(userId, title, messageText, data = {}
       const receipts = await expo.sendPushNotificationsAsync(chunk);
       
     } catch (err) {
-      console.error('Error sending push:', err);
+
     }
   }
 }

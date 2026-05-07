@@ -79,7 +79,7 @@ export const restaurantResolvers = {
           .eq('is_active', true);
 
         if (error) {
-          console.error('Error fetching restaurants:', error);
+
           return [];
         }
 
@@ -102,7 +102,7 @@ export const restaurantResolvers = {
         return restaurantsWithDistance.map(transformRestaurantData);
 
       } catch (error) {
-        console.error('Error in restaurantsNearby:', error);
+
         // Return empty array instead of null to satisfy GraphQL non-null constraint
         return [];
       }

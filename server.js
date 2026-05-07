@@ -202,7 +202,7 @@ app.post("/storage/upload", upload.single("image"), async (req, res) => {
 
     res.status(200).json({ publicUrl });
   } catch (error) {
-    console.error("Error uploading image:", error.message);
+
     res.status(500).json({ error: error.message });
   }
 });
@@ -231,7 +231,7 @@ app.post("/storage/profilePictures/upload", upload.single("image"), async (req, 
 
     res.status(200).json({ publicUrl });
   } catch (error) {
-    console.error("Error uploading image:", error.message);
+
     res.status(500).json({ error: error.message });
   }
 });
@@ -253,7 +253,7 @@ app.post('/api/push-token', async (req, res) => {
       .single();
 
     if (checkError) {
-      console.error("Error checking push token:", checkError);
+
       return res.status(500).json({ message: 'Failed to verify token existence', error: checkError });
     }
 
@@ -335,7 +335,7 @@ app.set("layout", "admin/restaurants");
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+
   res.status(err.status || 500).json({
     error: err.message,
     stack: process.env.NODE_ENV === 'production' ? null : err.stack
@@ -345,6 +345,6 @@ app.use((err, req, res, next) => {
 // Start the server
 const PORT = process.env.SERVER_PORT;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+
   
 });

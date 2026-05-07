@@ -39,7 +39,7 @@ router.get("/admin/payouts", async (req, res) => {
     const { data, error, count } = await query;
 
     if (error) {
-      console.error(error);
+
       return res
         .status(500)
         .json({ message: "Erreur lors du chargement des payouts." });
@@ -47,7 +47,7 @@ router.get("/admin/payouts", async (req, res) => {
 
     return res.json({ total: count, items: data });
   } catch (err) {
-    console.error(err);
+
     return res
       .status(500)
       .json({ message: "Erreur interne du serveur (admin payouts)." });

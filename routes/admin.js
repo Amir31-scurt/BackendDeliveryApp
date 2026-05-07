@@ -97,7 +97,7 @@ router.post("/login", [
 
     res.redirect("/admin/dashboard");
   } catch (error) {
-    console.error("Login error:", error);
+
     res.render("admin/adminLogin", {
         error: "Erreur interne du serveur",
         csrfToken: req.csrfToken(),
@@ -132,7 +132,7 @@ router.post("/login/restaurant", async (req, res) => {
       .single();
 
     if (error) {
-      console.error("Database error:", error);
+
       return res.status(500).json({ error: "Error finding restaurant" });
     }
 
@@ -175,7 +175,7 @@ router.post("/login/restaurant", async (req, res) => {
       redirectUrl: `/admin/restaurant/${restaurant.id}/dashboard`,
     });
   } catch (error) {
-    console.error("Login error:", error);
+
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -217,7 +217,7 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
         .single();
 
       if (restaurantError) {
-        console.error('Error fetching restaurant:', restaurantError);
+
         return res.status(500).send('Error fetching restaurant data');
       }
 
@@ -234,7 +234,7 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
         .order('created_at', { ascending: false });
 
       if (ordersError) {
-        console.error('Error fetching orders:', ordersError);
+
         return res.status(500).send('Error fetching orders');
       }
 
@@ -273,7 +273,7 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
         .single();
 
       if (revenueError) {
-        console.error('Error fetching restaurant revenue:', revenueError);
+
       }
 
       // KPIs
@@ -301,7 +301,7 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
       );
 
       if (monthlyError) {
-        console.error('Error fetching monthly revenue:', monthlyError);
+
       }
 
       orders.forEach(order => {
@@ -342,11 +342,11 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
         csrfToken: req.csrfToken()
       });
     } catch (err) {
-      console.error('Token verification error:', err);
+
       return res.redirect('/admin/login/restaurant');
     }
   } catch (error) {
-    console.error('Dashboard route error:', error);
+
     res.status(500).send('Internal server error');
   }
 });
@@ -387,7 +387,7 @@ router.get('/restaurant/:id/menu', async (req, res) => {
         .single();
 
       if (restaurantError) {
-        console.error('Error fetching restaurant:', restaurantError);
+
         return res.status(500).send('Error fetching restaurant data');
       }
 
@@ -404,7 +404,7 @@ router.get('/restaurant/:id/menu', async (req, res) => {
         .order('created_at', { ascending: false });
 
       if (menuError) {
-        console.error('Error fetching menu items:', menuError);
+
         return res.status(500).send('Error fetching menu items');
       }
 
@@ -415,11 +415,11 @@ router.get('/restaurant/:id/menu', async (req, res) => {
         csrfToken: req.csrfToken()
       });
     } catch (err) {
-      console.error('Token verification error:', err);
+
       return res.redirect('/admin/login/restaurant');
     }
   } catch (error) {
-    console.error('Menu route error:', error);
+
     res.status(500).send('Internal server error');
   }
 });
@@ -450,7 +450,7 @@ router.get("/restaurant/logout", (req, res) => {
       </html>
     `);
   } catch (error) {
-    console.error("Logout error:", error);
+
     res.status(500).send("Error logging out");
   }
 });
@@ -464,7 +464,7 @@ router.use(requireRole(['admin']));
 router.post("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
-      console.error("Session destruction error:", err);
+
       return res.status(500).json({ error: "Failed to logout." });
     }
     res.clearCookie("token");
@@ -486,7 +486,7 @@ router.get("/logout", (req, res) => {
     // Clear the session
     req.session.destroy((err) => {
       if (err) {
-        console.error('Error destroying session:', err);
+
       }
     });
 
@@ -509,7 +509,7 @@ router.get("/logout", (req, res) => {
       res.redirect('/admin/login');
     }
   } catch (error) {
-    console.error('Logout error:', error);
+
     res.status(500).json({ error: 'Internal server error during logout' });
   }
 });
@@ -525,7 +525,7 @@ router.get("/dashboard", async (req, res) => {
         .select("*", { count: "exact" });
 
       if (restaurantError) {
-        console.error("Error fetching restaurant data:", restaurantError);
+
       }
 
       // Fetch total active restaurants
@@ -536,7 +536,7 @@ router.get("/dashboard", async (req, res) => {
           .eq("is_active", true);
 
       if (activeRestaurantError) {
-        console.error("Error fetching restaurant data:", activeRestaurantError);
+
       }
 
       // Fetch total deliverers
@@ -545,7 +545,7 @@ router.get("/dashboard", async (req, res) => {
         .select("*", { count: "exact" });
 
       if (delivererError) {
-        console.error("Error fetching deliverer data:", delivererError);
+
       }
 
       // Fetch total orders
@@ -554,7 +554,7 @@ router.get("/dashboard", async (req, res) => {
         .select("*", { count: "exact" });
 
       if (orderError) {
-        console.error("Error fetching orders data:", orderError);
+
       }
 
       // Fetch monthly orders data
@@ -600,7 +600,7 @@ router.get("/dashboard", async (req, res) => {
       .select("*", { count: "exact" });
 
     if (restaurantError) {
-      console.error("Error fetching restaurant data:", restaurantError);
+
     }
 
     // Fetch total active restaurants
@@ -611,7 +611,7 @@ router.get("/dashboard", async (req, res) => {
         .eq("is_active", true);
 
     if (activeRestaurantError) {
-      console.error("Error fetching restaurant data:", activeRestaurantError);
+
     }
 
     // Fetch total deliverers
@@ -620,7 +620,7 @@ router.get("/dashboard", async (req, res) => {
       .select("*", { count: "exact" });
 
     if (delivererError) {
-      console.error("Error fetching deliverer data:", delivererError);
+
     }
 
     // Fetch total orders
@@ -629,7 +629,7 @@ router.get("/dashboard", async (req, res) => {
       .select("*", { count: "exact" });
 
     if (orderError) {
-      console.error("Error fetching orders data:", orderError);
+
     }
 
     // Fetch monthly orders data
@@ -638,7 +638,7 @@ router.get("/dashboard", async (req, res) => {
     );
 
     if (monthlyOrdersError) {
-      console.error("Error fetching monthly orders data:", monthlyOrdersError);
+
     }
 
     // Pass all data to the EJS template
@@ -652,7 +652,7 @@ router.get("/dashboard", async (req, res) => {
       monthlyOrders: monthlyOrders || [],
     });
   } catch (error) {
-    console.error("Dashboard error:", error);
+
     res.status(500).send("An error occurred.");
   }
 });
@@ -680,7 +680,7 @@ router.get("/restaurants", async (req, res) => {
     const { data: restaurants, count, error } = await query;
 
     if (error) {
-      console.error("Error fetching restaurants:", error);
+
       throw new Error("Failed to fetch restaurants.");
     }
 
@@ -713,7 +713,7 @@ router.get("/restaurants", async (req, res) => {
       searchQuery: search
     });
   } catch (error) {
-    console.error("Error fetching restaurants:", error.message);
+
     res.status(500).send("An error occurred while fetching restaurants.");
   }
 });
@@ -770,7 +770,7 @@ router.get("/restaurants/export", async (req, res) => {
       return res.send(buffer);
     }
   } catch (error) {
-    console.error("Export error:", error);
+
     res.status(500).send("Erreur lors de l'exportation");
   }
 });
@@ -807,7 +807,7 @@ router.get("/payouts", async (req, res) => {
     const { data, error } = await query;
 
     if (error) {
-      console.error("Payout load error:", error);
+
       return res.render("admin/payouts", {
         payouts: [],
         summary: {
@@ -834,7 +834,7 @@ router.get("/payouts", async (req, res) => {
       summary
     });
   } catch (err) {
-    console.error(err);
+
     return res.render("admin/payouts", {
       payouts: [],
       summary: {
@@ -879,7 +879,7 @@ router.get("/orders", async (req, res) => {
     const { data: rawOrders, error: rawOrdersError } = await plainQuery;
 
     if (rawOrdersError) {
-      console.error("Error fetching orders:", rawOrdersError);
+
       throw new Error("Failed to fetch orders.");
     }
 
@@ -941,7 +941,7 @@ router.get("/orders", async (req, res) => {
       currentStatus: status || ''
     });
   } catch (error) {
-    console.error("Error fetching orders:", error.message);
+
     res.status(500).render("admin/orders", {
       layout: "admin/layout",
       title: "Commandes",
@@ -1027,7 +1027,7 @@ router.get("/orders/export", async (req, res) => {
       return res.send(buffer);
     }
   } catch (error) {
-    console.error("Export error:", error);
+
     res.status(500).send("Erreur lors de l'exportation");
   }
 });
@@ -1127,7 +1127,7 @@ router.get("/revenues", async (req, res) => {
 
     const { data: revenueOrdersRaw, error: revenueOrdersError } = await revenueOrdersQuery;
     if (revenueOrdersError) {
-      console.error("Error fetching revenue orders:", revenueOrdersError);
+
     }
 
     // Manual join to get restaurant names
@@ -1161,7 +1161,7 @@ router.get("/revenues", async (req, res) => {
     const { data: monthlyData, error: monthlyError } = await supabase.rpc("get_monthly_orders");
 
     if (monthlyError) {
-      console.error("Error fetching monthly orders:", monthlyError);
+
     }
 
     res.render("admin/revenues", {
@@ -1187,7 +1187,7 @@ router.get("/revenues", async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Error fetching revenues:", error.message);
+
     res.status(500).render("admin/revenues", {
       layout: "admin/layout",
       title: "Revenus",
@@ -1274,7 +1274,7 @@ router.get("/restaurants/:id/details", async (req, res) => {
       menuItems,
     });
   } catch (error) {
-    console.error("Error fetching restaurant details:", error.message);
+
     res.status(500).send("An error occurred while fetching details.");
   }
 });
@@ -1323,7 +1323,7 @@ router.post("/upload", upload.single("image"), async (req, res) => {
 
     res.status(200).json({ message: "Image uploaded successfully", publicUrl });
   } catch (err) {
-    console.error("Upload error:", err);
+
     res.status(500).json({ error: err.message });
   }
 });
@@ -1373,7 +1373,7 @@ router.post("/restaurants/add", requireRole(['admin']), async (req, res) => {
     const { data, errors } = await graphqlRequest(mutation);
 
     if (errors) {
-      console.error("GraphQL Errors:", errors);
+
       throw new Error(errors[0].message);
     }
 
@@ -1381,7 +1381,7 @@ router.post("/restaurants/add", requireRole(['admin']), async (req, res) => {
 
     res.redirect("/admin/restaurants");
   } catch (error) {
-    console.error("Error adding restaurant:", error);
+
     res.status(500).send("Failed to add restaurant.");
   }
 });
@@ -1404,7 +1404,7 @@ router.post("/restaurants/:id/toggle", requireRole(['admin']), async (req, res) 
 
     res.redirect("/admin/restaurants");
   } catch (error) {
-    console.error("Error toggling restaurant status:", error);
+
     res.status(500).send("Failed to update restaurant status.");
   }
 });
@@ -1424,7 +1424,7 @@ router.post("/restaurants/:id/delete", requireRole(['admin']), async (req, res) 
 
     res.redirect("/admin/restaurants");
   } catch (error) {
-    console.error("Error deleting restaurant:", error);
+
     res.status(500).send("Failed to delete restaurant.");
   }
 });
@@ -1469,7 +1469,7 @@ router.post("/restaurants/:id/menu/add", async (req, res) => {
 
     res.redirect(`/admin/restaurants/${id}/details`);
   } catch (error) {
-    console.error("Error adding menu item:", error.message);
+
     res.status(500).send("Failed to add menu item.");
   }
 });
@@ -1494,7 +1494,7 @@ router.post("/orders/:id/status", async (req, res) => {
 
     res.status(200).json({ message: "Order status updated successfully." });
   } catch (error) {
-    console.error("Error updating order status:", error);
+
     res.status(500).json({ error: "Failed to update order status." });
   }
 });
@@ -1520,7 +1520,7 @@ router.post("/orders/:id/note", async (req, res) => {
 
     res.status(200).json({ message: "Order note updated successfully." });
   } catch (error) {
-    console.error("Error updating order note:", error);
+
     res.status(500).json({ error: "Failed to update order note." });
   }
 });
@@ -1549,7 +1549,7 @@ router.get("/deliverers", async (req, res) => {
     const { data: rawDeliverers, count, error } = await rawQuery;
 
     if (error) {
-      console.error("Error fetching deliverers:", error);
+
       throw new Error("Failed to fetch deliverers.");
     }
 
@@ -1604,7 +1604,7 @@ router.get("/deliverers", async (req, res) => {
       searchQuery: search
     });
   } catch (error) {
-    console.error("Error fetching deliverers:", error.message);
+
     if (req.xhr || req.headers.accept?.includes('application/json')) {
       return res.status(500).json({ error: "An error occurred while fetching deliverers." });
     }
@@ -1670,7 +1670,7 @@ router.get("/deliverers/export", async (req, res) => {
       return res.send(buffer);
     }
   } catch (error) {
-    console.error("Export error:", error);
+
     res.status(500).send("Erreur lors de l'exportation");
   }
 });
@@ -1691,7 +1691,7 @@ router.get("/deliverers/:id", async (req, res) => {
       .single();
 
     if (delivererError) {
-      console.error("Error fetching deliverer:", delivererError);
+
       if (req.xhr || req.headers.accept?.includes('application/json')) {
         return res.status(404).json({ error: "Deliverer not found." });
       }
@@ -1719,7 +1719,7 @@ router.get("/deliverers/:id", async (req, res) => {
 
     let orders = [];
     if (ordersError) {
-      console.error("Error fetching orders:", ordersError);
+
     } else {
       orders = await Promise.all((rawOrders || []).map(async (o) => {
         const { data: orderUser } = await supabase.from('users').select('name, phone_number').eq('id', o.user_id).single();
@@ -1756,7 +1756,7 @@ router.get("/deliverers/:id", async (req, res) => {
       deliverer: formattedDeliverer
     });
   } catch (error) {
-    console.error("Error fetching deliverer details:", error.message);
+
     if (req.xhr || req.headers.accept?.includes('application/json')) {
       return res.status(500).json({ error: "An error occurred while fetching deliverer details." });
     }
@@ -1789,7 +1789,7 @@ router.post("/deliverers/add", requireRole(['admin']), async (req, res) => {
     }
 
     if (existingUserError && existingUserError.code !== "PGRST116") {
-      console.error("Error checking phone number:", existingUserError);
+
       return res.status(500).json({ error: "Internal server error." });
     }
 
@@ -1812,7 +1812,7 @@ router.post("/deliverers/add", requireRole(['admin']), async (req, res) => {
       .single();
 
     if (userError) {
-      console.error("Error creating user:", userError);
+
       return res.status(500).json({ error: "Failed to create user account." });
     }
 
@@ -1830,7 +1830,7 @@ router.post("/deliverers/add", requireRole(['admin']), async (req, res) => {
       });
 
     if (delivererError) {
-      console.error("Error creating deliverer record:", delivererError);
+
       // Clean up the user if deliverer creation fails
       await supabase.from("users").delete().eq("id", userData.id);
       return res.status(500).json({ error: "Failed to create deliverer record." });
@@ -1842,7 +1842,7 @@ router.post("/deliverers/add", requireRole(['admin']), async (req, res) => {
       defaultPassword: defaultPassword // Include the default password in the response
     });
   } catch (error) {
-    console.error("Error adding deliverer:", error);
+
     res.status(500).json({ error: "Failed to add deliverer: " + error.message });
   }
 });
@@ -1864,7 +1864,7 @@ router.post("/deliverers/:id/update", requireRole(['admin']), async (req, res) =
       .eq("id", id);
 
     if (userError) {
-      console.error("Error updating user:", userError);
+
       return res.status(500).json({ error: "Failed to update user information." });
     }
 
@@ -1880,13 +1880,13 @@ router.post("/deliverers/:id/update", requireRole(['admin']), async (req, res) =
       .eq("user_id", id);
 
     if (delivererError) {
-      console.error("Error updating deliverer:", delivererError);
+
       return res.status(500).json({ error: "Failed to update deliverer information." });
     }
 
     res.json({ message: "Deliverer updated successfully" });
   } catch (error) {
-    console.error("Error updating deliverer:", error);
+
     res.status(500).json({ error: "An error occurred while updating the deliverer." });
   }
 });
@@ -1903,7 +1903,7 @@ router.post("/deliverers/:id/delete", requireRole(['admin']), async (req, res) =
       .single();
 
     if (fetchError) {
-      console.error("Error fetching deliverer:", fetchError);
+
       return res.status(404).json({ error: "Deliverer not found." });
     }
 
@@ -1914,7 +1914,7 @@ router.post("/deliverers/:id/delete", requireRole(['admin']), async (req, res) =
       .eq("user_id", id);
 
     if (deleteDelivererError) {
-      console.error("Error deleting deliverer:", deleteDelivererError);
+
       return res.status(500).json({ error: "Failed to delete deliverer." });
     }
 
@@ -1925,13 +1925,13 @@ router.post("/deliverers/:id/delete", requireRole(['admin']), async (req, res) =
       .eq("id", id);
 
     if (deleteUserError) {
-      console.error("Error deleting user:", deleteUserError);
+
       return res.status(500).json({ error: "Failed to delete user." });
     }
 
     res.json({ message: "Deliverer deleted successfully." });
   } catch (error) {
-    console.error("Error deleting deliverer:", error);
+
     res.status(500).json({ error: "An error occurred while deleting the deliverer." });
   }
 });
@@ -1953,7 +1953,7 @@ router.post("/deliverers/:id/toggle", requireRole(['admin']), async (req, res) =
 
     res.redirect("/admin/deliverers");
   } catch (error) {
-    console.error("Error toggling deliverer availability:", error);
+
     res.status(500).send("Failed to update deliverer availability.");
   }
 });
@@ -2289,7 +2289,7 @@ const initGraphQL = async () => {
     graphqlServer.applyMiddleware({ app: router, path: "/graphql" });
     
   } catch (error) {
-    console.error("Error initializing GraphQL server:", error);
+
   }
 };
 
@@ -2349,7 +2349,7 @@ router.get("/restaurant/menu", async (req, res) => {
       menuItems: menuItems || []
     });
   } catch (error) {
-    console.error("Error in menu page:", error);
+
     res.status(500).send("An error occurred while loading the menu page.");
   }
 });

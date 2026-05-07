@@ -30,7 +30,7 @@ export const geocodeAddress = async (address) => {
 
         throw new Error('No coordinates found for this address');
     } catch (error) {
-        console.error('Geocoding error:', error.message);
+
         throw new Error(`Failed to geocode address: ${error.message}`);
     }
 };
@@ -73,7 +73,7 @@ export const batchGeocodeAddresses = async (addresses) => {
             // Add delay to respect rate limits
             await new Promise(resolve => setTimeout(resolve, 1000));
         } catch (error) {
-            console.error(`Failed to geocode address: ${address}`, error.message);
+
             results.push({
                 address,
                 latitude: null,

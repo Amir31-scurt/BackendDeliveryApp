@@ -16,18 +16,18 @@ const requiredEnvVars = ['HOST', 'DB', 'USER', 'PASSWORD'];
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingVars.length > 0) {
-  console.error('❌ Missing required environment variables:');
+
   missingVars.forEach(varName => {
-    console.error(`   - ${varName}`);
+
   });
-  console.error('\n📝 Please create a .env file in BackendDeliveryApp/ with the following variables:');
-  console.error('   HOST=your-database-host');
-  console.error('   PORT=5432');
-  console.error('   DB=your-database-name');
-  console.error('   USER=your-database-user');
-  console.error('   PASSWORD=your-database-password');
-  console.error('   SSL=false');
-  console.error('\nSee MIGRATION_GUIDE.md for more details.');
+
+
+
+
+
+
+
+
 }
 
 // PostgreSQL connection pool
@@ -49,7 +49,7 @@ pool.on('connect', () => {
 });
 
 pool.on('error', (err) => {
-  console.error('❌ Unexpected error on idle PostgreSQL client', err);
+
   process.exit(-1);
 });
 
@@ -64,7 +64,7 @@ export const query = async (text, params) => {
     }
     return { data: res.rows, error: null, count: res.rowCount };
   } catch (error) {
-    console.error('Database query error:', error);
+
     return { data: null, error, count: 0 };
   }
 };
