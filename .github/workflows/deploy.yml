@@ -1,0 +1,25 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main  # change to your branch name
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd /home/c2554004c/repositories/BackendDeliveryApp
+            git pull origin main
+            npm install --production
+            cp /home/c2554004c/schema.graphql .  # keep schema in sync
+            /home/c2554004c/.nvm/versions/node/v18.20.7/bin/pm2 restart server
+            /home/c2554004c/.nvm/versions/node/v18.20.7/bin/pm2 save
