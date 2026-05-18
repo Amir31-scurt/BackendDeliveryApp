@@ -238,6 +238,21 @@ app.post("/storage/profilePictures/upload", upload.single("image"), async (req, 
   }
 });
 
+app.get('/.well-known/apple-app-site-association', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.json({
+    applinks: {
+      apps: [],
+      details: [
+        {
+          appID: "7P5W8BC7WD.com.gourmetdamour.app",
+          paths: ["/payment/success", "/payment/error"]
+        }
+      ]
+    }
+  });
+});
+
 // Add this route
 app.post('/api/push-token', async (req, res) => {
   const { userId, token } = req.body;
