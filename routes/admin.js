@@ -167,7 +167,7 @@ router.post("/login/restaurant", async (req, res) => {
     res.setHeader("Expires", "0");
 
     // --- Response ---
-    res.json({
+    return res.json({
       success: true,
       message: "Login successful",
       token,
@@ -1884,7 +1884,7 @@ router.post("/deliverers/:id/update", requireRole(['admin']), async (req, res) =
       return res.status(500).json({ error: "Failed to update deliverer information." });
     }
 
-    res.json({ message: "Deliverer updated successfully" });
+    return res.json({ message: "Deliverer updated successfully" });
   } catch (error) {
 
     res.status(500).json({ error: "An error occurred while updating the deliverer." });
@@ -1929,7 +1929,7 @@ router.post("/deliverers/:id/delete", requireRole(['admin']), async (req, res) =
       return res.status(500).json({ error: "Failed to delete user." });
     }
 
-    res.json({ message: "Deliverer deleted successfully." });
+    return res.json({ message: "Deliverer deleted successfully." });
   } catch (error) {
 
     res.status(500).json({ error: "An error occurred while deleting the deliverer." });

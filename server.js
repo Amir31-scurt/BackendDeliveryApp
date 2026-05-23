@@ -352,6 +352,10 @@ app.set("layout", "admin/restaurants");
 
 // Error handling middleware
 app.use((err, req, res, next) => {
+  // Check if headers have already been sent
+  if (res.headersSent) {
+    return next(err);
+  }
 
   res.status(err.status || 500).json({
     error: err.message,

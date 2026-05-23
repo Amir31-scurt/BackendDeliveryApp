@@ -80,15 +80,20 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 50px;
+            padding: 20px 60px;
             z-index: 100;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background: transparent;
+            backdrop-filter: none;
+            border-bottom: none;
         }
 
         nav.scrolled {
-            background-color: rgba(44, 44, 44, 0.9);
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(180deg, rgba(44, 44, 44, 0.95), rgba(44, 44, 44, 0.85));
+            box-shadow: 0 8px 32px rgba(219, 96, 126, 0.15);
+            padding: 15px 60px;
+            border-bottom: 1px solid rgba(219, 96, 126, 0.2);
+            backdrop-filter: blur(15px);
         }
 
         .logo {
@@ -97,42 +102,62 @@
             font-weight: 700;
             color: var(--primary-color);
             text-decoration: none;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s ease;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .logo:hover {
-            transform: scale(1.05);
+            transform: scale(1.08);
+            text-shadow: 2px 2px 12px rgba(219, 96, 126, 0.5);
+        }
+
+        .logo img {
+            transition: filter 0.3s ease;
+        }
+
+        .logo:hover img {
+            filter: drop-shadow(0 0 8px rgba(219, 96, 126, 0.6));
         }
 
         .nav-links {
             display: flex;
             list-style: none;
-            gap: 30px;
+            gap: 40px;
         }
 
         .nav-links a {
             color: white;
             text-decoration: none;
-            font-weight: 400;
-            font-size: 16px;
+            font-weight: 500;
+            font-size: 15px;
             transition: all 0.3s ease;
             position: relative;
-            padding: 5px 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            letter-spacing: 0.5px;
         }
 
-        .nav-links a::after {
+        .nav-links a::before {
             content: '';
             position: absolute;
             bottom: 0;
             left: 0;
             width: 0;
-            height: 2px;
-            background-color: var(--primary-color);
-            transition: width 0.3s ease;
+            height: 3px;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            transition: width 0.4s ease;
+            border-radius: 2px;
         }
 
-        .nav-links a:hover::after {
+        .nav-links a:hover {
+            background: rgba(219, 96, 126, 0.15);
+            color: var(--primary-color);
+        }
+
+        .nav-links a:hover::before {
             width: 100%;
         }
 
@@ -223,21 +248,26 @@
 
         .features-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px;
-            max-width: 1200px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1350px;
             margin: 0 auto;
             padding: 20px;
         }
 
         .feature-card {
-            background-color: white;
-            border-radius: 20px;
-            padding: 40px 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-            transition: all 0.3s ease;
+            background: white;
+            border-radius: 25px;
+            padding: 50px 35px;
+            box-shadow: 0 8px 32px rgba(219, 96, 126, 0.12);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            border: 2px solid rgba(219, 96, 126, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
         }
 
         .feature-card::before {
@@ -245,38 +275,62 @@
             position: absolute;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 5px;
-            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
-            transform: scaleX(0);
-            transition: transform 0.3s ease;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(219, 96, 126, 0.05), rgba(171, 210, 126, 0.05));
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 0;
         }
 
         .feature-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 0 20px 50px rgba(219, 96, 126, 0.25);
+            border-color: var(--primary-color);
         }
 
         .feature-card:hover::before {
-            transform: scaleX(1);
+            opacity: 1;
+        }
+
+        .feature-card>* {
+            position: relative;
+            z-index: 1;
         }
 
         .feature-icon {
-            font-size: 3rem;
-            color: var(--primary-color);
-            margin-bottom: 25px;
-            transition: transform 0.3s ease;
+            width: 90px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary-color), #e85a7f);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            color: white;
+            transition: all 0.4s ease;
+            box-shadow: 0 10px 25px rgba(219, 96, 126, 0.3);
         }
 
         .feature-card:hover .feature-icon {
-            transform: scale(1.1);
+            transform: scale(1.15) rotate(-5deg);
+            box-shadow: 0 15px 40px rgba(219, 96, 126, 0.4);
         }
 
         .feature-card h3 {
             font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
-            margin-bottom: 20px;
+            font-size: 1.6rem;
+            margin-bottom: 18px;
             color: var(--dark-color);
+            font-weight: 700;
+        }
+
+        .feature-card p {
+            font-size: 0.95rem;
+            color: #666;
+            line-height: 1.7;
+            margin: 0;
         }
 
         .app-preview {
@@ -548,10 +602,8 @@
         }
 
         .feature-icon i {
-            font-size: 3rem;
-            color: var(--primary-color);
-            margin-bottom: 25px;
-            transition: transform 0.3s ease;
+            font-size: 2.5rem;
+            color: white;
         }
 
         .store-button i {
@@ -597,25 +649,32 @@
                 <div class="feature-icon">
                     <i class="fas fa-utensils"></i>
                 </div>
-                <h3>Cuisine d'Exception</h3>
-                <p>Nos chefs talentueux préparent des plats exquis avec des ingrédients frais et de saison pour vous
-                    offrir une expérience gustative exceptionnelle.</p>
+                <h3>Commander en quelques clics</h3>
+                <p>Parcourez les menus des restaurants, ajoutez au panier et commandez rapidement depuis votre
+                    téléphone.</p>
             </div>
             <div class="feature-card animate-on-scroll">
                 <div class="feature-icon">
-                    <i class="fas fa-truck"></i>
+                    <i class="fas fa-map-marker-alt"></i>
                 </div>
-                <h3>Livraison Rapide</h3>
-                <p>Notre service de livraison efficace garantit que vos plats arrivent chauds et dans les délais,
-                    préservant toutes leurs saveurs.</p>
+                <h3>Suivi de livraison en temps réel</h3>
+                <p>Suivez le déplacement de votre commande sur la carte et consultez le statut en direct jusqu'à la
+                    livraison.</p>
             </div>
             <div class="feature-card animate-on-scroll">
                 <div class="feature-icon">
-                    <i class="fas fa-mobile-alt"></i>
+                    <i class="fas fa-lock"></i>
                 </div>
-                <h3>Commande Facile</h3>
-                <p>Notre application intuitive vous permet de commander en quelques clics et de suivre votre livraison
-                    en temps réel.</p>
+                <h3>Paiement sécurisé</h3>
+                <p>Paiements intégrés (Wave orange money) pour des transactions rapides et sécurisées.</p>
+            </div>
+            <div class="feature-card animate-on-scroll">
+                <div class="feature-icon">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <h3>Notifications & Offres</h3>
+                <p>Recevez des notifications pour le suivi des commandes, les confirmations et les promotions
+                    exclusives.</p>
             </div>
         </div>
     </section>
@@ -632,7 +691,8 @@
                         <i class="fab fa-apple"></i>
                         <span>App Store</span>
                     </a>
-                    <a href="#" class="store-button">
+                    <a href="https://play.google.com/store/apps/details?id=com.gourmet.damour&pli=1"
+                        class="store-button" target="_blank" rel="noopener noreferrer">
                         <i class="fab fa-google-play"></i>
                         <span>Google Play</span>
                     </a>
