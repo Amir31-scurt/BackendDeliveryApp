@@ -1,12 +1,12 @@
-import { createClient } from "@supabase/supabase-js";
+const {createClient} = require("@supabase/supabase-js");
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+module.exports.supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Helper functions for each table
-export const deliverersTable = {
+module.exports.deliverersTable = {
   getAll: () => supabase.from("deliverers").select("*"),
   getById: (id) =>
     supabase.from("deliverers").select("*").eq("id", id).single(),
@@ -16,7 +16,7 @@ export const deliverersTable = {
   delete: (id) => supabase.from("deliverers").delete().eq("id", id),
 };
 
-export const usersTable = {
+module.exports.usersTable = {
   getAll: () => supabase.from("users").select("*"),
   getById: (id) => supabase.from("users").select("*").eq("id", id).single(),
   create: (user) => supabase.from("users").insert(user),
@@ -24,7 +24,7 @@ export const usersTable = {
   delete: (id) => supabase.from("users").delete().eq("id", id),
 };
 
-export const restaurantsTable = {
+module.exports.restaurantsTable = {
   getAll: () => supabase.from("restaurants").select("*"),
   getById: (id) =>
     supabase.from("restaurants").select("*").eq("id", id).single(),
@@ -34,7 +34,7 @@ export const restaurantsTable = {
   delete: (id) => supabase.from("restaurants").delete().eq("id", id),
 };
 
-export const menuItemsTable = {
+module.exports.menuItemsTable = {
   getAll: () => supabase.from("menu_items").select("*"),
   getById: (id) =>
     supabase.from("menu_items").select("*").eq("id", id).single(),
@@ -44,10 +44,19 @@ export const menuItemsTable = {
   delete: (id) => supabase.from("menu_items").delete().eq("id", id),
 };
 
-export const ordersTable = {
+module.exports.ordersTable = {
   getAll: () => supabase.from("orders").select("*"),
   getById: (id) => supabase.from("orders").select("*").eq("id", id).single(),
   create: (order) => supabase.from("orders").insert(order),
   update: (id, updates) => supabase.from("orders").update(updates).eq("id", id),
   delete: (id) => supabase.from("orders").delete().eq("id", id),
+};
+
+module.exports.reviewsTable = {
+  getAll: () => supabase.from("reviews").select("*"),
+  getById: (id) => supabase.from("reviews").select("*").eq("id", id).single(),
+  create: (review) => supabase.from("reviews").insert(review),
+  update: (id, updates) =>
+    supabase.from("reviews").update(updates).eq("id", id),
+  delete: (id) => supabase.from("reviews").delete().eq("id", id),
 };

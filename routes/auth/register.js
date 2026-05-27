@@ -1,6 +1,6 @@
-import { signUp } from "../../utils/auth";
+const { signUp } = require("../../utils/auth.js");
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method === "POST") {
     try {
       const { phoneNumber, password, name, role } = req.body;
@@ -23,3 +23,6 @@ export default async function handler(req, res) {
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
+
+module.exports = handler;
+module.exports.default = handler;

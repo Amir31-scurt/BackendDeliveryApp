@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient.js';
+const { supabase } = require('../supabaseClient.js');
 
 async function testDistanceCalculation() {
     try {
@@ -83,8 +83,8 @@ function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
 }
 
 // Run the test if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
     testDistanceCalculation();
 }
 
-export { testDistanceCalculation }; 
+module.exports = { testDistanceCalculation };

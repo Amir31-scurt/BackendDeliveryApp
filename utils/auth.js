@@ -1,14 +1,14 @@
-import bcrypt from "bcrypt";
-import { supabase } from "../supabaseClient.js";
+const bcrypt = require("bcrypt");
+const {supabase} = require("../supabaseClient.js");
 
-export const signUp = async (
+const signUp = async (
   phoneNumber,
   password,
   name,
   role = "customer",
-  vehicleId
+  vehicleId,
 ) => {
-  const { data, error } = await supabase.auth.signUp({
+  const {data, error} = await supabase.auth.signUp({
     phone: phoneNumber, // Use phone instead of email
     password: password,
   });
@@ -17,7 +17,7 @@ export const signUp = async (
 
   if (data.user) {
     // Create a record in the users table
-    const { error: profileError } = await supabase.from("users").insert({
+    const {error: profileError} = await supabase.from("users").insert({
       id: data.user.id,
       phone_number: phoneNumber,
       name: name,
@@ -29,17 +29,15 @@ export const signUp = async (
 
     // If role is deliverer, insert additional details into deliverers table
     if (role === "deliverer") {
-      const { error: delivererError } = await supabase
-        .from("deliverers")
-        .insert({
-          user_id: data.user.id,
-          vehicle_id: vehicleId,
-          is_available: true,
-          current_location: null,
-          zone: null,
-          profile_picture: null,
-          is_verified: true,
-        });
+      const {error: delivererError} = await supabase.from("deliverers").insert({
+        user_id: data.user.id,
+        vehicle_id: vehicleId,
+        is_available: true,
+        current_location: null,
+        zone: null,
+        profile_picture: null,
+        is_verified: true,
+      });
 
       if (delivererError)
         throw new Error("Failed to create deliverer profile.");
@@ -49,9 +47,9 @@ export const signUp = async (
   return data;
 };
 
-export const signIn = async (phoneNumber, password) => {
+const signIn = async (phoneNumber, password) => {
   // Retrieve the user from the `users` table
-  const { data: user, error } = await supabase
+  const {data: user, error} = await supabase
     .from("users")
     .select("*")
     .eq("phone_number", phoneNumber)
@@ -68,21 +66,21 @@ export const signIn = async (phoneNumber, password) => {
   }
 
   // If valid, return the user data (you can also generate a token here)
-  return { user };
+  return {user};
 };
 
-export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
+const signOut = async () => {
+  const {error} = await supabase.auth.signOut();
   if (error) throw error;
 };
 
-export const getCurrentUser = async () => {
+const getCurrentUser = async () => {
   const {
-    data: { user },
+    data: {user},
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data, error } = await supabase
+  const {data, error} = await supabase
     .from("users")
     .select("*")
     .eq("id", user.id)
@@ -93,13 +91,13 @@ export const getCurrentUser = async () => {
   return data;
 };
 
-export const updateUser = async (updates) => {
+const updateUser = async (updates) => {
   const {
-    data: { user },
+    data: {user},
   } = await supabase.auth.getUser();
   if (!user) throw new Error("No user logged in");
 
-  const { data, error } = await supabase
+  const {data, error} = await supabase
     .from("users")
     .update(updates)
     .eq("id", user.id)
@@ -110,14 +108,14 @@ export const updateUser = async (updates) => {
   return data;
 };
 
-export const createDeliverer = async (delivererData) => {
+const createDeliverer = async (delivererData) => {
   const {
-    data: { user },
+    data: {user},
   } = await supabase.auth.getUser();
   if (!user) throw new Error("No user logged in");
 
   // Insert deliverer-specific details into the deliverers table
-  const { data, error } = await supabase
+  const {data, error} = await supabase
     .from("deliverers")
     .insert({
       user_id: user.id, // Link to the user
@@ -130,9 +128,10 @@ export const createDeliverer = async (delivererData) => {
     .single();
 
   if (error) {
-
     throw new Error("Failed to create deliverer profile.");
   }
 
   return data;
 };
+
+module.exports = { signUp, signIn, signOut, getCurrentUser, updateUser, createDeliverer };

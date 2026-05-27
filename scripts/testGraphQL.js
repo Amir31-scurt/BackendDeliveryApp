@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient.js';
+const { supabase } = require('../supabaseClient.js');
 
 async function testGraphQLQuery() {
     try {
@@ -149,8 +149,8 @@ async function testGraphQLQuery() {
 }
 
 // Run the test if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
     testGraphQLQuery();
 }
 
-export { testGraphQLQuery }; 
+module.exports = { testGraphQLQuery };

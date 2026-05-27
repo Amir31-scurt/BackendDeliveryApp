@@ -1,4 +1,4 @@
-import axios from "axios";
+const axios = require("axios");
 
 // Create an Axios instance
 const apiClient = axios.create({
@@ -19,7 +19,8 @@ apiClient.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
-export default apiClient;
+module.exports = apiClient;
+module.exports.default = apiClient;

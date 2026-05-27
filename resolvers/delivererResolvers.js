@@ -1,9 +1,9 @@
-import { supabase } from "../supabaseClient.js";
+const {supabase} = require("../supabaseClient.js");
 
-export const delivererResolvers = {
+const delivererResolvers = {
   Query: {
-    deliverer: async (_, { id }) => {
-      const { data, error } = await supabase
+    deliverer: async (_, {id}) => {
+      const {data, error} = await supabase
         .from("deliverers")
         .select(
           `
@@ -14,7 +14,7 @@ export const delivererResolvers = {
             phone_number,
             role
           )
-        `
+        `,
         )
         .eq("id", id)
         .single();
@@ -23,8 +23,8 @@ export const delivererResolvers = {
       return data;
     },
 
-    delivererByUserId: async (_, { userId }) => {
-      const { data, error } = await supabase
+    delivererByUserId: async (_, {userId}) => {
+      const {data, error} = await supabase
         .from("deliverers")
         .select(
           `
@@ -35,7 +35,7 @@ export const delivererResolvers = {
             phone_number,
             role
           )
-        `
+        `,
         )
         .eq("user_id", userId)
         .single();
@@ -45,7 +45,7 @@ export const delivererResolvers = {
     },
 
     allDeliverers: async () => {
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from("deliverers")
         .select(
           `
@@ -56,16 +56,16 @@ export const delivererResolvers = {
             phone_number,
             role
           )
-        `
+        `,
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", {ascending: false});
 
       if (error) throw error;
       return data;
     },
 
     availableDeliverers: async () => {
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from("deliverers")
         .select(
           `
@@ -76,10 +76,10 @@ export const delivererResolvers = {
             phone_number,
             role
           )
-        `
+        `,
         )
         .eq("is_available", true)
-        .order("created_at", { ascending: false });
+        .order("created_at", {ascending: false});
 
       if (error) throw error;
       return data;
@@ -87,13 +87,13 @@ export const delivererResolvers = {
   },
 
   Mutation: {
-    createDeliverer: async (_, { input }, context) => {
+    createDeliverer: async (_, {input}, context) => {
       // Ensure user is authenticated
       if (!context.user) {
         throw new Error("Authentication required");
       }
 
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from("deliverers")
         .insert({
           user_id: context.user.id,
@@ -110,15 +110,15 @@ export const delivererResolvers = {
       return data;
     },
 
-    updateDelivererStatus: async (_, { id, isAvailable }, context) => {
+    updateDelivererStatus: async (_, {id, isAvailable}, context) => {
       // Ensure user is authenticated and authorized
       if (!context.user) {
         throw new Error("Authentication required");
       }
 
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from("deliverers")
-        .update({ is_available: isAvailable })
+        .update({is_available: isAvailable})
         .eq("id", id)
         .single();
 
@@ -126,15 +126,15 @@ export const delivererResolvers = {
       return data;
     },
 
-    updateDelivererLocation: async (_, { id, location }, context) => {
+    updateDelivererLocation: async (_, {id, location}, context) => {
       // Ensure user is authenticated and authorized
       if (!context.user) {
         throw new Error("Authentication required");
       }
 
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from("deliverers")
-        .update({ current_location: location })
+        .update({current_location: location})
         .eq("id", id)
         .single();
 
@@ -162,3 +162,6 @@ export const delivererResolvers = {
     },
   },
 };
+
+module.exports = {delivererResolvers};
+module.exports.delivererResolvers = delivererResolvers;

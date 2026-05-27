@@ -1,11 +1,11 @@
-import { supabase } from "../supabaseClient.js";
-import { translateWaveError } from "../utils/waveErrorMap.js";
-import { sendPayoutNotification } from "./payoutNotifications.js";
+const { supabase } = require("../supabaseClient.js");
+const { translateWaveError } = require("../utils/waveErrorMap.js");
+const { sendPayoutNotification } = require("./payoutNotifications.js");
 
 /**
  * Log les résultats individuels d'un batch Wave
  */
-export async function logBatchResults(orderId, batchResponse) {
+async function logBatchResults(orderId, batchResponse) {
   const batchId = batchResponse.id;
   const payouts = batchResponse.payouts || [];
 
@@ -20,41 +20,41 @@ export async function logBatchResults(orderId, batchResponse) {
 
     // Détection RESTO ou LIVREUR
     // 1. Restaurant?
-const { data: restaurant } = await supabase
-  .from("restaurants")
-  .select("id")
-  .eq("phone_number", mobile)
-  .maybeSingle();
-
-if (restaurant) {
-  targetType = "restaurant";
-  targetId = restaurant.id;
-} else {
-  // 2. User?
-  const { data: user } = await supabase
-    .from("users")
-    .select("id")
-    .eq("phone_number", mobile)
-    .maybeSingle();
-
-  if (user) {
-    // 3. Vérifier si c'est un livreur
-    const { data: deliverer } = await supabase
-      .from("deliverers")
-      .select("user_id")
-      .eq("user_id", user.id)
+    const { data: restaurant } = await supabase
+      .from("restaurants")
+      .select("id")
+      .eq("phone_number", mobile)
       .maybeSingle();
 
-    if (deliverer) {
-      targetType = "deliverer";
-      targetId = user.id;
+    if (restaurant) {
+      targetType = "restaurant";
+      targetId = restaurant.id;
     } else {
-      // C'est juste un user normal (peu probable mais propre)
-      targetType = "user";
-      targetId = user.id;
+      // 2. User?
+      const { data: user } = await supabase
+        .from("users")
+        .select("id")
+        .eq("phone_number", mobile)
+        .maybeSingle();
+
+      if (user) {
+        // 3. Vérifier si c'est un livreur
+        const { data: deliverer } = await supabase
+          .from("deliverers")
+          .select("user_id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (deliverer) {
+          targetType = "deliverer";
+          targetId = user.id;
+        } else {
+          // C'est juste un user normal (peu probable mais propre)
+          targetType = "user";
+          targetId = user.id;
+        }
+      }
     }
-  }
-}
 
     // Notifier uniquement en cas de succès
     if (status === "succeeded" && targetType && targetId) {
@@ -86,3 +86,6 @@ if (restaurant) {
     ]);
   }
 }
+
+module.exports = { logBatchResults };
+module.exports.logBatchResults = logBatchResults;

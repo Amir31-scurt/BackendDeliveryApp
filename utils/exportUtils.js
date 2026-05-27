@@ -1,6 +1,6 @@
-import ExcelJS from 'exceljs';
-import PdfTable from 'pdfkit-table';
-import fs from 'fs';
+const ExcelJS = require("exceljs");
+const PdfTable = require("pdfkit-table");
+const fs = require("fs");
 
 /**
  * Export data to Excel
@@ -9,7 +9,7 @@ import fs from 'fs';
  * @param {string} worksheetName - Name of the worksheet
  * @returns {Promise<Buffer>} - Excel file buffer
  */
-export const exportToExcel = async (data, columns, worksheetName = 'Data') => {
+const exportToExcel = async (data, columns, worksheetName = "Data") => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(worksheetName);
 
@@ -19,11 +19,11 @@ export const exportToExcel = async (data, columns, worksheetName = 'Data') => {
   worksheet.addRows(data);
 
   // Style header
-  worksheet.getRow(1).font = { bold: true };
+  worksheet.getRow(1).font = {bold: true};
   worksheet.getRow(1).fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FFE0E0E0' }
+    type: "pattern",
+    pattern: "solid",
+    fgColor: {argb: "FFE0E0E0"},
   };
 
   return await workbook.xlsx.writeBuffer();
@@ -37,23 +37,25 @@ export const exportToExcel = async (data, columns, worksheetName = 'Data') => {
  * @param {string} title - PDF title
  * @returns {Promise<Buffer>} - PDF file buffer
  */
-export const exportToPdf = async (data, headers, keys, title) => {
+const exportToPdf = async (data, headers, keys, title) => {
   return new Promise((resolve, reject) => {
-    const doc = new PdfTable({ margin: 30, size: 'A4' });
+    const doc = new PdfTable({margin: 30, size: "A4"});
     const buffers = [];
 
-    doc.on('data', buffers.push.bind(buffers));
-    doc.on('end', () => resolve(Buffer.concat(buffers)));
-    doc.on('error', reject);
+    doc.on("data", buffers.push.bind(buffers));
+    doc.on("end", () => resolve(Buffer.concat(buffers)));
+    doc.on("error", reject);
 
     // Add title
-    doc.fontSize(20).text(title, { align: 'center' });
+    doc.fontSize(20).text(title, {align: "center"});
     doc.moveDown();
 
-    const rows = data.map(item => keys.map(key => {
+    const rows = data.map((item) =>
+      keys.map((key) => {
         const val = item[key];
-        return val === null || val === undefined ? '' : String(val);
-    }));
+        return val === null || val === undefined ? "" : String(val);
+      }),
+    );
 
     const table = {
       title: "",
@@ -62,10 +64,14 @@ export const exportToPdf = async (data, headers, keys, title) => {
     };
 
     doc.table(table, {
-      prepareHeader: () => doc.font('Helvetica-Bold').fontSize(10),
-      prepareRow: () => doc.font('Helvetica').fontSize(10),
+      prepareHeader: () => doc.font("Helvetica-Bold").fontSize(10),
+      prepareRow: () => doc.font("Helvetica").fontSize(10),
     });
 
     doc.end();
   });
 };
+
+module.exports = { exportToExcel, exportToPdf };
+module.exports.exportToExcel = exportToExcel;
+module.exports.exportToPdf = exportToPdf;

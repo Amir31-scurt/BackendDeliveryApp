@@ -1,8 +1,8 @@
-export const validateEmail = (email) => {
+const validateEmail = (email) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
 
-export const validateDelivererInput = (input) => {
+const validateDelivererInput = (input) => {
   const errors = {};
 
   if (input.zone && typeof input.zone !== "string") {
@@ -24,3 +24,7 @@ export const validateDelivererInput = (input) => {
     throw new Error(JSON.stringify(errors));
   }
 };
+
+module.exports = {validateEmail, validateDelivererInput};
+module.exports.validateEmail = validateEmail;
+module.exports.validateDelivererInput = validateDelivererInput;

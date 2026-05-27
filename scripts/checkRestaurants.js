@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient.js';
+const { supabase } = require('../supabaseClient.js');
 
 async function checkRestaurants() {
     try {
@@ -20,7 +20,7 @@ async function checkRestaurants() {
             
 
             // Import and run the sample restaurants script
-            const { addSampleRestaurants } = await import('./addSampleRestaurants.js');
+            const { addSampleRestaurants } = require('./addSampleRestaurants.js');
             await addSampleRestaurants();
 
             return;
@@ -97,8 +97,8 @@ async function checkRestaurants() {
 }
 
 // Run the script if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
     checkRestaurants();
 }
 
-export { checkRestaurants }; 
+module.exports = { checkRestaurants }; 

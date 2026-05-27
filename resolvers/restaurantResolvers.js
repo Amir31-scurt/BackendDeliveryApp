@@ -1,4 +1,4 @@
-import { supabase } from "../supabaseClient.js";
+const { supabase } = require("../supabaseClient.js");
 
 // Helper function to calculate distance using Haversine formula
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -54,7 +54,7 @@ const transformRestaurantData = (restaurant) => ({
   },
 });
 
-export const restaurantResolvers = {
+const restaurantResolvers = {
   Query: {
     restaurants: async () => {
       const { data, error } = await supabase
@@ -134,3 +134,7 @@ export const restaurantResolvers = {
     },
   },
 };
+
+module.exports = { restaurantResolvers };
+module.exports.restaurantResolvers = restaurantResolvers;
+

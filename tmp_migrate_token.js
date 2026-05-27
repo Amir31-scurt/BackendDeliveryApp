@@ -1,6 +1,6 @@
-import pg from 'pg';
-import dotenv from 'dotenv';
-import { join } from 'path';
+const pg = require('pg');
+const dotenv = require('dotenv');
+const { join } = require('path');
 
 dotenv.config({ path: join(process.cwd(), '.env') });
 

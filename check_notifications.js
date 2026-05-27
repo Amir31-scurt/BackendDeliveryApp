@@ -1,5 +1,5 @@
-import 'dotenv/config';
-import { pool } from './db.js';
+require('dotenv').config();
+const { pool } = require('./db.js');
 
 async function run() {
   try {

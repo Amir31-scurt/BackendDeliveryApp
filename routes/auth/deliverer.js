@@ -1,6 +1,6 @@
-import { createDeliverer } from "../../utils/auth";
+const { createDeliverer } = require("../../utils/auth.js");
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method === "POST") {
     try {
       const delivererData = req.body;
@@ -19,3 +19,6 @@ export default async function handler(req, res) {
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
+
+module.exports = handler;
+module.exports.default = handler;

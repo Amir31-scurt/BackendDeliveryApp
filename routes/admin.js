@@ -1,156 +1,155 @@
-import { ApolloServer, gql } from "apollo-server-express";
-import bcrypt from "bcrypt";
-import express from "express";
-import jwt from "jsonwebtoken";
-import multer from "multer";
-import path from "path";
-import { writeFile, mkdir } from "fs/promises";
-import { existsSync } from "fs";
-import { supabase } from "../supabaseClient.js";
-import { graphqlRequest } from "../utils/graphqlClient.js";
-import { authMiddleware, requireRole } from "../middleware/auth.js";
-import { body, validationResult } from "express-validator";
-import { exportToExcel, exportToPdf } from "../utils/exportUtils.js";
+const {ApolloServer, gql} = require("apollo-server-express");
+const bcrypt = require("bcrypt");
+const express = require("express");
+const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const path = require("path");
+const {writeFile, mkdir} = require("fs/promises");
+const {existsSync} = require("fs");
+const {supabase} = require("../supabaseClient.js");
+const {graphqlRequest} = require("../utils/graphqlClient.js");
+const {authMiddleware, requireRole} = require("../middleware/auth.js");
+const {body, validationResult} = require("express-validator");
+const {exportToExcel, exportToPdf} = require("../utils/exportUtils.js");
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({storage: multer.memoryStorage()});
 const ROOT_DIR = path.resolve();
 
 // Public routes (no auth required)
 router.get("/login", (req, res) => {
-  res.render("admin/adminLogin", { layout: false });
+  res.render("admin/adminLogin", {layout: false});
 });
 
 // Admin login POST route
-router.post("/login", [
-    body('phoneNumber').notEmpty().withMessage('Le numéro de téléphone est requis'),
-    body('password').notEmpty().withMessage('Le mot de passe est requis')
-], async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.render("admin/adminLogin", {
+router.post(
+  "/login",
+  [
+    body("phoneNumber")
+      .notEmpty()
+      .withMessage("Le numéro de téléphone est requis"),
+    body("password").notEmpty().withMessage("Le mot de passe est requis"),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.render("admin/adminLogin", {
         errors: errors.array(),
         csrfToken: req.csrfToken(),
         phoneNumber: req.body.phoneNumber,
-        layout: false
-    });
-  }
-
-  try {
-    const { phoneNumber, password } = req.body;
-
-    // Find user by phone number
-    const { data: user, error: userError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("phone_number", phoneNumber)
-      .single();
-
-    if (userError || !user) {
-      return res.render("admin/adminLogin", {
-        error: "Numéro de téléphone ou mot de passe incorrect",
-        csrfToken: req.csrfToken(),
-        phoneNumber,
-        layout: false
+        layout: false,
       });
     }
 
-    // Verify password
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.render("admin/adminLogin", {
-        error: "Numéro de téléphone ou mot de passe incorrect",
-        csrfToken: req.csrfToken(),
-        phoneNumber,
-        layout: false
+    try {
+      const {phoneNumber, password} = req.body;
+
+      // Find user by phone number
+      const {data: user, error: userError} = await supabase
+        .from("users")
+        .select("*")
+        .eq("phone_number", phoneNumber)
+        .single();
+
+      if (userError || !user) {
+        return res.render("admin/adminLogin", {
+          error: "Numéro de téléphone ou mot de passe incorrect",
+          csrfToken: req.csrfToken(),
+          phoneNumber,
+          layout: false,
+        });
+      }
+
+      // Verify password
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        return res.render("admin/adminLogin", {
+          error: "Numéro de téléphone ou mot de passe incorrect",
+          csrfToken: req.csrfToken(),
+          phoneNumber,
+          layout: false,
+        });
+      }
+
+      // Check if user is an admin
+      if (user.role !== "admin") {
+        return res.render("admin/adminLogin", {
+          error: "Accès refusé. Privilèges administrateur requis.",
+          csrfToken: req.csrfToken(),
+          phoneNumber,
+          layout: false,
+        });
+      }
+
+      // Generate JWT token
+      const token = jwt.sign(
+        {id: user.id, role: user.role},
+        process.env.JWT_SECRET,
+        {expiresIn: "24h"},
+      );
+
+      // Set token in cookie
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
       });
-    }
 
-    // Check if user is an admin
-    if (user.role !== "admin") {
-      return res.render("admin/adminLogin", {
-        error: "Accès refusé. Privilèges administrateur requis.",
-        csrfToken: req.csrfToken(),
-        phoneNumber,
-        layout: false
-      });
-    }
+      // Also populate session for standard MVC (optional if using JWT mainly)
+      req.session.user = user;
+      req.flash("success_msg", "Connexion réussie");
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "24h" }
-    );
-
-    // Set token in cookie
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    });
-
-    // Also populate session for standard MVC (optional if using JWT mainly)
-    req.session.user = user;
-    req.flash('success_msg', 'Connexion réussie');
-
-    res.redirect("/admin/dashboard");
-  } catch (error) {
-
-    res.render("admin/adminLogin", {
+      res.redirect("/admin/dashboard");
+    } catch (error) {
+      res.render("admin/adminLogin", {
         error: "Erreur interne du serveur",
         csrfToken: req.csrfToken(),
-        layout: false
-    });
-  }
-});
+        layout: false,
+      });
+    }
+  },
+);
 
 // Restaurant login routes (should be public)
 router.get("/login/restaurant", (req, res) => {
-  res.render("admin/restaurantLogin", { csrfToken: req.csrfToken(), layout: false });
+  res.render("admin/restaurantLogin", {
+    csrfToken: req.csrfToken(),
+    layout: false,
+  });
 });
 
 router.post("/login/restaurant", async (req, res) => {
   try {
-    
-    const { email } = req.body;
+    const {email} = req.body;
 
     // --- CSRF token check ---
     const csrfToken = req.body._csrf || req.headers["x-csrf-token"];
 
     if (!email) {
-      
-      return res.status(400).json({ error: "Email is required" });
+      return res.status(400).json({error: "Email is required"});
     }
 
-    
-    const { data: restaurant, error } = await supabase
+    const {data: restaurant, error} = await supabase
       .from("restaurants")
       .select("*")
       .eq("email", email)
       .single();
 
     if (error) {
-
-      return res.status(500).json({ error: "Error finding restaurant" });
+      return res.status(500).json({error: "Error finding restaurant"});
     }
 
     if (!restaurant) {
-      
-      return res.status(404).json({ error: "Restaurant not found" });
+      return res.status(404).json({error: "Restaurant not found"});
     }
-
-    
 
     // --- JWT token creation ---
     const token = jwt.sign(
-      { id: restaurant.id, role: "restaurant" },
+      {id: restaurant.id, role: "restaurant"},
       process.env.JWT_SECRET,
-      { expiresIn: "24h" }
+      {expiresIn: "24h"},
     );
-
-    
 
     // --- Secure cookie setup ---
     res.cookie("token", token, {
@@ -162,7 +161,10 @@ router.post("/login/restaurant", async (req, res) => {
     });
 
     // --- Disable caching ---
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, private",
+    );
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
 
@@ -175,110 +177,107 @@ router.post("/login/restaurant", async (req, res) => {
       redirectUrl: `/admin/restaurant/${restaurant.id}/dashboard`,
     });
   } catch (error) {
-
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({error: "Internal server error"});
   }
 });
 
-
 // Restaurant dashboard route - moved before the catch-all route
-router.get('/restaurant/:id/dashboard', async (req, res) => {
+router.get("/restaurant/:id/dashboard", async (req, res) => {
   try {
     // Prevent caching
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, private",
+    );
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
 
-    
-
     // Get token from cookie or Authorization header
     const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
-    
 
     if (!token) {
-      
-      return res.redirect('/admin/login/restaurant');
+      return res.redirect("/admin/login/restaurant");
     }
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
 
-      if (decoded.role !== 'restaurant' || decoded.id !== req.params.id) {
-        
-        return res.redirect('/admin/login/restaurant');
+      if (decoded.role !== "restaurant" || decoded.id !== req.params.id) {
+        return res.redirect("/admin/login/restaurant");
       }
 
       // Fetch restaurant data
-      const { data: restaurant, error: restaurantError } = await supabase
-        .from('restaurants')
-        .select('*')
-        .eq('id', req.params.id)
+      const {data: restaurant, error: restaurantError} = await supabase
+        .from("restaurants")
+        .select("*")
+        .eq("id", req.params.id)
         .single();
 
       if (restaurantError) {
-
-        return res.status(500).send('Error fetching restaurant data');
+        return res.status(500).send("Error fetching restaurant data");
       }
 
       if (!restaurant) {
-        
-        return res.status(404).send('Restaurant not found');
+        return res.status(404).send("Restaurant not found");
       }
 
       // Fetch orders for the restaurant (plain SQL - no Supabase nested syntax)
-      const { data: rawOrders, error: ordersError } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('restaurant_id', req.params.id)
-        .order('created_at', { ascending: false });
+      const {data: rawOrders, error: ordersError} = await supabase
+        .from("orders")
+        .select("*")
+        .eq("restaurant_id", req.params.id)
+        .order("created_at", {ascending: false});
 
       if (ordersError) {
-
-        return res.status(500).send('Error fetching orders');
+        return res.status(500).send("Error fetching orders");
       }
 
       // Enrich each order with user info and order items (manual join)
-      const orders = await Promise.all((rawOrders || []).map(async (order) => {
-        // Fetch user info
-        const { data: userData } = await supabase
-          .from('users')
-          .select('name, phone_number')
-          .eq('id', order.user_id)
-          .single();
-
-        // Fetch order items with menu item details
-        const { data: rawItems } = await supabase
-          .from('order_items')
-          .select('quantity, price, menu_item_id')
-          .eq('order_id', order.id);
-
-        const items = await Promise.all((rawItems || []).map(async (item) => {
-          const { data: menuItem } = await supabase
-            .from('menu_items')
-            .select('name, image_url, description')
-            .eq('id', item.menu_item_id)
+      const orders = await Promise.all(
+        (rawOrders || []).map(async (order) => {
+          // Fetch user info
+          const {data: userData} = await supabase
+            .from("users")
+            .select("name, phone_number")
+            .eq("id", order.user_id)
             .single();
-          return { ...item, menuItem: menuItem || {} };
-        }));
 
-        return { ...order, user: userData || {}, items };
-      }));
+          // Fetch order items with menu item details
+          const {data: rawItems} = await supabase
+            .from("order_items")
+            .select("quantity, price, menu_item_id")
+            .eq("order_id", order.id);
+
+          const items = await Promise.all(
+            (rawItems || []).map(async (item) => {
+              const {data: menuItem} = await supabase
+                .from("menu_items")
+                .select("name, image_url, description")
+                .eq("id", item.menu_item_id)
+                .single();
+              return {...item, menuItem: menuItem || {}};
+            }),
+          );
+
+          return {...order, user: userData || {}, items};
+        }),
+      );
 
       // Fetch restaurant-level revenue from the view
-      const { data: revenueData, error: revenueError } = await supabase
-        .from('restaurant_revenue')
-        .select('*')
-        .eq('restaurant_id', req.params.id)
+      const {data: revenueData, error: revenueError} = await supabase
+        .from("restaurant_revenue")
+        .select("*")
+        .eq("restaurant_id", req.params.id)
         .single();
 
       if (revenueError) {
-
       }
 
       // KPIs
       const totalOrders = orders.length;
-      const completedOrders = orders.filter(o => o.status === 'COMPLETED').length;
+      const completedOrders = orders.filter(
+        (o) => o.status === "COMPLETED",
+      ).length;
       const uncompletedOrders = totalOrders - completedOrders;
 
       // Total revenue from our view (more reliable than summing total_amount)
@@ -287,35 +286,34 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
       // Today’s revenue
       const todayDate = new Date().toLocaleDateString();
       const todayOrders = orders.filter(
-        o => new Date(o.created_at).toLocaleDateString() === todayDate
+        (o) => new Date(o.created_at).toLocaleDateString() === todayDate,
       );
       const todayRevenue = todayOrders.reduce(
         (sum, o) => sum + (parseFloat(o.products_total) || 0),
-        0
+        0,
       );
 
       // Optional: Monthly revenue aggregation for the chart
-      const { data: monthlyRevenue, error: monthlyError } = await supabase.rpc(
-        'get_monthly_restaurant_revenue',  // (we’ll define this next)
-        { restaurant_id: req.params.id }
+      const {data: monthlyRevenue, error: monthlyError} = await supabase.rpc(
+        "get_monthly_restaurant_revenue", // (we’ll define this next)
+        {restaurant_id: req.params.id},
       );
 
       if (monthlyError) {
-
       }
 
-      orders.forEach(order => {
-
+      orders.forEach((order) => {
         // 1. Items total
         const itemsTotal = order.items.reduce(
-          (sum, item) => sum + (item.price * item.quantity),
-          0
+          (sum, item) => sum + item.price * item.quantity,
+          0,
         );
 
         order.items_total = itemsTotal;
 
         // 2. Real delivery fee = total_amount - items_total - 200
-        let deliveryFee = (parseFloat(order.total_amount) || 0) - itemsTotal - 200;
+        let deliveryFee =
+          (parseFloat(order.total_amount) || 0) - itemsTotal - 200;
         if (deliveryFee < 0) deliveryFee = 0;
 
         order.delivery_fee = deliveryFee;
@@ -325,12 +323,9 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
         if (deliveryFeeFinal < 0) deliveryFeeFinal = 0;
 
         order.delivery_fee_final = deliveryFeeFinal;
-
       });
 
-
-
-      res.render('restaurant/dashboard', {
+      res.render("restaurant/dashboard", {
         restaurant,
         orders,
         totalOrders,
@@ -339,99 +334,99 @@ router.get('/restaurant/:id/dashboard', async (req, res) => {
         totalRevenue,
         todayRevenue,
         monthlyRevenue: monthlyRevenue || [],
-        csrfToken: req.csrfToken()
+        csrfToken: req.csrfToken(),
       });
     } catch (err) {
-
-      return res.redirect('/admin/login/restaurant');
+      return res.redirect("/admin/login/restaurant");
     }
   } catch (error) {
-
-    res.status(500).send('Internal server error');
+    res.status(500).send("Internal server error");
   }
 });
 
 // Restaurant menu route
-router.get('/restaurant/:id/menu', async (req, res) => {
+router.get("/restaurant/:id/menu", async (req, res) => {
   try {
     // Prevent caching
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, private",
+    );
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
 
-    
-
     // Get token from cookie or Authorization header
     const token = req.cookies.token || req.headers.authorization?.split(" ")[1];
-    
 
     if (!token) {
-      
-      return res.redirect('/admin/login/restaurant');
+      return res.redirect("/admin/login/restaurant");
     }
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
 
-      if (decoded.role !== 'restaurant' || decoded.id !== req.params.id) {
-        
-        return res.redirect('/admin/login/restaurant');
+      if (decoded.role !== "restaurant" || decoded.id !== req.params.id) {
+        return res.redirect("/admin/login/restaurant");
       }
 
       // Fetch restaurant data
-      const { data: restaurant, error: restaurantError } = await supabase
-        .from('restaurants')
-        .select('*')
-        .eq('id', req.params.id)
+      const {data: restaurant, error: restaurantError} = await supabase
+        .from("restaurants")
+        .select("*")
+        .eq("id", req.params.id)
         .single();
 
       if (restaurantError) {
-
-        return res.status(500).send('Error fetching restaurant data');
+        return res.status(500).send("Error fetching restaurant data");
       }
 
       if (!restaurant) {
-        
-        return res.status(404).send('Restaurant not found');
+        return res.status(404).send("Restaurant not found");
       }
 
       // Fetch menu items for the restaurant
-      const { data: menuItems, error: menuError } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('restaurant_id', req.params.id)
-        .order('created_at', { ascending: false });
+      const {data: menuItems, error: menuError} = await supabase
+        .from("menu_items")
+        .select("*")
+        .eq("restaurant_id", req.params.id)
+        .order("created_at", {ascending: false});
 
       if (menuError) {
-
-        return res.status(500).send('Error fetching menu items');
+        return res.status(500).send("Error fetching menu items");
       }
 
-      
-      res.render('restaurant/menu', {
+      res.render("restaurant/menu", {
         restaurant,
         menuItems: menuItems || [],
-        csrfToken: req.csrfToken()
+        csrfToken: req.csrfToken(),
       });
     } catch (err) {
-
-      return res.redirect('/admin/login/restaurant');
+      return res.redirect("/admin/login/restaurant");
     }
   } catch (error) {
-
-    res.status(500).send('Internal server error');
+    res.status(500).send("Internal server error");
   }
 });
 
 router.get("/restaurant/logout", (req, res) => {
   try {
     // Clear cookies
-    res.clearCookie("token", { path: "/", httpOnly: true, secure: process.env.NODE_ENV === "production" });
-    res.clearCookie("restaurant", { path: "/", httpOnly: true, secure: process.env.NODE_ENV === "production" });
-    
+    res.clearCookie("token", {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
+    res.clearCookie("restaurant", {
+      path: "/",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
+
     // Invalidate cache
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    res.setHeader(
+      "Cache-Control",
+      "no-store, no-cache, must-revalidate, private",
+    );
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
 
@@ -450,22 +445,19 @@ router.get("/restaurant/logout", (req, res) => {
       </html>
     `);
   } catch (error) {
-
     res.status(500).send("Error logging out");
   }
 });
 
-
 // Protected routes (auth required)
 router.use(authMiddleware);
-router.use(requireRole(['admin']));
+router.use(requireRole(["admin"]));
 
 // Admin logout route
 router.post("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {
-
-      return res.status(500).json({ error: "Failed to logout." });
+      return res.status(500).json({error: "Failed to logout."});
     }
     res.clearCookie("token");
     res.clearCookie("restaurant");
@@ -475,42 +467,40 @@ router.post("/logout", (req, res) => {
     localStorage.removeItem("restaurant");
     localStorage.removeItem("user");
     localStorage.removeItem("deliverer");
-    res.status(200).json({ message: "Logout successful." });
+    res.status(200).json({message: "Logout successful."});
   });
 });
 
 router.get("/logout", (req, res) => {
   try {
     const role = req.user?.role || req.session?.user?.role;
-    
+
     // Clear the session
     req.session.destroy((err) => {
       if (err) {
-
       }
     });
 
     // Clear the JWT cookies
-    res.clearCookie('token', {
+    res.clearCookie("token", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
     });
-    
+
     // Clear other cookies to be safe
-    res.clearCookie('restaurant');
-    res.clearCookie('user');
-    res.clearCookie('deliverer');
+    res.clearCookie("restaurant");
+    res.clearCookie("user");
+    res.clearCookie("deliverer");
 
     // Redirect based on role
-    if (role === 'restaurant') {
-      res.redirect('/admin/login/restaurant');
+    if (role === "restaurant") {
+      res.redirect("/admin/login/restaurant");
     } else {
-      res.redirect('/admin/login');
+      res.redirect("/admin/login");
     }
   } catch (error) {
-
-    res.status(500).json({ error: 'Internal server error during logout' });
+    res.status(500).json({error: "Internal server error during logout"});
   }
 });
 
@@ -518,127 +508,124 @@ router.get("/logout", (req, res) => {
 router.get("/dashboard", async (req, res) => {
   try {
     // Check if it's an AJAX request for data
-    if (req.xhr || req.headers.accept.includes('application/json')) {
+    if (req.xhr || req.headers.accept.includes("application/json")) {
       // Fetch total restaurants
-      const { data: totalRestaurants, error: restaurantError } = await supabase
+      const {data: totalRestaurants, error: restaurantError} = await supabase
         .from("restaurants")
-        .select("*", { count: "exact" });
+        .select("*", {count: "exact"});
 
       if (restaurantError) {
-
       }
 
       // Fetch total active restaurants
-      const { data: totalActiveRestaurants, error: activeRestaurantError } =
+      const {data: totalActiveRestaurants, error: activeRestaurantError} =
         await supabase
           .from("restaurants")
-          .select("*", { count: "exact" })
+          .select("*", {count: "exact"})
           .eq("is_active", true);
 
       if (activeRestaurantError) {
-
       }
 
       // Fetch total deliverers
-      const { data: totalDeliverers, error: delivererError } = await supabase
+      const {data: totalDeliverers, error: delivererError} = await supabase
         .from("deliverers")
-        .select("*", { count: "exact" });
+        .select("*", {count: "exact"});
 
       if (delivererError) {
-
       }
 
       // Fetch total orders
-      const { data: totalOrders, error: orderError } = await supabase
+      const {data: totalOrders, error: orderError} = await supabase
         .from("orders")
-        .select("*", { count: "exact" });
+        .select("*", {count: "exact"});
 
       if (orderError) {
-
       }
 
       // Fetch monthly orders data
-      const { data: monthlyOrders, error: monthlyOrdersError } = await supabase.rpc("get_monthly_orders");
+      const {data: monthlyOrders, error: monthlyOrdersError} =
+        await supabase.rpc("get_monthly_orders");
 
       // New revenue system using v2 functions
       const [
-        { data: restoRev, error: restoErr },
-        { data: delivererRev, error: delivererErr },
-        { data: gourmetRev, error: gourmetErr }
+        {data: restoRev, error: restoErr},
+        {data: delivererRev, error: delivererErr},
+        {data: gourmetRev, error: gourmetErr},
       ] = await Promise.all([
-        supabase.rpc('rpc_restaurant_revenue', { p_from: null, p_to: null }),
-        supabase.rpc('rpc_deliverer_revenue', { p_from: null, p_to: null }),
-        supabase.rpc('rpc_gourmet_revenue', { p_from: null, p_to: null })
+        supabase.rpc("rpc_restaurant_revenue", {p_from: null, p_to: null}),
+        supabase.rpc("rpc_deliverer_revenue", {p_from: null, p_to: null}),
+        supabase.rpc("rpc_gourmet_revenue", {p_from: null, p_to: null}),
       ]);
 
       const totalRestaurantRevenue =
-        restoRev?.reduce((sum, r) => sum + Number(r.restaurant_revenue || 0), 0) || 0;
+        restoRev?.reduce(
+          (sum, r) => sum + Number(r.restaurant_revenue || 0),
+          0,
+        ) || 0;
       const totalDelivererRevenue =
-        delivererRev?.reduce((sum, d) => sum + Number(d.deliverer_net_revenue || 0), 0) || 0;
-      const totalGourmetRevenue =
-        gourmetRev?.[0]?.total_revenue || 0;
-
+        delivererRev?.reduce(
+          (sum, d) => sum + Number(d.deliverer_net_revenue || 0),
+          0,
+        ) || 0;
+      const totalGourmetRevenue = gourmetRev?.[0]?.total_revenue || 0;
 
       return res.json({
         totalOrders: totalOrders ? totalOrders.length : 0,
         totalRestaurants: totalRestaurants ? totalRestaurants.length : 0,
-        activeRestaurants: totalActiveRestaurants ? totalActiveRestaurants.length : 0,
+        activeRestaurants: totalActiveRestaurants
+          ? totalActiveRestaurants.length
+          : 0,
         activeDeliverers: totalDeliverers ? totalDeliverers.length : 0,
         monthlyOrders: monthlyOrders || [],
         revenues: {
           restaurants: totalRestaurantRevenue,
           deliverers: totalDelivererRevenue,
-          gourmet: totalGourmetRevenue
-        }
+          gourmet: totalGourmetRevenue,
+        },
       });
     }
 
     // Regular page render
     // Fetch total restaurants
-    const { data: totalRestaurants, error: restaurantError } = await supabase
+    const {data: totalRestaurants, error: restaurantError} = await supabase
       .from("restaurants")
-      .select("*", { count: "exact" });
+      .select("*", {count: "exact"});
 
     if (restaurantError) {
-
     }
 
     // Fetch total active restaurants
-    const { data: totalActiveRestaurants, error: activeRestaurantError } =
+    const {data: totalActiveRestaurants, error: activeRestaurantError} =
       await supabase
         .from("restaurants")
-        .select("*", { count: "exact" })
+        .select("*", {count: "exact"})
         .eq("is_active", true);
 
     if (activeRestaurantError) {
-
     }
 
     // Fetch total deliverers
-    const { data: totalDeliverers, error: delivererError } = await supabase
+    const {data: totalDeliverers, error: delivererError} = await supabase
       .from("deliverers")
-      .select("*", { count: "exact" });
+      .select("*", {count: "exact"});
 
     if (delivererError) {
-
     }
 
     // Fetch total orders
-    const { data: totalOrders, error: orderError } = await supabase
+    const {data: totalOrders, error: orderError} = await supabase
       .from("orders")
-      .select("*", { count: "exact" });
+      .select("*", {count: "exact"});
 
     if (orderError) {
-
     }
 
     // Fetch monthly orders data
-    const { data: monthlyOrders, error: monthlyOrdersError } = await supabase.rpc(
-      "get_monthly_orders"
-    );
+    const {data: monthlyOrders, error: monthlyOrdersError} =
+      await supabase.rpc("get_monthly_orders");
 
     if (monthlyOrdersError) {
-
     }
 
     // Pass all data to the EJS template
@@ -652,7 +639,6 @@ router.get("/dashboard", async (req, res) => {
       monthlyOrders: monthlyOrders || [],
     });
   } catch (error) {
-
     res.status(500).send("An error occurred.");
   }
 });
@@ -661,41 +647,38 @@ router.get("/dashboard", async (req, res) => {
 // Render the admin restaurants page
 router.get("/restaurants", async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "" } = req.query;
+    const {page = 1, limit = 10, search = ""} = req.query;
     const offset = (Number(page) - 1) * Number(limit);
     const pageSize = Number(limit);
 
-    
-
     let query = supabase
       .from("restaurants")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false })
+      .select("*", {count: "exact"})
+      .order("created_at", {ascending: false})
       .range(offset, offset + pageSize - 1);
 
     if (search) {
       query = query.ilike("name", `%${search}%`);
     }
 
-    const { data: restaurants, count, error } = await query;
+    const {data: restaurants, count, error} = await query;
 
     if (error) {
-
       throw new Error("Failed to fetch restaurants.");
     }
 
     const totalPages = Math.ceil(count / pageSize);
 
     // If it's an AJAX request (e.g. search), return JSON
-    if (req.xhr || req.headers.accept?.includes('application/json')) {
-       return res.json({
-         restaurants,
-         pagination: {
-           currentPage: Number(page),
-           totalPages,
-           totalCount: count
-         }
-       });
+    if (req.xhr || req.headers.accept?.includes("application/json")) {
+      return res.json({
+        restaurants,
+        pagination: {
+          currentPage: Number(page),
+          totalPages,
+          totalCount: count,
+        },
+      });
     }
 
     res.render("admin/restaurants", {
@@ -708,12 +691,11 @@ router.get("/restaurants", async (req, res) => {
         pageSize,
         totalCount: count,
         hasNext: Number(page) < totalPages,
-        hasPrev: Number(page) > 1
+        hasPrev: Number(page) > 1,
       },
-      searchQuery: search
+      searchQuery: search,
     });
   } catch (error) {
-
     res.status(500).send("An error occurred while fetching restaurants.");
   }
 });
@@ -721,63 +703,91 @@ router.get("/restaurants", async (req, res) => {
 // Export Restaurants
 router.get("/restaurants/export", async (req, res) => {
   try {
-    const { format = 'excel', search = '' } = req.query;
-    
+    const {format = "excel", search = ""} = req.query;
+
     let query = supabase
       .from("restaurants")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", {ascending: false});
 
     if (search) {
       query = query.ilike("name", `%${search}%`);
     }
 
-    const { data: restaurants, error } = await query;
+    const {data: restaurants, error} = await query;
     if (error) throw error;
 
-    const exportData = restaurants.map(r => ({
-      name: r.name || 'N/A',
-      address: r.address || 'N/A',
-      type: r.type || 'N/A',
-      phone: r.phone_number || 'N/A',
-      email: r.email || 'N/A',
-      status: r.is_active ? 'Actif' : 'Inactif',
-      createdAt: new Date(r.created_at).toLocaleDateString('fr-FR')
+    const exportData = restaurants.map((r) => ({
+      name: r.name || "N/A",
+      address: r.address || "N/A",
+      type: r.type || "N/A",
+      phone: r.phone_number || "N/A",
+      email: r.email || "N/A",
+      status: r.is_active ? "Actif" : "Inactif",
+      createdAt: new Date(r.created_at).toLocaleDateString("fr-FR"),
     }));
 
-    if (format === 'pdf') {
-      const headers = ['Nom', 'Adresse', 'Type', 'Téléphone', 'Email', 'Statut', 'Date'];
-      const keys = ['name', 'address', 'type', 'phone', 'email', 'status', 'createdAt'];
-      const buffer = await exportToPdf(exportData, headers, keys, 'Liste des Restaurants');
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename=restaurants.pdf');
+    if (format === "pdf") {
+      const headers = [
+        "Nom",
+        "Adresse",
+        "Type",
+        "Téléphone",
+        "Email",
+        "Statut",
+        "Date",
+      ];
+      const keys = [
+        "name",
+        "address",
+        "type",
+        "phone",
+        "email",
+        "status",
+        "createdAt",
+      ];
+      const buffer = await exportToPdf(
+        exportData,
+        headers,
+        keys,
+        "Liste des Restaurants",
+      );
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=restaurants.pdf",
+      );
       return res.send(buffer);
     } else {
       const columns = [
-        { header: 'Nom', key: 'name', width: 20 },
-        { header: 'Adresse', key: 'address', width: 30 },
-        { header: 'Type', key: 'type', width: 15 },
-        { header: 'Téléphone', key: 'phone', width: 15 },
-        { header: 'Email', key: 'email', width: 25 },
-        { header: 'Statut', key: 'status', width: 12 },
-        { header: 'Date Inscription', key: 'createdAt', width: 15 }
+        {header: "Nom", key: "name", width: 20},
+        {header: "Adresse", key: "address", width: 30},
+        {header: "Type", key: "type", width: 15},
+        {header: "Téléphone", key: "phone", width: 15},
+        {header: "Email", key: "email", width: 25},
+        {header: "Statut", key: "status", width: 12},
+        {header: "Date Inscription", key: "createdAt", width: 15},
       ];
-      const buffer = await exportToExcel(exportData, columns, 'Restaurants');
-      
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename=restaurants.xlsx');
+      const buffer = await exportToExcel(exportData, columns, "Restaurants");
+
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=restaurants.xlsx",
+      );
       return res.send(buffer);
     }
   } catch (error) {
-
     res.status(500).send("Erreur lors de l'exportation");
   }
 });
 
-
 router.get("/payouts", async (req, res) => {
-  const { status, target_type, limit = 50, offset = 0 } = req.query;
+  const {status, target_type, limit = 50, offset = 0} = req.query;
 
   try {
     let query = supabase
@@ -796,25 +806,24 @@ router.get("/payouts", async (req, res) => {
         error_code,
         error_message,
         created_at
-      `
+      `,
       )
-      .order("created_at", { ascending: false })
+      .order("created_at", {ascending: false})
       .range(Number(offset), Number(limit) - 1);
 
     if (status) query = query.eq("status", status);
     if (target_type) query = query.eq("target_type", target_type);
 
-    const { data, error } = await query;
+    const {data, error} = await query;
 
     if (error) {
-
       return res.render("admin/payouts", {
         payouts: [],
         summary: {
           totalPayouts: 0,
           totalRestaurant: 0,
-          totalDeliverer: 0
-        }
+          totalDeliverer: 0,
+        },
       });
     }
 
@@ -822,26 +831,25 @@ router.get("/payouts", async (req, res) => {
     const summary = {
       totalPayouts: data.reduce((a, b) => a + (b.receive_amount || 0), 0),
       totalRestaurant: data
-        .filter(x => x.target_type === "restaurant")
+        .filter((x) => x.target_type === "restaurant")
         .reduce((a, b) => a + (b.receive_amount || 0), 0),
       totalDeliverer: data
-        .filter(x => x.target_type === "deliverer")
-        .reduce((a, b) => a + (b.receive_amount || 0), 0)
+        .filter((x) => x.target_type === "deliverer")
+        .reduce((a, b) => a + (b.receive_amount || 0), 0),
     };
 
     return res.render("admin/payouts", {
       payouts: data,
-      summary
+      summary,
     });
   } catch (err) {
-
     return res.render("admin/payouts", {
       payouts: [],
       summary: {
         totalPayouts: 0,
         totalRestaurant: 0,
-        totalDeliverer: 0
-      }
+        totalDeliverer: 0,
+      },
     });
   }
 });
@@ -849,7 +857,7 @@ router.get("/payouts", async (req, res) => {
 // Orders route
 router.get("/orders", async (req, res) => {
   try {
-    const { status, limit = 20, offset = 0, page = 1 } = req.query;
+    const {status, limit = 20, offset = 0, page = 1} = req.query;
     const pageSize = Number(limit);
     const currentPage = Number(page);
     const currentOffset = (currentPage - 1) * pageSize;
@@ -857,70 +865,99 @@ router.get("/orders", async (req, res) => {
     // Get total count for pagination
     let countQuery = supabase
       .from("orders")
-      .select("*", { count: "exact", head: true });
+      .select("*", {count: "exact", head: true});
 
     if (status) {
       countQuery = countQuery.eq("status", status);
     }
 
-    const { count: totalCount } = await countQuery;
+    const {count: totalCount} = await countQuery;
 
     // Fetch orders with plain queries + manual join (no Supabase nested syntax)
     let plainQuery = supabase
       .from("orders")
       .select("*")
-      .order("created_at", { ascending: false })
+      .order("created_at", {ascending: false})
       .range(currentOffset, currentOffset + pageSize - 1);
 
     if (status) {
       plainQuery = plainQuery.eq("status", status);
     }
 
-    const { data: rawOrders, error: rawOrdersError } = await plainQuery;
+    const {data: rawOrders, error: rawOrdersError} = await plainQuery;
 
     if (rawOrdersError) {
-
       throw new Error("Failed to fetch orders.");
     }
 
     // Enrich each order with related data
-    const orders = await Promise.all((rawOrders || []).map(async (order) => {
-      const [userResult, restaurantResult, itemsResult, delivererResult] = await Promise.all([
-        supabase.from("users").select("id, name, phone_number").eq("id", order.user_id).single(),
-        supabase.from("restaurants").select("id, name, address").eq("id", order.restaurant_id).single(),
-        supabase.from("order_items").select("quantity, price, menu_item_id").eq("order_id", order.id),
-        order.deliverer_id ? supabase.from("deliverers").select("user_id").eq("user_id", order.deliverer_id).single() : Promise.resolve({ data: null })
-      ]);
+    const orders = await Promise.all(
+      (rawOrders || []).map(async (order) => {
+        const [userResult, restaurantResult, itemsResult, delivererResult] =
+          await Promise.all([
+            supabase
+              .from("users")
+              .select("id, name, phone_number")
+              .eq("id", order.user_id)
+              .single(),
+            supabase
+              .from("restaurants")
+              .select("id, name, address")
+              .eq("id", order.restaurant_id)
+              .single(),
+            supabase
+              .from("order_items")
+              .select("quantity, price, menu_item_id")
+              .eq("order_id", order.id),
+            order.deliverer_id
+              ? supabase
+                  .from("deliverers")
+                  .select("user_id")
+                  .eq("user_id", order.deliverer_id)
+                  .single()
+              : Promise.resolve({data: null}),
+          ]);
 
-      // Enrich order_items with menu_item data
-      const enrichedItems = await Promise.all((itemsResult.data || []).map(async (item) => {
-        const { data: menuItem } = await supabase.from('menu_items').select('id, name, image_url, description').eq('id', item.menu_item_id).single();
-        return { ...item, menu_items: menuItem || {} };
-      }));
+        // Enrich order_items with menu_item data
+        const enrichedItems = await Promise.all(
+          (itemsResult.data || []).map(async (item) => {
+            const {data: menuItem} = await supabase
+              .from("menu_items")
+              .select("id, name, image_url, description")
+              .eq("id", item.menu_item_id)
+              .single();
+            return {...item, menu_items: menuItem || {}};
+          }),
+        );
 
-      return {
-        ...order,
-        user: userResult.data,
-        restaurant: restaurantResult.data,
-        order_items: enrichedItems,
-        deliverer: delivererResult.data
-      };
-    }));
-
+        return {
+          ...order,
+          user: userResult.data,
+          restaurant: restaurantResult.data,
+          order_items: enrichedItems,
+          deliverer: delivererResult.data,
+        };
+      }),
+    );
 
     // Calculate summary statistics
-    const { data: allOrders } = await supabase
+    const {data: allOrders} = await supabase
       .from("orders")
       .select("status, total_amount");
 
     const summary = {
       total: allOrders?.length || 0,
-      pending: allOrders?.filter(o => o.status === "Pending").length || 0,
-      preparing: allOrders?.filter(o => o.status === "PREPARING").length || 0,
-      delivering: allOrders?.filter(o => o.status === "DELIVERING").length || 0,
-      completed: allOrders?.filter(o => o.status === "COMPLETED").length || 0,
-      cancelled: allOrders?.filter(o => o.status === "CANCELLED").length || 0,
-      totalRevenue: allOrders?.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0
+      pending: allOrders?.filter((o) => o.status === "Pending").length || 0,
+      preparing: allOrders?.filter((o) => o.status === "PREPARING").length || 0,
+      delivering:
+        allOrders?.filter((o) => o.status === "DELIVERING").length || 0,
+      completed: allOrders?.filter((o) => o.status === "COMPLETED").length || 0,
+      cancelled: allOrders?.filter((o) => o.status === "CANCELLED").length || 0,
+      totalRevenue:
+        allOrders?.reduce(
+          (sum, o) => sum + parseFloat(o.total_amount || 0),
+          0,
+        ) || 0,
     };
 
     const totalPages = Math.ceil((totalCount || 0) / pageSize);
@@ -936,12 +973,11 @@ router.get("/orders", async (req, res) => {
         pageSize,
         totalCount: totalCount || 0,
         hasNext: currentPage < totalPages,
-        hasPrev: currentPage > 1
+        hasPrev: currentPage > 1,
       },
-      currentStatus: status || ''
+      currentStatus: status || "",
     });
   } catch (error) {
-
     res.status(500).render("admin/orders", {
       layout: "admin/layout",
       title: "Commandes",
@@ -953,7 +989,7 @@ router.get("/orders", async (req, res) => {
         delivering: 0,
         completed: 0,
         cancelled: 0,
-        totalRevenue: 0
+        totalRevenue: 0,
       },
       pagination: {
         currentPage: 1,
@@ -961,9 +997,9 @@ router.get("/orders", async (req, res) => {
         pageSize: pageSize,
         totalCount: 0,
         hasNext: false,
-        hasPrev: false
+        hasPrev: false,
       },
-      currentStatus: ''
+      currentStatus: "",
     });
   }
 });
@@ -971,145 +1007,208 @@ router.get("/orders", async (req, res) => {
 // Export Orders
 router.get("/orders/export", async (req, res) => {
   try {
-    const { format = 'excel', status = '' } = req.query;
-    
+    const {format = "excel", status = ""} = req.query;
+
     let exportQuery = supabase
       .from("orders")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", {ascending: false});
 
     if (status) {
       exportQuery = exportQuery.eq("status", status);
     }
 
-    const { data: rawExportOrders, error } = await exportQuery;
+    const {data: rawExportOrders, error} = await exportQuery;
     if (error) throw error;
 
     // Enrich with user and restaurant data
-    const orders = await Promise.all((rawExportOrders || []).map(async (o) => {
-      const [uRes, rRes] = await Promise.all([
-        supabase.from('users').select('name, phone_number').eq('id', o.user_id).single(),
-        supabase.from('restaurants').select('name').eq('id', o.restaurant_id).single()
-      ]);
-      return { ...o, users: uRes.data || {}, restaurants: rRes.data || {} };
-    }));
+    const orders = await Promise.all(
+      (rawExportOrders || []).map(async (o) => {
+        const [uRes, rRes] = await Promise.all([
+          supabase
+            .from("users")
+            .select("name, phone_number")
+            .eq("id", o.user_id)
+            .single(),
+          supabase
+            .from("restaurants")
+            .select("name")
+            .eq("id", o.restaurant_id)
+            .single(),
+        ]);
+        return {...o, users: uRes.data || {}, restaurants: rRes.data || {}};
+      }),
+    );
 
-    const exportData = orders.map(o => ({
+    const exportData = orders.map((o) => ({
       id: o.id.substring(0, 8),
-      client: o.users?.name || 'N/A',
-      restaurant: o.restaurants?.name || 'N/A',
+      client: o.users?.name || "N/A",
+      restaurant: o.restaurants?.name || "N/A",
       amount: o.total_amount || 0,
-      status: o.status || 'N/A',
-      date: new Date(o.created_at).toLocaleDateString('fr-FR') + ' ' + new Date(o.created_at).toLocaleTimeString('fr-FR')
+      status: o.status || "N/A",
+      date:
+        new Date(o.created_at).toLocaleDateString("fr-FR") +
+        " " +
+        new Date(o.created_at).toLocaleTimeString("fr-FR"),
     }));
 
-    if (format === 'pdf') {
-      const headers = ['ID', 'Client', 'Restaurant', 'Montant', 'Statut', 'Date'];
-      const keys = ['id', 'client', 'restaurant', 'amount', 'status', 'date'];
-      const buffer = await exportToPdf(exportData, headers, keys, 'Liste des Commandes');
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename=commandes.pdf');
+    if (format === "pdf") {
+      const headers = [
+        "ID",
+        "Client",
+        "Restaurant",
+        "Montant",
+        "Statut",
+        "Date",
+      ];
+      const keys = ["id", "client", "restaurant", "amount", "status", "date"];
+      const buffer = await exportToPdf(
+        exportData,
+        headers,
+        keys,
+        "Liste des Commandes",
+      );
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=commandes.pdf",
+      );
       return res.send(buffer);
     } else {
       const columns = [
-        { header: 'ID', key: 'id', width: 15 },
-        { header: 'Client', key: 'client', width: 25 },
-        { header: 'Restaurant', key: 'restaurant', width: 25 },
-        { header: 'Montant', key: 'amount', width: 15 },
-        { header: 'Statut', key: 'status', width: 15 },
-        { header: 'Date', key: 'date', width: 20 }
+        {header: "ID", key: "id", width: 15},
+        {header: "Client", key: "client", width: 25},
+        {header: "Restaurant", key: "restaurant", width: 25},
+        {header: "Montant", key: "amount", width: 15},
+        {header: "Statut", key: "status", width: 15},
+        {header: "Date", key: "date", width: 20},
       ];
-      const buffer = await exportToExcel(exportData, columns, 'Commandes');
-      
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename=commandes.xlsx');
+      const buffer = await exportToExcel(exportData, columns, "Commandes");
+
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=commandes.xlsx",
+      );
       return res.send(buffer);
     }
   } catch (error) {
-
     res.status(500).send("Erreur lors de l'exportation");
   }
 });
 
-
 // Revenues route
 router.get("/revenues", async (req, res) => {
   try {
-    const { from, to } = req.query;
+    const {from, to} = req.query;
     const dateFrom = from ? new Date(from) : null;
     const dateTo = to ? new Date(to) : null;
 
     const rpcParams = {
       p_from: dateFrom ? dateFrom.toISOString() : null,
-      p_to: dateTo ? dateTo.toISOString() : null
+      p_to: dateTo ? dateTo.toISOString() : null,
     };
 
     // Fetch revenue data using the same functions as dashboard
     const [
-      { data: restoRev, error: restoErr },
-      { data: delivererRev, error: delivererErr },
-      { data: gourmetRev, error: gourmetErr }
+      {data: restoRev, error: restoErr},
+      {data: delivererRev, error: delivererErr},
+      {data: gourmetRev, error: gourmetErr},
     ] = await Promise.all([
-      supabase.rpc('rpc_restaurant_revenue', rpcParams),
-      supabase.rpc('rpc_deliverer_revenue', rpcParams),
-      supabase.rpc('rpc_gourmet_revenue', rpcParams)
+      supabase.rpc("rpc_restaurant_revenue", rpcParams),
+      supabase.rpc("rpc_deliverer_revenue", rpcParams),
+      supabase.rpc("rpc_gourmet_revenue", rpcParams),
     ]);
 
-    const totalRestaurantRevenue =
-      restoErr ? 0 : (restoRev?.reduce((sum, r) => sum + Number(r.restaurant_revenue || 0), 0) || 0);
-    const totalDelivererRevenue =
-      delivererErr ? 0 : (delivererRev?.reduce((sum, d) => sum + Number(d.deliverer_net_revenue || 0), 0) || 0);
-    const totalGourmetRevenue =
-      gourmetErr ? 0 : (gourmetRev?.[0]?.total_revenue || 0);
+    const totalRestaurantRevenue = restoErr
+      ? 0
+      : restoRev?.reduce(
+          (sum, r) => sum + Number(r.restaurant_revenue || 0),
+          0,
+        ) || 0;
+    const totalDelivererRevenue = delivererErr
+      ? 0
+      : delivererRev?.reduce(
+          (sum, d) => sum + Number(d.deliverer_net_revenue || 0),
+          0,
+        ) || 0;
+    const totalGourmetRevenue = gourmetErr
+      ? 0
+      : gourmetRev?.[0]?.total_revenue || 0;
 
     const revenues = {
       restaurants: totalRestaurantRevenue,
       deliverers: totalDelivererRevenue,
-      gourmet: totalGourmetRevenue
+      gourmet: totalGourmetRevenue,
     };
 
     // Log the data for debugging purposes
     if (restoRev && restoRev.length > 0) {
-      
     }
 
     // Fetch revenue breakdown by restaurant
-    const restaurantBreakdown = restoErr ? [] : (restoRev || []).map(r => ({
-      restaurantId: r.restaurant_id,
-      restaurantName: r.restaurant_name || 'N/A',
-      revenue: Number(r.restaurant_revenue || 0),
-      orderCount: Number(r.order_count || r.orders || r.count || 0)
-    })).sort((a, b) => b.revenue - a.revenue).slice(0, 10); // Top 10
+    const restaurantBreakdown = restoErr
+      ? []
+      : (restoRev || [])
+          .map((r) => ({
+            restaurantId: r.restaurant_id,
+            restaurantName: r.restaurant_name || "N/A",
+            revenue: Number(r.restaurant_revenue || 0),
+            orderCount: Number(r.order_count || r.orders || r.count || 0),
+          }))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 10); // Top 10
 
     // Fetch revenue breakdown by deliverer
-    const delivererBreakdown = delivererErr ? [] : (delivererRev || []).map(d => ({
-      delivererId: d.deliverer_id,
-      delivererName: d.deliverer_name || 'N/A',
-      revenue: Number(d.deliverer_net_revenue || 0),
-      orderCount: Number(d.order_count || d.orders || d.count || 0)
-    })).sort((a, b) => b.revenue - a.revenue).slice(0, 10); // Top 10
+    const delivererBreakdown = delivererErr
+      ? []
+      : (delivererRev || [])
+          .map((d) => ({
+            delivererId: d.deliverer_id,
+            delivererName: d.deliverer_name || "N/A",
+            revenue: Number(d.deliverer_net_revenue || 0),
+            orderCount: Number(d.order_count || d.orders || d.count || 0),
+          }))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 10); // Top 10
 
     // Fetch total orders for revenue calculation explanation
     let totalOrdersQuery = supabase
       .from("orders")
       .select("total_amount, status, created_at")
       .eq("status", "COMPLETED");
-    if (dateFrom) totalOrdersQuery = totalOrdersQuery.gte("created_at", dateFrom.toISOString());
-    if (dateTo) totalOrdersQuery = totalOrdersQuery.lte("created_at", dateTo.toISOString());
+    if (dateFrom)
+      totalOrdersQuery = totalOrdersQuery.gte(
+        "created_at",
+        dateFrom.toISOString(),
+      );
+    if (dateTo)
+      totalOrdersQuery = totalOrdersQuery.lte(
+        "created_at",
+        dateTo.toISOString(),
+      );
 
-    const { data: totalOrdersData } = await totalOrdersQuery;
+    const {data: totalOrdersData} = await totalOrdersQuery;
 
-    const totalOrderValue = totalOrdersData?.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0) || 0;
+    const totalOrderValue =
+      totalOrdersData?.reduce(
+        (sum, o) => sum + parseFloat(o.total_amount || 0),
+        0,
+      ) || 0;
 
     // Fetch per-order revenue breakdown (where it came from)
-    const { page = 1, limit = 20 } = req.query;
+    const {page = 1, limit = 20} = req.query;
     const offset = (Number(page) - 1) * Number(limit);
     const pageSize = Number(limit);
 
     let revenueOrdersQuery = supabase
       .from("orders")
-      .select(`
+      .select(
+        `
         id,
         total_amount,
         restaurant_payout,
@@ -1117,51 +1216,62 @@ router.get("/revenues", async (req, res) => {
         gourmet_payout,
         created_at,
         restaurant_id
-      `)
+      `,
+      )
       .eq("status", "COMPLETED")
-      .order("created_at", { ascending: false })
+      .order("created_at", {ascending: false})
       .range(offset, offset + pageSize - 1);
 
-    if (dateFrom) revenueOrdersQuery = revenueOrdersQuery.gte("created_at", dateFrom.toISOString());
-    if (dateTo) revenueOrdersQuery = revenueOrdersQuery.lte("created_at", dateTo.toISOString());
+    if (dateFrom)
+      revenueOrdersQuery = revenueOrdersQuery.gte(
+        "created_at",
+        dateFrom.toISOString(),
+      );
+    if (dateTo)
+      revenueOrdersQuery = revenueOrdersQuery.lte(
+        "created_at",
+        dateTo.toISOString(),
+      );
 
-    const { data: revenueOrdersRaw, error: revenueOrdersError } = await revenueOrdersQuery;
+    const {data: revenueOrdersRaw, error: revenueOrdersError} =
+      await revenueOrdersQuery;
     if (revenueOrdersError) {
-
     }
 
     // Manual join to get restaurant names
-    const restIds = [...new Set((revenueOrdersRaw || []).map(o => o.restaurant_id))].filter(Boolean);
+    const restIds = [
+      ...new Set((revenueOrdersRaw || []).map((o) => o.restaurant_id)),
+    ].filter(Boolean);
     let restaurantMap = {};
     if (restIds.length > 0) {
-      const { data: restaurantsData } = await supabase
+      const {data: restaurantsData} = await supabase
         .from("restaurants")
         .select("id, name")
         .in("id", restIds);
-      
-      (restaurantsData || []).forEach(r => {
+
+      (restaurantsData || []).forEach((r) => {
         restaurantMap[r.id] = r.name;
       });
     }
 
-    const revenueOrders = (revenueOrdersRaw || []).map(o => ({
+    const revenueOrders = (revenueOrdersRaw || []).map((o) => ({
       id: o.id,
       total: Number(o.total_amount || 0),
       restaurantShare: Number(o.restaurant_payout || 0),
       delivererShare: Number(o.deliverer_payout || 0),
       gourmetShare: Number(o.gourmet_payout || 0),
       restaurantName: restaurantMap[o.restaurant_id] || "N/A",
-      createdAt: o.created_at
+      createdAt: o.created_at,
     }));
 
     const totalCount = totalOrdersData?.length || 0;
     const totalPages = Math.ceil(totalCount / pageSize);
 
     // Fetch monthly revenue data
-    const { data: monthlyData, error: monthlyError } = await supabase.rpc("get_monthly_orders");
+    const {data: monthlyData, error: monthlyError} =
+      await supabase.rpc("get_monthly_orders");
 
     if (monthlyError) {
-
     }
 
     res.render("admin/revenues", {
@@ -1179,22 +1289,21 @@ router.get("/revenues", async (req, res) => {
         pageSize,
         totalCount,
         hasNext: Number(page) < totalPages,
-        hasPrev: Number(page) > 1
+        hasPrev: Number(page) > 1,
       },
       filters: {
         from: from || "",
-        to: to || ""
-      }
+        to: to || "",
+      },
     });
   } catch (error) {
-
     res.status(500).render("admin/revenues", {
       layout: "admin/layout",
       title: "Revenus",
       revenues: {
         restaurants: 0,
         deliverers: 0,
-        gourmet: 0
+        gourmet: 0,
       },
       monthlyData: [],
       restaurantBreakdown: [],
@@ -1203,15 +1312,15 @@ router.get("/revenues", async (req, res) => {
       revenueOrders: [],
       filters: {
         from: req.query.from || "",
-        to: req.query.to || ""
-      }
+        to: req.query.to || "",
+      },
     });
   }
 });
 
 // Restaurant Details Route
 router.get("/restaurants/:id/details", async (req, res) => {
-  const { id } = req.params;
+  const {id} = req.params;
 
   try {
     // Fetch restaurant details
@@ -1274,7 +1383,6 @@ router.get("/restaurants/:id/details", async (req, res) => {
       menuItems,
     });
   } catch (error) {
-
     res.status(500).send("An error occurred while fetching details.");
   }
 });
@@ -1282,9 +1390,9 @@ router.get("/restaurants/:id/details", async (req, res) => {
 // Upload restaurant image to local storage (replaces Supabase storage)
 router.post("/upload", upload.single("image"), async (req, res) => {
   try {
-    const { restaurantId } = req.body;
+    const {restaurantId} = req.body;
     if (!restaurantId) {
-      return res.status(400).json({ error: "restaurantId is required" });
+      return res.status(400).json({error: "restaurantId is required"});
     }
 
     // Accept either multipart file (preferred) or base64 payload
@@ -1298,14 +1406,14 @@ router.post("/upload", upload.single("image"), async (req, res) => {
       const base64 = req.body.image.replace(/^data:image\/\\w+;base64,/, "");
       buffer = Buffer.from(base64, "base64");
     } else {
-      return res.status(400).json({ error: "No image provided" });
+      return res.status(400).json({error: "No image provided"});
     }
 
     const fileName = `${restaurantId}-${Date.now()}.jpg`;
     const uploadDir = path.join(ROOT_DIR, "public", "uploads", "restaurants");
 
     if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
+      await mkdir(uploadDir, {recursive: true});
     }
 
     const filePath = path.join(uploadDir, fileName);
@@ -1314,22 +1422,21 @@ router.post("/upload", upload.single("image"), async (req, res) => {
     const publicUrl = `/uploads/restaurants/${fileName}`;
 
     // Save the public URL in restaurants table
-    const { error: dbError } = await supabase
+    const {error: dbError} = await supabase
       .from("restaurants")
-      .update({ image_url: publicUrl })
+      .update({image_url: publicUrl})
       .eq("id", restaurantId);
 
     if (dbError) throw new Error(dbError.message);
 
-    res.status(200).json({ message: "Image uploaded successfully", publicUrl });
+    res.status(200).json({message: "Image uploaded successfully", publicUrl});
   } catch (err) {
-
-    res.status(500).json({ error: err.message });
+    res.status(500).json({error: err.message});
   }
 });
 
 // Handle adding a new restaurant
-router.post("/restaurants/add", requireRole(['admin']), async (req, res) => {
+router.post("/restaurants/add", requireRole(["admin"]), async (req, res) => {
   try {
     const {
       name,
@@ -1345,7 +1452,7 @@ router.post("/restaurants/add", requireRole(['admin']), async (req, res) => {
     // Format openingHours to GraphQL-compliant string
     const formattedOpeningHours = JSON.stringify(openingHours).replace(
       /"([^"]+)":/g,
-      "$1:"
+      "$1:",
     );
 
     const mutation = `
@@ -1370,29 +1477,28 @@ router.post("/restaurants/add", requireRole(['admin']), async (req, res) => {
     `;
 
     // Execute GraphQL request
-    const { data, errors } = await graphqlRequest(mutation);
+    const {data, errors} = await graphqlRequest(mutation);
 
     if (errors) {
-
       throw new Error(errors[0].message);
     }
 
-    
-
     res.redirect("/admin/restaurants");
   } catch (error) {
-
     res.status(500).send("Failed to add restaurant.");
   }
 });
 
 // Handle toggling the restaurant's active status
-router.post("/restaurants/:id/toggle", requireRole(['admin']), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { isActive } = req.body;
+router.post(
+  "/restaurants/:id/toggle",
+  requireRole(["admin"]),
+  async (req, res) => {
+    try {
+      const {id} = req.params;
+      const {isActive} = req.body;
 
-    const mutation = `
+      const mutation = `
       mutation {
         updateRestaurant(id: "${id}", input: { isActive: ${isActive} }) {
           id
@@ -1400,41 +1506,42 @@ router.post("/restaurants/:id/toggle", requireRole(['admin']), async (req, res) 
       }
     `;
 
-    await graphqlRequest(mutation);
+      await graphqlRequest(mutation);
 
-    res.redirect("/admin/restaurants");
-  } catch (error) {
-
-    res.status(500).send("Failed to update restaurant status.");
-  }
-});
+      res.redirect("/admin/restaurants");
+    } catch (error) {
+      res.status(500).send("Failed to update restaurant status.");
+    }
+  },
+);
 
 // Handle deleting a restaurant
-router.post("/restaurants/:id/delete", requireRole(['admin']), async (req, res) => {
-  try {
-    const { id } = req.params;
+router.post(
+  "/restaurants/:id/delete",
+  requireRole(["admin"]),
+  async (req, res) => {
+    try {
+      const {id} = req.params;
 
-    const mutation = `
+      const mutation = `
       mutation {
         deleteRestaurant(id: "${id}")
       }
     `;
 
-    await graphqlRequest(mutation);
+      await graphqlRequest(mutation);
 
-    res.redirect("/admin/restaurants");
-  } catch (error) {
-
-    res.status(500).send("Failed to delete restaurant.");
-  }
-});
+      res.redirect("/admin/restaurants");
+    } catch (error) {
+      res.status(500).send("Failed to delete restaurant.");
+    }
+  },
+);
 
 // Add Menu Item Route
 router.post("/restaurants/:id/menu/add", async (req, res) => {
-  const { id } = req.params;
-  const { name, description, price, category, imageUrl } = req.body;
-
-  
+  const {id} = req.params;
+  const {name, description, price, category, imageUrl} = req.body;
 
   try {
     const addMenuItemMutation = `
@@ -1469,14 +1576,13 @@ router.post("/restaurants/:id/menu/add", async (req, res) => {
 
     res.redirect(`/admin/restaurants/${id}/details`);
   } catch (error) {
-
     res.status(500).send("Failed to add menu item.");
   }
 });
 
 router.post("/orders/:id/status", async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
+  const {id} = req.params;
+  const {status} = req.body;
 
   try {
     const mutation = `
@@ -1488,21 +1594,20 @@ router.post("/orders/:id/status", async (req, res) => {
       }
     `;
 
-    const variables = { id, status };
+    const variables = {id, status};
 
     await graphqlRequest(mutation, variables);
 
-    res.status(200).json({ message: "Order status updated successfully." });
+    res.status(200).json({message: "Order status updated successfully."});
   } catch (error) {
-
-    res.status(500).json({ error: "Failed to update order status." });
+    res.status(500).json({error: "Failed to update order status."});
   }
 });
 
 // Add route for updating order notes
 router.post("/orders/:id/note", async (req, res) => {
-  const { id } = req.params;
-  const { note } = req.body;
+  const {id} = req.params;
+  const {note} = req.body;
 
   try {
     const mutation = `
@@ -1514,14 +1619,13 @@ router.post("/orders/:id/note", async (req, res) => {
       }
     `;
 
-    const variables = { orderId: id, note };
+    const variables = {orderId: id, note};
 
     await graphqlRequest(mutation, variables);
 
-    res.status(200).json({ message: "Order note updated successfully." });
+    res.status(200).json({message: "Order note updated successfully."});
   } catch (error) {
-
-    res.status(500).json({ error: "Failed to update order note." });
+    res.status(500).json({error: "Failed to update order note."});
   }
 });
 
@@ -1529,62 +1633,61 @@ router.post("/orders/:id/note", async (req, res) => {
 // Render the deliverers page
 router.get("/deliverers", async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = "" } = req.query;
+    const {page = 1, limit = 10, search = ""} = req.query;
     const offset = (Number(page) - 1) * Number(limit);
     const pageSize = Number(limit);
-
-    
 
     // Fetch deliverers with plain query (no Supabase nested syntax)
     let rawQuery = supabase
       .from("deliverers")
-      .select('*', { count: "exact" })
+      .select("*", {count: "exact"})
       .range(offset, offset + pageSize - 1)
-      .order("created_at", { ascending: false });
+      .order("created_at", {ascending: false});
 
     if (search) {
       rawQuery = rawQuery.ilike("zone", `%${search}%`);
     }
 
-    const { data: rawDeliverers, count, error } = await rawQuery;
+    const {data: rawDeliverers, count, error} = await rawQuery;
 
     if (error) {
-
       throw new Error("Failed to fetch deliverers.");
     }
 
     // Enrich with user data (manual join)
-    const formattedDeliverers = await Promise.all((rawDeliverers || []).map(async (deliverer) => {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('id, name, phone_number, profile_picture')
-        .eq('id', deliverer.user_id)
-        .single();
-      return {
-        userId: deliverer.user_id,
-        user: userData || {},
-        vehicleId: deliverer.vehicle_id,
-        isAvailable: deliverer.is_available,
-        currentLocation: deliverer.current_location,
-        zone: deliverer.zone,
-        profilePicture: deliverer.profile_picture,
-        completedDeliveries: deliverer.completed_deliveries,
-        isActive: deliverer.is_active,
-        isVerified: deliverer.is_verified
-      };
-    }));
+    const formattedDeliverers = await Promise.all(
+      (rawDeliverers || []).map(async (deliverer) => {
+        const {data: userData} = await supabase
+          .from("users")
+          .select("id, name, phone_number, profile_picture")
+          .eq("id", deliverer.user_id)
+          .single();
+        return {
+          userId: deliverer.user_id,
+          user: userData || {},
+          vehicleId: deliverer.vehicle_id,
+          isAvailable: deliverer.is_available,
+          currentLocation: deliverer.current_location,
+          zone: deliverer.zone,
+          profilePicture: deliverer.profile_picture,
+          completedDeliveries: deliverer.completed_deliveries,
+          isActive: deliverer.is_active,
+          isVerified: deliverer.is_verified,
+        };
+      }),
+    );
 
     const totalPages = Math.ceil(count / pageSize);
 
     // Check if it's an AJAX request
-    if (req.xhr || req.headers.accept?.includes('application/json')) {
+    if (req.xhr || req.headers.accept?.includes("application/json")) {
       return res.json({
         deliverers: formattedDeliverers,
         pagination: {
-           currentPage: Number(page),
-           totalPages,
-           totalCount: count
-         }
+          currentPage: Number(page),
+          totalPages,
+          totalCount: count,
+        },
       });
     }
 
@@ -1599,14 +1702,15 @@ router.get("/deliverers", async (req, res) => {
         pageSize,
         totalCount: count,
         hasNext: Number(page) < totalPages,
-        hasPrev: Number(page) > 1
+        hasPrev: Number(page) > 1,
       },
-      searchQuery: search
+      searchQuery: search,
     });
   } catch (error) {
-
-    if (req.xhr || req.headers.accept?.includes('application/json')) {
-      return res.status(500).json({ error: "An error occurred while fetching deliverers." });
+    if (req.xhr || req.headers.accept?.includes("application/json")) {
+      return res
+        .status(500)
+        .json({error: "An error occurred while fetching deliverers."});
     }
     res.status(500).send("An error occurred while fetching deliverers.");
   }
@@ -1615,116 +1719,148 @@ router.get("/deliverers", async (req, res) => {
 // Export Deliverers
 router.get("/deliverers/export", async (req, res) => {
   try {
-    const { format = 'excel', search = '' } = req.query;
-    
+    const {format = "excel", search = ""} = req.query;
+
     let rawExportQuery = supabase
       .from("deliverers")
-      .select('*')
-      .order("created_at", { ascending: false });
+      .select("*")
+      .order("created_at", {ascending: false});
 
     if (search) {
       rawExportQuery = rawExportQuery.ilike("zone", `%${search}%`);
     }
 
-    const { data: rawExportDeliverers, error } = await rawExportQuery;
+    const {data: rawExportDeliverers, error} = await rawExportQuery;
     if (error) throw error;
 
     // Enrich with user data
-    const deliverers = await Promise.all((rawExportDeliverers || []).map(async (d) => {
-      const { data: u } = await supabase.from('users').select('name, phone_number').eq('id', d.user_id).single();
-      return { ...d, users: u || {} };
-    }));
+    const deliverers = await Promise.all(
+      (rawExportDeliverers || []).map(async (d) => {
+        const {data: u} = await supabase
+          .from("users")
+          .select("name, phone_number")
+          .eq("id", d.user_id)
+          .single();
+        return {...d, users: u || {}};
+      }),
+    );
 
-    const exportData = deliverers.map(d => ({
-      name: d.users?.name || 'N/A',
-      phone: d.users?.phone_number || 'N/A',
-      zone: d.zone || 'N/A',
-      vehicleId: d.vehicle_id || 'N/A',
-      status: d.is_available ? 'Disponible' : 'Occupé',
+    const exportData = deliverers.map((d) => ({
+      name: d.users?.name || "N/A",
+      phone: d.users?.phone_number || "N/A",
+      zone: d.zone || "N/A",
+      vehicleId: d.vehicle_id || "N/A",
+      status: d.is_available ? "Disponible" : "Occupé",
       deliveries: d.completed_deliveries || 0,
-      createdAt: new Date(d.created_at).toLocaleDateString('fr-FR')
+      createdAt: new Date(d.created_at).toLocaleDateString("fr-FR"),
     }));
 
-    if (format === 'pdf') {
-      const headers = ['Nom', 'Téléphone', 'Zone', 'Véhicule', 'Statut', 'Livraisons', 'Date'];
-      const keys = ['name', 'phone', 'zone', 'vehicleId', 'status', 'deliveries', 'createdAt'];
-      const buffer = await exportToPdf(exportData, headers, keys, 'Liste des Livreurs');
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename=livreurs.pdf');
+    if (format === "pdf") {
+      const headers = [
+        "Nom",
+        "Téléphone",
+        "Zone",
+        "Véhicule",
+        "Statut",
+        "Livraisons",
+        "Date",
+      ];
+      const keys = [
+        "name",
+        "phone",
+        "zone",
+        "vehicleId",
+        "status",
+        "deliveries",
+        "createdAt",
+      ];
+      const buffer = await exportToPdf(
+        exportData,
+        headers,
+        keys,
+        "Liste des Livreurs",
+      );
+
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", "attachment; filename=livreurs.pdf");
       return res.send(buffer);
     } else {
       const columns = [
-        { header: 'Nom', key: 'name', width: 20 },
-        { header: 'Téléphone', key: 'phone', width: 15 },
-        { header: 'Zone', key: 'zone', width: 15 },
-        { header: 'Véhicule', key: 'vehicleId', width: 15 },
-        { header: 'Statut', key: 'status', width: 12 },
-        { header: 'Livraisons', key: 'deliveries', width: 12 },
-        { header: 'Date Inscription', key: 'createdAt', width: 15 }
+        {header: "Nom", key: "name", width: 20},
+        {header: "Téléphone", key: "phone", width: 15},
+        {header: "Zone", key: "zone", width: 15},
+        {header: "Véhicule", key: "vehicleId", width: 15},
+        {header: "Statut", key: "status", width: 12},
+        {header: "Livraisons", key: "deliveries", width: 12},
+        {header: "Date Inscription", key: "createdAt", width: 15},
       ];
-      const buffer = await exportToExcel(exportData, columns, 'Livreurs');
-      
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename=livreurs.xlsx');
+      const buffer = await exportToExcel(exportData, columns, "Livreurs");
+
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=livreurs.xlsx",
+      );
       return res.send(buffer);
     }
   } catch (error) {
-
     res.status(500).send("Erreur lors de l'exportation");
   }
 });
 
-
 // Get single deliverer details
 router.get("/deliverers/:id", async (req, res) => {
-  const { id } = req.params;
+  const {id} = req.params;
 
   try {
-    
-
     // Fetch deliverer with plain query then join user data
-    const { data: rawDeliverer, error: delivererError } = await supabase
+    const {data: rawDeliverer, error: delivererError} = await supabase
       .from("deliverers")
-      .select('*')
+      .select("*")
       .eq("user_id", id)
       .single();
 
     if (delivererError) {
-
-      if (req.xhr || req.headers.accept?.includes('application/json')) {
-        return res.status(404).json({ error: "Deliverer not found." });
+      if (req.xhr || req.headers.accept?.includes("application/json")) {
+        return res.status(404).json({error: "Deliverer not found."});
       }
       return res.status(404).render("error", {
-        message: "Livreur non trouvé."
+        message: "Livreur non trouvé.",
       });
     }
 
     // Fetch user info separately
-    const { data: delivererUser } = await supabase
-      .from('users')
-      .select('id, name, phone_number, profile_picture')
-      .eq('id', rawDeliverer.user_id)
+    const {data: delivererUser} = await supabase
+      .from("users")
+      .select("id, name, phone_number, profile_picture")
+      .eq("id", rawDeliverer.user_id)
       .single();
 
-    const deliverer = { ...rawDeliverer, users: delivererUser || {} };
-    
+    const deliverer = {...rawDeliverer, users: delivererUser || {}};
 
     // Fetch deliverer's orders with plain query, then join user data
-    const { data: rawOrders, error: ordersError } = await supabase
+    const {data: rawOrders, error: ordersError} = await supabase
       .from("orders")
-      .select('id, total_amount, status, created_at, delivery_address, user_id')
+      .select("id, total_amount, status, created_at, delivery_address, user_id")
       .eq("deliverer_id", deliverer.user_id)
-      .order('created_at', { ascending: false });
+      .order("created_at", {ascending: false});
 
     let orders = [];
     if (ordersError) {
-
     } else {
-      orders = await Promise.all((rawOrders || []).map(async (o) => {
-        const { data: orderUser } = await supabase.from('users').select('name, phone_number').eq('id', o.user_id).single();
-        return { ...o, users: orderUser || {} };
-      }));
+      orders = await Promise.all(
+        (rawOrders || []).map(async (o) => {
+          const {data: orderUser} = await supabase
+            .from("users")
+            .select("name, phone_number")
+            .eq("id", o.user_id)
+            .single();
+          return {...o, users: orderUser || {}};
+        }),
+      );
     }
 
     // Transform the data to match the template structure
@@ -1739,13 +1875,11 @@ router.get("/deliverers/:id", async (req, res) => {
       isActive: deliverer.is_active,
       isVerified: deliverer.is_verified,
       completedDeliveries: deliverer.completed_deliveries || 0,
-      orders: orders || []
+      orders: orders || [],
     };
 
-    
-
     // Check if it's an AJAX request
-    if (req.xhr || req.headers.accept?.includes('application/json')) {
+    if (req.xhr || req.headers.accept?.includes("application/json")) {
       return res.json(formattedDeliverer);
     }
 
@@ -1753,44 +1887,47 @@ router.get("/deliverers/:id", async (req, res) => {
     return res.render("admin/delivererDetails", {
       layout: "admin/layout",
       title: `Détails du Livreur - ${formattedDeliverer.user.name}`,
-      deliverer: formattedDeliverer
+      deliverer: formattedDeliverer,
     });
   } catch (error) {
-
-    if (req.xhr || req.headers.accept?.includes('application/json')) {
-      return res.status(500).json({ error: "An error occurred while fetching deliverer details." });
+    if (req.xhr || req.headers.accept?.includes("application/json")) {
+      return res
+        .status(500)
+        .json({error: "An error occurred while fetching deliverer details."});
     }
     return res.status(500).render("error", {
-      message: "Une erreur s'est produite lors du chargement des détails du livreur."
+      message:
+        "Une erreur s'est produite lors du chargement des détails du livreur.",
     });
   }
 });
 
 // Handle adding a new deliverer
-router.post("/deliverers/add", requireRole(['admin']), async (req, res) => {
+router.post("/deliverers/add", requireRole(["admin"]), async (req, res) => {
   try {
-    const { name, phoneNumber, vehicleId, zone, profilePicture, isAvailable } = req.body;
-    
+    const {name, phoneNumber, vehicleId, zone, profilePicture, isAvailable} =
+      req.body;
 
     // Validate required fields
     if (!name || !phoneNumber || !zone) {
-      return res.status(400).json({ error: "Name, phone number, and zone are required." });
+      return res
+        .status(400)
+        .json({error: "Name, phone number, and zone are required."});
     }
 
     // Check if phone number already exists
-    const { data: existingUser, error: existingUserError } = await supabase
+    const {data: existingUser, error: existingUserError} = await supabase
       .from("users")
       .select("phone_number")
       .eq("phone_number", phoneNumber)
       .single();
 
     if (existingUser) {
-      return res.status(400).json({ error: "Phone number already registered." });
+      return res.status(400).json({error: "Phone number already registered."});
     }
 
     if (existingUserError && existingUserError.code !== "PGRST116") {
-
-      return res.status(500).json({ error: "Internal server error." });
+      return res.status(500).json({error: "Internal server error."});
     }
 
     // Set default password and hash it
@@ -1798,7 +1935,7 @@ router.post("/deliverers/add", requireRole(['admin']), async (req, res) => {
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     // Create user
-    const { data: userData, error: userError } = await supabase
+    const {data: userData, error: userError} = await supabase
       .from("users")
       .insert({
         phone_number: phoneNumber,
@@ -1806,157 +1943,174 @@ router.post("/deliverers/add", requireRole(['admin']), async (req, res) => {
         password: hashedPassword,
         role: "deliverer",
         is_verified: true, // Deliverers are verified by admin
-        profile_picture: profilePicture || null // Add profile picture to user
+        profile_picture: profilePicture || null, // Add profile picture to user
       })
       .select()
       .single();
 
     if (userError) {
-
-      return res.status(500).json({ error: "Failed to create user account." });
+      return res.status(500).json({error: "Failed to create user account."});
     }
 
     // Create deliverer record
-    const { error: delivererError } = await supabase
-      .from("deliverers")
-      .insert({
-        user_id: userData.id,
-        vehicle_id: vehicleId || null,
-        is_available: isAvailable || true,
-        current_location: null,
-        zone: zone,
-        is_active: true,
-        completed_deliveries: 0
-      });
+    const {error: delivererError} = await supabase.from("deliverers").insert({
+      user_id: userData.id,
+      vehicle_id: vehicleId || null,
+      is_available: isAvailable || true,
+      current_location: null,
+      zone: zone,
+      is_active: true,
+      completed_deliveries: 0,
+    });
 
     if (delivererError) {
-
       // Clean up the user if deliverer creation fails
       await supabase.from("users").delete().eq("id", userData.id);
-      return res.status(500).json({ error: "Failed to create deliverer record." });
+      return res
+        .status(500)
+        .json({error: "Failed to create deliverer record."});
     }
 
     res.status(201).json({
       message: "Deliverer added successfully",
       user: userData,
-      defaultPassword: defaultPassword // Include the default password in the response
+      defaultPassword: defaultPassword, // Include the default password in the response
     });
   } catch (error) {
-
-    res.status(500).json({ error: "Failed to add deliverer: " + error.message });
+    res.status(500).json({error: "Failed to add deliverer: " + error.message});
   }
 });
 
 // Handle updating a deliverer
-router.post("/deliverers/:id/update", requireRole(['admin']), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, phoneNumber, vehicleId, zone, profilePicture, isAvailable, isActive } = req.body;
-
-    // First update the user
-    const { error: userError } = await supabase
-      .from("users")
-      .update({
+router.post(
+  "/deliverers/:id/update",
+  requireRole(["admin"]),
+  async (req, res) => {
+    try {
+      const {id} = req.params;
+      const {
         name,
-        phone_number: phoneNumber,
-        profile_picture: profilePicture || null // Update profile picture in user
-      })
-      .eq("id", id);
+        phoneNumber,
+        vehicleId,
+        zone,
+        profilePicture,
+        isAvailable,
+        isActive,
+      } = req.body;
 
-    if (userError) {
+      // First update the user
+      const {error: userError} = await supabase
+        .from("users")
+        .update({
+          name,
+          phone_number: phoneNumber,
+          profile_picture: profilePicture || null, // Update profile picture in user
+        })
+        .eq("id", id);
 
-      return res.status(500).json({ error: "Failed to update user information." });
+      if (userError) {
+        return res
+          .status(500)
+          .json({error: "Failed to update user information."});
+      }
+
+      // Then update the deliverer
+      const {error: delivererError} = await supabase
+        .from("deliverers")
+        .update({
+          vehicle_id: vehicleId,
+          zone: zone,
+          is_available: isAvailable,
+          is_active: isActive,
+        })
+        .eq("user_id", id);
+
+      if (delivererError) {
+        return res
+          .status(500)
+          .json({error: "Failed to update deliverer information."});
+      }
+
+      return res.json({message: "Deliverer updated successfully"});
+    } catch (error) {
+      res
+        .status(500)
+        .json({error: "An error occurred while updating the deliverer."});
     }
-
-    // Then update the deliverer
-    const { error: delivererError } = await supabase
-      .from("deliverers")
-      .update({
-        vehicle_id: vehicleId,
-        zone: zone,
-        is_available: isAvailable,
-        is_active: isActive
-      })
-      .eq("user_id", id);
-
-    if (delivererError) {
-
-      return res.status(500).json({ error: "Failed to update deliverer information." });
-    }
-
-    return res.json({ message: "Deliverer updated successfully" });
-  } catch (error) {
-
-    res.status(500).json({ error: "An error occurred while updating the deliverer." });
-  }
-});
+  },
+);
 
 // Delete deliverer
-router.post("/deliverers/:id/delete", requireRole(['admin']), async (req, res) => {
-  const { id } = req.params;
-  try {
-    // First get the deliverer to find the user_id
-    const { data: deliverer, error: fetchError } = await supabase
-      .from("deliverers")
-      .select("user_id")
-      .eq("user_id", id)
-      .single();
+router.post(
+  "/deliverers/:id/delete",
+  requireRole(["admin"]),
+  async (req, res) => {
+    const {id} = req.params;
+    try {
+      // First get the deliverer to find the user_id
+      const {data: deliverer, error: fetchError} = await supabase
+        .from("deliverers")
+        .select("user_id")
+        .eq("user_id", id)
+        .single();
 
-    if (fetchError) {
+      if (fetchError) {
+        return res.status(404).json({error: "Deliverer not found."});
+      }
 
-      return res.status(404).json({ error: "Deliverer not found." });
+      // Delete the deliverer record
+      const {error: deleteDelivererError} = await supabase
+        .from("deliverers")
+        .delete()
+        .eq("user_id", id);
+
+      if (deleteDelivererError) {
+        return res.status(500).json({error: "Failed to delete deliverer."});
+      }
+
+      // Delete the user record
+      const {error: deleteUserError} = await supabase
+        .from("users")
+        .delete()
+        .eq("id", id);
+
+      if (deleteUserError) {
+        return res.status(500).json({error: "Failed to delete user."});
+      }
+
+      return res.json({message: "Deliverer deleted successfully."});
+    } catch (error) {
+      res
+        .status(500)
+        .json({error: "An error occurred while deleting the deliverer."});
     }
-
-    // Delete the deliverer record
-    const { error: deleteDelivererError } = await supabase
-      .from("deliverers")
-      .delete()
-      .eq("user_id", id);
-
-    if (deleteDelivererError) {
-
-      return res.status(500).json({ error: "Failed to delete deliverer." });
-    }
-
-    // Delete the user record
-    const { error: deleteUserError } = await supabase
-      .from("users")
-      .delete()
-      .eq("id", id);
-
-    if (deleteUserError) {
-
-      return res.status(500).json({ error: "Failed to delete user." });
-    }
-
-    return res.json({ message: "Deliverer deleted successfully." });
-  } catch (error) {
-
-    res.status(500).json({ error: "An error occurred while deleting the deliverer." });
-  }
-});
+  },
+);
 
 // Handle toggling deliverer availability
-router.post("/deliverers/:id/toggle", requireRole(['admin']), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { isAvailable } = req.body;
+router.post(
+  "/deliverers/:id/toggle",
+  requireRole(["admin"]),
+  async (req, res) => {
+    try {
+      const {id} = req.params;
+      const {isAvailable} = req.body;
 
-    const { error } = await supabase
-      .from("deliverers")
-      .update({ is_available: isAvailable })
-      .eq("id", id);
+      const {error} = await supabase
+        .from("deliverers")
+        .update({is_available: isAvailable})
+        .eq("id", id);
 
-    if (error) {
-      throw new Error(error.message);
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      res.redirect("/admin/deliverers");
+    } catch (error) {
+      res.status(500).send("Failed to update deliverer availability.");
     }
-
-    res.redirect("/admin/deliverers");
-  } catch (error) {
-
-    res.status(500).send("Failed to update deliverer availability.");
-  }
-});
+  },
+);
 
 // GraphQL Schema for Restaurants
 const typeDefs = gql`
@@ -2049,28 +2203,17 @@ const typeDefs = gql`
       isAvailable: Boolean!
     ): Deliverer
 
-    updateDeliverer(
-      id: ID!
-      input: DelivererInput!
-    ): Deliverer
+    updateDeliverer(id: ID!, input: DelivererInput!): Deliverer
 
     deleteDeliverer(id: ID!): Boolean
 
-    addMenuItem(
-      input: MenuItemInput!
-    ): MenuItem
+    addMenuItem(input: MenuItemInput!): MenuItem
 
-    updateMenuItem(
-      id: ID!
-      input: MenuItemInput!
-    ): MenuItem
+    updateMenuItem(id: ID!, input: MenuItemInput!): MenuItem
 
     deleteMenuItem(id: ID!): Boolean
 
-    updateDelivererLocation(
-      id: ID!
-      location: String!
-    ): Deliverer
+    updateDelivererLocation(id: ID!, location: String!): Deliverer
   }
 
   input MenuItemInput {
@@ -2103,12 +2246,12 @@ const typeDefs = gql`
 const resolvers = {
   Query: {
     restaurants: async () => {
-      const { data, error } = await supabase.from("restaurants").select("*");
+      const {data, error} = await supabase.from("restaurants").select("*");
       if (error) throw new Error("Error fetching restaurants.");
       return data;
     },
-    restaurant: async (_, { id }) => {
-      const { data, error } = await supabase
+    restaurant: async (_, {id}) => {
+      const {data, error} = await supabase
         .from("restaurants")
         .select("*")
         .eq("id", id)
@@ -2117,12 +2260,12 @@ const resolvers = {
       return data;
     },
     deliverers: async () => {
-      const { data, error } = await supabase.from("deliverers").select("*");
+      const {data, error} = await supabase.from("deliverers").select("*");
       if (error) throw new Error("Error fetching deliverers.");
       return data;
     },
-    deliverer: async (_, { id }) => {
-      const { data, error } = await supabase
+    deliverer: async (_, {id}) => {
+      const {data, error} = await supabase
         .from("deliverers")
         .select("*")
         .eq("id", id)
@@ -2130,27 +2273,27 @@ const resolvers = {
       if (error) throw new Error("Error fetching deliverer.");
       return data;
     },
-    menuItems: async (_, { restaurantId }) => {
-      const { data, error } = await supabase
+    menuItems: async (_, {restaurantId}) => {
+      const {data, error} = await supabase
         .from("menu_items")
         .select("*")
         .eq("restaurant_id", restaurantId);
       if (error) throw new Error("Error fetching menu items.");
       return data;
     },
-    menuItem: async (_, { id }) => {
-      const { data, error } = await supabase
+    menuItem: async (_, {id}) => {
+      const {data, error} = await supabase
         .from("menu_items")
         .select("*")
         .eq("id", id)
         .single();
       if (error) throw new Error("Error fetching menu item.");
       return data;
-    }
+    },
   },
   Mutation: {
     addRestaurant: async (_, args) => {
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from("restaurants")
         .insert(args)
         .select()
@@ -2159,7 +2302,7 @@ const resolvers = {
       return data;
     },
     createDeliverer: async (_, args) => {
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from("deliverers")
         .insert(args)
         .select()
@@ -2167,8 +2310,8 @@ const resolvers = {
       if (error) throw new Error("Error adding deliverer.");
       return data;
     },
-    updateDeliverer: async (_, { id, input }) => {
-      const { data, error } = await supabase
+    updateDeliverer: async (_, {id, input}) => {
+      const {data, error} = await supabase
         .from("deliverers")
         .update(input)
         .eq("id", id)
@@ -2177,16 +2320,13 @@ const resolvers = {
       if (error) throw new Error("Error updating deliverer.");
       return data;
     },
-    deleteDeliverer: async (_, { id }) => {
-      const { error } = await supabase
-        .from("deliverers")
-        .delete()
-        .eq("id", id);
+    deleteDeliverer: async (_, {id}) => {
+      const {error} = await supabase.from("deliverers").delete().eq("id", id);
       if (error) throw new Error("Error deleting deliverer.");
       return true;
     },
-    addMenuItem: async (_, { input }) => {
-      const { data, error } = await supabase
+    addMenuItem: async (_, {input}) => {
+      const {data, error} = await supabase
         .from("menu_items")
         .insert({
           name: input.name,
@@ -2196,7 +2336,7 @@ const resolvers = {
           image_url: input.imageUrl,
           restaurant_id: input.restaurantId,
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .select()
         .single();
@@ -2210,22 +2350,22 @@ const resolvers = {
         imageUrl: data.image_url,
         restaurantId: data.restaurant_id,
         createdAt: data.created_at,
-        updatedAt: data.updated_at
+        updatedAt: data.updated_at,
       };
     },
-    updateMenuItem: async (_, { id, input }) => {
+    updateMenuItem: async (_, {id, input}) => {
       // Build the update object dynamically
       const updateObj = {
         name: input.name,
         description: input.description,
         price: input.price,
         category: input.category,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
-      if (typeof input.imageUrl === 'string' && input.imageUrl.trim() !== '') {
+      if (typeof input.imageUrl === "string" && input.imageUrl.trim() !== "") {
         updateObj.image_url = input.imageUrl;
       }
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from("menu_items")
         .update(updateObj)
         .eq("id", id)
@@ -2241,23 +2381,20 @@ const resolvers = {
         imageUrl: data.image_url,
         restaurantId: data.restaurant_id,
         createdAt: data.created_at,
-        updatedAt: data.updated_at
+        updatedAt: data.updated_at,
       };
     },
-    deleteMenuItem: async (_, { id }) => {
-      const { error } = await supabase
-        .from("menu_items")
-        .delete()
-        .eq("id", id);
+    deleteMenuItem: async (_, {id}) => {
+      const {error} = await supabase.from("menu_items").delete().eq("id", id);
       if (error) throw new Error("Error deleting menu item.");
       return true;
     },
-    updateDelivererLocation: async (_, { id, location }) => {
-      const { data, error } = await supabase
+    updateDelivererLocation: async (_, {id, location}) => {
+      const {data, error} = await supabase
         .from("deliverers")
         .update({
           current_location: location,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq("user_id", id)
         .select()
@@ -2265,8 +2402,8 @@ const resolvers = {
 
       if (error) throw new Error("Error updating deliverer location.");
       return data;
-    }
-  }
+    },
+  },
 };
 
 // Setup ApolloServer for GraphQL
@@ -2313,18 +2450,18 @@ router.get("/restaurant/menu", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) {
-      return res.status(401).json({ error: "Access denied. No token provided." });
+      return res.status(401).json({error: "Access denied. No token provided."});
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (decoded.role !== "restaurant") {
-      return res.status(403).json({ error: "Access denied. Restaurant only." });
+      return res.status(403).json({error: "Access denied. Restaurant only."});
     }
 
     const restaurantId = decoded.id;
 
     // Fetch restaurant details
-    const { data: restaurant, error: restaurantError } = await supabase
+    const {data: restaurant, error: restaurantError} = await supabase
       .from("restaurants")
       .select("*")
       .eq("id", restaurantId)
@@ -2335,7 +2472,7 @@ router.get("/restaurant/menu", async (req, res) => {
     }
 
     // Fetch menu items
-    const { data: menuItems, error: menuError } = await supabase
+    const {data: menuItems, error: menuError} = await supabase
       .from("menu_items")
       .select("*")
       .eq("restaurant_id", restaurantId);
@@ -2346,17 +2483,17 @@ router.get("/restaurant/menu", async (req, res) => {
 
     res.render("restaurant/menu", {
       restaurant,
-      menuItems: menuItems || []
+      menuItems: menuItems || [],
     });
   } catch (error) {
-
     res.status(500).send("An error occurred while loading the menu page.");
   }
 });
 
 // Catch-all route for undefined routes
-router.get('*', (req, res) => {
-  res.status(404).send('Page not found');
+router.get("*", (req, res) => {
+  res.status(404).send("Page not found");
 });
 
-export default router;
+module.exports = router;
+module.exports.default = router;

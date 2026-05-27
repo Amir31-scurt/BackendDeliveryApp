@@ -1,4 +1,4 @@
-import fetch from "node-fetch";
+const fetch = require("node-fetch");
 
 const GRAPHQL_API_URL = process.env.GRAPHQL_API_URL;
 
@@ -9,7 +9,7 @@ const GRAPHQL_API_URL = process.env.GRAPHQL_API_URL;
  * @param {string} token - Admin token for authentication
  * @returns {Promise<object>} - The response data
  */
-export const graphqlRequest = async (query, variables = {}, token = null) => {
+const graphqlRequest = async (query, variables = {}, token = null) => {
   try {
     const headers = {
       "Content-Type": "application/json",
@@ -36,13 +36,14 @@ export const graphqlRequest = async (query, variables = {}, token = null) => {
     const result = await response.json();
 
     if (result.errors) {
-
       throw new Error(result.errors[0].message);
     }
 
     return result.data;
   } catch (error) {
-
     throw error;
   }
 };
+
+module.exports = { graphqlRequest };
+module.exports.graphqlRequest = graphqlRequest;

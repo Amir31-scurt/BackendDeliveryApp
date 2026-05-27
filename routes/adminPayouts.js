@@ -1,6 +1,6 @@
 // src/routes/adminPayouts.js
-import express from "express";
-import { supabase } from "../supabaseClient.js";
+const express = require("express");
+const {supabase} = require("../supabaseClient.js");
 
 const router = express.Router();
 
@@ -8,7 +8,7 @@ const router = express.Router();
  * Liste paginée des payouts batch items
  */
 router.get("/admin/payouts", async (req, res) => {
-  const { status, target_type, limit = 50, offset = 0 } = req.query;
+  const {status, target_type, limit = 50, offset = 0} = req.query;
 
   try {
     let query = supabase
@@ -28,30 +28,29 @@ router.get("/admin/payouts", async (req, res) => {
         error_message,
         created_at
       `,
-        { count: "exact" }
+        {count: "exact"},
       )
-      .order("created_at", { ascending: false })
+      .order("created_at", {ascending: false})
       .range(Number(offset), Number(offset) + Number(limit) - 1);
 
     if (status) query = query.eq("status", status);
     if (target_type) query = query.eq("target_type", target_type);
 
-    const { data, error, count } = await query;
+    const {data, error, count} = await query;
 
     if (error) {
-
       return res
         .status(500)
-        .json({ message: "Erreur lors du chargement des payouts." });
+        .json({message: "Erreur lors du chargement des payouts."});
     }
 
-    return res.json({ total: count, items: data });
+    return res.json({total: count, items: data});
   } catch (err) {
-
     return res
       .status(500)
-      .json({ message: "Erreur interne du serveur (admin payouts)." });
+      .json({message: "Erreur interne du serveur (admin payouts)."});
   }
 });
 
-export default router;
+module.exports = router;
+module.exports.default = router;

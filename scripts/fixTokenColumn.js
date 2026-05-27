@@ -1,5 +1,5 @@
-import { query } from '../db.js';
-import dotenv from 'dotenv';
+const { query } = require('../db.js');
+const dotenv = require('dotenv');
 
 dotenv.config();
 

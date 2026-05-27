@@ -1,8 +1,8 @@
 // src/services/payoutNotifications.js
-import { supabase } from "../supabaseClient.js";
-import { sendPushNotification } from "./pushService.js"; // ton service existant
+const { supabase } = require("../supabaseClient.js");
+const { sendPushNotification } = require("../utils/sendNotifications.js");
 
-export async function sendPayoutNotification({ targetType, targetId, amount }) {
+async function sendPayoutNotification({ targetType, targetId, amount }) {
   let userId = null;
   let title = "";
   let body = "";
@@ -38,8 +38,11 @@ export async function sendPayoutNotification({ targetType, targetId, amount }) {
 
   // Envoyer une push (si tu as des tokens expo ou FCM)
   try {
-    await sendPushNotification(userId, body, supabase);
+    await sendPushNotification(userId, title, body, {}, supabase);
   } catch (err) {
     console.error("Erreur lors de l'envoi de la notification push :", err);
   }
 }
+
+module.exports = { sendPayoutNotification };
+module.exports.sendPayoutNotification = sendPayoutNotification;

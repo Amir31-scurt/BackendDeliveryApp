@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient.js';
+const { supabase } = require('../supabaseClient.js');
 
 const sampleRestaurants = [
     {
@@ -123,8 +123,8 @@ async function addSampleRestaurants() {
 }
 
 // Run the script if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
     addSampleRestaurants();
 }
 
-export { addSampleRestaurants }; 
+module.exports = { addSampleRestaurants }; 

@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient.js';
+const { supabase } = require('../supabaseClient.js');
 
 async function testConnection() {
     try {
@@ -52,8 +52,8 @@ async function testConnection() {
 }
 
 // Run the test if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
     testConnection();
 }
 
-export { testConnection }; 
+module.exports = { testConnection }; 

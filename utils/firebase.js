@@ -1,7 +1,7 @@
-import admin from 'firebase-admin';
-import dotenv from 'dotenv';
-import { readFileSync } from 'fs';
-import path from 'path';
+const admin = require("firebase-admin");
+const dotenv = require("dotenv");
+const {readFileSync} = require("fs");
+const path = require("path");
 
 dotenv.config();
 
@@ -9,10 +9,13 @@ dotenv.config();
 // and set its path in your .env file: FIREBASE_SERVICE_ACCOUNT_PATH=./serviceAccountKey.json
 if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
   try {
-    const serviceAccountContent = readFileSync(path.resolve(process.env.FIREBASE_SERVICE_ACCOUNT_PATH), 'utf-8');
+    const serviceAccountContent = readFileSync(
+      path.resolve(process.env.FIREBASE_SERVICE_ACCOUNT_PATH),
+      "utf-8",
+    );
     const serviceAccount = JSON.parse(serviceAccountContent);
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+      credential: admin.credential.cert(serviceAccount),
     });
     // Removed console.log for security policy
   } catch (error) {
@@ -20,4 +23,5 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
   }
 }
 
-export { admin };
+module.exports = {admin};
+module.exports.admin = admin;
