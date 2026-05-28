@@ -134,7 +134,4 @@ const restaurantResolvers = {
     },
   },
 };
-
-module.exports = { restaurantResolvers };
-module.exports.restaurantResolvers = restaurantResolvers;
-
+module.exports = restaurantResolvers;

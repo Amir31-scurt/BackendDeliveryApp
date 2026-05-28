@@ -162,6 +162,4 @@ const delivererResolvers = {
     },
   },
 };
-
-module.exports = {delivererResolvers};
-module.exports.delivererResolvers = delivererResolvers;
+module.exports = delivererResolvers;

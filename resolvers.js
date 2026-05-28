@@ -2325,4 +2325,3 @@ const resolvers = {
 };
 
 module.exports = resolvers;
-module.exports.default = resolvers;
