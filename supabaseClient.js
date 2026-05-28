@@ -3,5 +3,7 @@
 const db = require("./dbHelper.js");
 
 // Export as 'supabase' for backward compatibility
-module.exports.supabase = db;
-module.exports = db;
+module.exports = {
+  supabase: db,
+  default: db
+};

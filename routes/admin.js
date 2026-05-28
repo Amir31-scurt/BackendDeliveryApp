@@ -177,6 +177,7 @@ router.post("/login/restaurant", async (req, res) => {
       redirectUrl: `/admin/restaurant/${restaurant.id}/dashboard`,
     });
   } catch (error) {
+    console.error("Restaurant login POST error:", error);
     res.status(500).json({error: "Internal server error"});
   }
 });
