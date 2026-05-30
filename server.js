@@ -1,12 +1,3 @@
-/* global PhusionPassenger */
-// Capture the original PORT environment variable set by Passenger
-// before it gets overwritten by dotenv.config() in db.js or elsewhere.
-const passengerPort = process.env.PORT;
-
-if (typeof PhusionPassenger !== "undefined") {
-  PhusionPassenger.configure({ autoInstall: false });
-}
-
 const {ApolloServer} = require("apollo-server-express");
 const cors = require("cors");
 const dotenv = require("dotenv");
@@ -419,18 +410,9 @@ const server = new ApolloServer({
     });
   });
 
-  // Start the server
-  // If we captured an original Passenger port at the top of the file, use it
-  let actualPort = passengerPort || process.env.PORT || process.env.SERVER_PORT || 4000;
-
-  // If the resolved port is the database port (5432) and we're not running under Passenger,
-  // force it to use SERVER_PORT or 4000 to prevent EADDRINUSE crash.
-  if (Number(actualPort) === 5432 && !passengerPort) {
-    actualPort = process.env.SERVER_PORT || 4000;
-  }
-
-  app.listen(actualPort, () => {
-    console.log(`Server running on ${actualPort}`);
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
   });
 })();
 
