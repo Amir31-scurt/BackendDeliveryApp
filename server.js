@@ -421,24 +421,16 @@ const server = new ApolloServer({
 
   // Start the server
   // If we captured an original Passenger port at the top of the file, use it
-  const actualPort = passengerPort || process.env.PORT || process.env.SERVER_PORT || 4000;
+  let actualPort = passengerPort || process.env.PORT || process.env.SERVER_PORT || 4000;
 
-  if (typeof PhusionPassenger !== "undefined" || (passengerPort && isNaN(Number(passengerPort)))) {
-    // Running under Passenger on cPanel — use Passenger's socket
-    app.listen("passenger", () => {
-      console.log("Server running on Passenger");
-    });
-  } else {
-    // Running manually (npm run start / dev)
-    // If the port is a number like 5432 (from .env) but we're running manually, 
-    // use SERVER_PORT (4000) or fallback to avoid binding on PostgreSQL's port.
-    let runPort = Number(actualPort);
-    if (runPort === 5432) {
-      runPort = Number(process.env.SERVER_PORT || 4000);
-    }
-    app.listen(runPort, () => {
-      console.log(`Server running on port ${runPort}`);
-    });
+  // If the resolved port is the database port (5432) and we're not running under Passenger,
+  // force it to use SERVER_PORT or 4000 to prevent EADDRINUSE crash.
+  if (Number(actualPort) === 5432 && !passengerPort) {
+    actualPort = process.env.SERVER_PORT || 4000;
   }
+
+  app.listen(actualPort, () => {
+    console.log(`Server running on ${actualPort}`);
+  });
 })();
 
