@@ -410,7 +410,7 @@ const server = new ApolloServer({
     });
   });
 
-  const PORT = process.env.PORT || 3000;
+  const PORT = process.env.PORT || process.env.SERVER_PORT || 4000;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
