@@ -6,7 +6,7 @@ dotenv.config({ path: join(process.cwd(), '.env') });
 
 const pool = new pg.Pool({
   host: process.env.HOST,
-  port: Number(process.env.PORT || 5432),
+  port: Number(process.env.DB_PORT || 5432),
   database: process.env.DB,
   user: process.env.USER,
   password: String(process.env.PASSWORD),

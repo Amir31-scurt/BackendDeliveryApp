@@ -18,7 +18,7 @@ if (missingVars.length > 0) {
 // PostgreSQL connection pool
 const pool = new Pool({
   host: process.env.HOST || "localhost",
-  port: Number(process.env.PORT || 5432),
+  port: Number(process.env.DB_PORT || 5432),
   database: process.env.DB || "postgres",
   user: process.env.USER || "postgres",
   password: process.env.PASSWORD ? String(process.env.PASSWORD) : "",
