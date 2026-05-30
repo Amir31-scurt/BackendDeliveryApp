@@ -1,4 +1,8 @@
 /* global PhusionPassenger */
+// Capture the original PORT environment variable set by Passenger
+// before it gets overwritten by dotenv.config() in db.js or elsewhere.
+const passengerPort = process.env.PORT;
+
 if (typeof PhusionPassenger !== "undefined") {
   PhusionPassenger.configure({ autoInstall: false });
 }
@@ -416,16 +420,24 @@ const server = new ApolloServer({
   });
 
   // Start the server
-  if (typeof PhusionPassenger !== "undefined") {
+  // If we captured an original Passenger port at the top of the file, use it
+  const actualPort = passengerPort || process.env.PORT || process.env.SERVER_PORT || 4000;
+
+  if (typeof PhusionPassenger !== "undefined" || (passengerPort && isNaN(Number(passengerPort)))) {
     // Running under Passenger on cPanel — use Passenger's socket
     app.listen("passenger", () => {
       console.log("Server running on Passenger");
     });
   } else {
     // Running manually (npm run start / dev)
-    const PORT = process.env.SERVER_PORT || 4000;
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    // If the port is a number like 5432 (from .env) but we're running manually, 
+    // use SERVER_PORT (4000) or fallback to avoid binding on PostgreSQL's port.
+    let runPort = Number(actualPort);
+    if (runPort === 5432) {
+      runPort = Number(process.env.SERVER_PORT || 4000);
+    }
+    app.listen(runPort, () => {
+      console.log(`Server running on port ${runPort}`);
     });
   }
 })();
