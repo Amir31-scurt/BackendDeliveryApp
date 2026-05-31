@@ -23,16 +23,17 @@ const pool = new Pool({
   user: process.env.USER || "postgres",
   password: process.env.PASSWORD ? String(process.env.PASSWORD) : "",
   ssl: process.env.SSL === "true" ? {rejectUnauthorized: false} : false,
-  max: 20, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  max: 3,
+  min: 0,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 5000,
 });
 
 // Test connection on startup
 pool.on("connect", () => {});
 
 pool.on("error", (err) => {
-  process.exit(-1);
+  console.error("DB pool error:", err.message);
 });
 
 // Query helper function
