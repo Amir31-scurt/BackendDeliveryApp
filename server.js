@@ -365,12 +365,25 @@ const server = new ApolloServer({
   server.applyMiddleware({app, path: "/api/graphql"});
 
   // Health check route - available at both paths
+  // Returns JSON for API/programmatic callers; renders branded page for browsers
   app.get(["/health", "/api/health"], (req, res) => {
-    res.status(200).json({
+    const payload = {
       status: "ok",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-    });
+    };
+
+    const wantsJson =
+      req.path.startsWith("/api/") ||
+      (req.headers["accept"] || "").includes("application/json") ||
+      req.query.format === "json";
+
+    if (wantsJson) {
+      return res.status(200).json(payload);
+    }
+
+    // Browser → render branded health page
+    res.status(200).render("health", { layout: false, health: payload });
   });
 
   // Root routes - Handle various ways cPanel/browsers might land here
@@ -397,17 +410,49 @@ const server = new ApolloServer({
   app.set("layout", "admin/layout");
   app.set("layout", "admin/restaurants");
 
-  // Error handling middleware
-  app.use((err, req, res, next) => {
-    // Check if headers have already been sent
-    if (res.headersSent) {
-      return next(err);
+  // ─── 404 catch-all (unknown routes) ─────────────────────────────────────────
+  app.use((req, res) => {
+    const isApiRequest =
+      req.path.startsWith("/api/") ||
+      req.path.startsWith("/auth") ||
+      req.path.startsWith("/graphql") ||
+      (req.headers["content-type"] || "").includes("application/json") ||
+      (req.headers["accept"] || "").includes("application/json");
+
+    if (isApiRequest) {
+      return res.status(404).json({ error: "Route not found", path: req.path });
     }
 
-    res.status(err.status || 500).json({
-      error: err.message,
-      stack: process.env.NODE_ENV === "production" ? null : err.stack,
-    });
+    res.status(404).render("404", { layout: false, requestedPath: req.originalUrl });
+  });
+
+  // ─── Global error handler ─────────────────────────────────────────────────
+  app.use((err, req, res, next) => {
+    if (res.headersSent) return next(err);
+
+    const status = err.status || err.statusCode || 500;
+
+    const isApiRequest =
+      req.path.startsWith("/api/") ||
+      req.path.startsWith("/auth") ||
+      req.path.startsWith("/graphql") ||
+      (req.headers["content-type"] || "").includes("application/json") ||
+      (req.headers["accept"] || "").includes("application/json");
+
+    if (isApiRequest) {
+      return res.status(status).json({
+        error: err.message,
+        stack: process.env.NODE_ENV === "production" ? null : err.stack,
+      });
+    }
+
+    // Render 503 for service-unavailable errors; generic 500 → also 503 page
+    if (status === 503 || status === 500) {
+      return res.status(status).render("503", { layout: false });
+    }
+
+    // Fallback for other HTTP errors
+    res.status(status).render("404", { layout: false, requestedPath: req.originalUrl });
   });
 
   const PORT = process.env.PORT || process.env.SERVER_PORT || 4000;

@@ -4,414 +4,1082 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Politique de Confidentialité - Gourmet d'amour</title>
+    <title>Politique de Confidentialité & CGU | Gourmet d'amour</title>
+    <meta name="description"
+        content="Politique de confidentialité et conditions générales d'utilisation de l'application Gourmet d'amour – livraison de repas à Dakar.">
     <link rel="icon" href="/images/logo.png" type="image/png">
     <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         :root {
-            --primary-color: #DB607E;
-            --secondary-color: #ABD27E;
-            --accent-color: #b22222;
-            --background-color: #f9f5f0;
-            --dark-color: #2c2c2c;
+            --primary:   #DB607E;
+            --secondary: #ABD27E;
+            --dark:      #2c2c2c;
+            --bg:        #f9f5f0;
+            --card:      #ffffff;
+            --muted:     #888;
+            --border:    rgba(219,96,126,0.13);
+            --text:      #444;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
 
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: var(--background-color);
-            color: var(--dark-color);
-            line-height: 1.6;
+            background: var(--bg);
+            color: var(--dark);
+            line-height: 1.7;
         }
 
-        nav {
-            background-color: rgba(44, 44, 44, 0.9);
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        /* Subtle grid pattern */
+        body::before {
+            content: '';
             position: fixed;
-            top: 0;
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 50px;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(219,96,126,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(219,96,126,0.03) 1px, transparent 1px);
+            background-size: 44px 44px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Accent bar ── */
+        .accent-bar {
+            height: 4px;
+            background: linear-gradient(to right, var(--primary), var(--secondary), var(--primary));
+            background-size: 200% auto;
+            animation: barShimmer 4s linear infinite;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 200;
+        }
+        @keyframes barShimmer {
+            from { background-position: 0% center; }
+            to   { background-position: 200% center; }
+        }
+
+        /* ── Nav ── */
+        nav {
+            position: fixed;
+            top: 4px; left: 0; right: 0;
             z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 48px;
+            background: rgba(255,255,255,0.88);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.05);
+            transition: padding 0.3s ease;
         }
 
-        .logo {
-            font-family: 'Playfair Display', serif;
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--primary-color);
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             text-decoration: none;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s ease;
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            transition: transform 0.25s ease;
         }
-
-        .logo:hover {
-            transform: scale(1.05);
-        }
+        .nav-logo:hover { transform: scale(1.04); }
+        .nav-logo img { height: 40px; }
 
         .nav-links {
             display: flex;
             list-style: none;
-            gap: 30px;
+            gap: 8px;
         }
-
         .nav-links a {
-            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.87rem;
+            font-weight: 500;
+            color: var(--dark);
             text-decoration: none;
-            font-weight: 400;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            position: relative;
-            padding: 5px 0;
+            transition: all 0.25s ease;
+            border: 1.5px solid transparent;
+        }
+        .nav-links a:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(219,96,126,0.06);
+        }
+        .nav-links a.active {
+            background: linear-gradient(135deg, var(--primary), #e85a7f);
+            color: white;
+            box-shadow: 0 4px 14px rgba(219,96,126,0.3);
         }
 
-        .nav-links a::after {
+        /* ── Hero banner ── */
+        .hero {
+            position: relative;
+            z-index: 1;
+            background: linear-gradient(135deg, var(--dark) 0%, #1a1a1a 100%);
+            color: white;
+            padding: 140px 48px 80px;
+            text-align: center;
+            overflow: hidden;
+        }
+        .hero::before {
             content: '';
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background-color: var(--primary-color);
-            transition: width 0.3s ease;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 50%, rgba(219,96,126,0.18) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(171,210,126,0.12) 0%, transparent 50%);
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 60px;
+            background: var(--bg);
+            clip-path: ellipse(55% 100% at 50% 100%);
+        }
+        .hero-inner { position: relative; z-index: 1; }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(219,96,126,0.18);
+            border: 1px solid rgba(219,96,126,0.35);
+            color: #f0a0b5;
+            padding: 6px 18px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 22px;
         }
 
-        .nav-links a:hover::after {
-            width: 100%;
+        .hero h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 14px;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,0.7));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
-        .legal-content {
-            padding: 120px 50px 50px;
-            max-width: 900px;
+        .hero-meta {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.5);
+            margin-top: 16px;
+        }
+        .hero-meta span { display: flex; align-items: center; gap: 6px; }
+        .hero-meta i { color: var(--primary); }
+
+        /* ── Layout ── */
+        .layout {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
             margin: 0 auto;
-            background-color: white;
-            min-height: calc(100vh - 350px);
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+            padding: 48px 24px 80px;
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 36px;
+            align-items: start;
         }
 
-        h1 {
-            font-family: 'Playfair Display', serif;
-            color: var(--primary-color);
-            font-size: 2.5rem;
-            text-align: center;
-            margin-bottom: 20px;
+        /* ── Sidebar / Table of Contents ── */
+        .toc {
+            position: sticky;
+            top: 90px;
+            background: var(--card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            padding: 28px 24px;
         }
 
-        .last-updated {
-            text-align: center;
-            color: #666;
-            font-style: italic;
-            margin-bottom: 40px;
+        .toc-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 18px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
         }
 
-        h2 {
-            font-family: 'Playfair Display', serif;
-            color: var(--dark-color);
-            margin-top: 40px;
-            margin-bottom: 15px;
-            padding-bottom: 5px;
-            border-bottom: 2px solid var(--secondary-color);
-            display: inline-block;
+        .toc ul { list-style: none; }
+        .toc li { margin-bottom: 4px; }
+
+        .toc a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.83rem;
+            font-weight: 500;
+            color: var(--text);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-left: 2px solid transparent;
+        }
+        .toc a:hover, .toc a.active {
+            background: rgba(219,96,126,0.07);
+            color: var(--primary);
+            border-left-color: var(--primary);
+        }
+        .toc a i { font-size: 0.75rem; width: 16px; color: var(--primary); opacity: 0.7; }
+
+        .toc-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 14px 0;
         }
 
-        h3 {
-            color: var(--primary-color);
-            margin-top: 25px;
-            margin-bottom: 10px;
+        .toc-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 0 12px;
+            margin-bottom: 6px;
         }
 
-        p,
-        ul {
-            margin-bottom: 15px;
-            color: #444;
+        .toc-cta {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
         }
 
-        ul {
-            padding-left: 20px;
-        }
-
-        li {
-            margin-bottom: 5px;
-        }
-
-        .cgu-section {
-            margin-top: 60px;
-            padding-top: 40px;
-            border-top: 1px solid #eee;
-        }
-
-        footer {
-            background-color: var(--dark-color);
+        .toc-cta a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 11px 16px;
+            border-radius: 50px;
+            background: linear-gradient(135deg, var(--primary), #e85a7f);
             color: white;
-            padding: 50px 50px 30px;
+            font-size: 0.83rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(219,96,126,0.3);
+        }
+        .toc-cta a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(219,96,126,0.4);
+        }
+
+        /* ── Main content ── */
+        .content { min-width: 0; }
+
+        /* Section blocks */
+        .policy-section {
+            background: var(--card);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            padding: 36px 40px;
+            margin-bottom: 24px;
+            animation: fadeUp 0.5s ease both;
+            scroll-margin-top: 100px;
+            transition: box-shadow 0.3s ease;
+        }
+        .policy-section:hover {
+            box-shadow: 0 8px 36px rgba(219,96,126,0.09);
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .policy-section:nth-child(1)  { animation-delay: 0.04s; }
+        .policy-section:nth-child(2)  { animation-delay: 0.08s; }
+        .policy-section:nth-child(3)  { animation-delay: 0.12s; }
+        .policy-section:nth-child(4)  { animation-delay: 0.16s; }
+        .policy-section:nth-child(5)  { animation-delay: 0.20s; }
+        .policy-section:nth-child(6)  { animation-delay: 0.24s; }
+        .policy-section:nth-child(7)  { animation-delay: 0.28s; }
+        .policy-section:nth-child(8)  { animation-delay: 0.32s; }
+        .policy-section:nth-child(9)  { animation-delay: 0.36s; }
+        .policy-section:nth-child(10) { animation-delay: 0.40s; }
+        .policy-section:nth-child(11) { animation-delay: 0.44s; }
+        .policy-section:nth-child(12) { animation-delay: 0.48s; }
+        .policy-section:nth-child(13) { animation-delay: 0.52s; }
+
+        /* Section header row */
+        .section-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .section-icon {
+            width: 46px;
+            height: 46px;
+            flex-shrink: 0;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(219,96,126,0.12), rgba(171,210,126,0.12));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-top: 2px;
+        }
+
+        .section-header-text { flex: 1; }
+
+        .section-num {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        h2.section-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: var(--dark);
+            border: none;
+            display: block;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Sub-headings */
+        h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 20px 0 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        h3::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 16px;
+            background: linear-gradient(to bottom, var(--primary), var(--secondary));
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        /* Body text */
+        p {
+            font-size: 0.93rem;
+            color: var(--text);
+            line-height: 1.8;
+            margin-bottom: 14px;
+        }
+        p:last-child { margin-bottom: 0; }
+
+        /* Lists */
+        ul.fancy-list {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 14px;
+        }
+        ul.fancy-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.9rem;
+            color: var(--text);
+            padding: 7px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+        }
+        ul.fancy-list li:last-child { border-bottom: none; }
+        ul.fancy-list li::before {
+            content: '';
+            display: block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            flex-shrink: 0;
+            margin-top: 7px;
+        }
+
+        /* Highlight box */
+        .highlight-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            background: linear-gradient(135deg, rgba(219,96,126,0.06), rgba(171,210,126,0.06));
+            border: 1px solid rgba(219,96,126,0.18);
+            border-radius: 16px;
+            padding: 18px 20px;
+            margin: 20px 0;
+        }
+        .highlight-box i {
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+        .highlight-box p {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        /* Delete account CTA card */
+        .delete-cta {
+            background: linear-gradient(135deg, rgba(239,68,68,0.05), rgba(219,96,126,0.07));
+            border: 1px solid rgba(239,68,68,0.2);
+            border-radius: 16px;
+            padding: 22px 24px;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+        .delete-cta-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            background: rgba(239,68,68,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            color: #dc2626;
+            flex-shrink: 0;
+        }
+        .delete-cta-text { flex: 1; min-width: 200px; }
+        .delete-cta-text strong { display: block; font-size: 0.95rem; color: var(--dark); margin-bottom: 3px; }
+        .delete-cta-text span { font-size: 0.83rem; color: var(--muted); }
+        .delete-cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 11px 22px;
+            border-radius: 50px;
+            background: #dc2626;
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(220,38,38,0.3);
+            white-space: nowrap;
+        }
+        .delete-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(220,38,38,0.4); }
+
+        /* CGU divider banner */
+        .cgu-divider {
+            background: linear-gradient(135deg, var(--dark), #1a1a1a);
+            border-radius: 24px;
+            padding: 36px 40px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            color: white;
+        }
+        .cgu-divider::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 50%, rgba(219,96,126,0.15), transparent 60%);
+        }
+        .cgu-divider-inner { position: relative; z-index: 1; }
+        .cgu-divider h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+            border: none;
+            display: block;
+        }
+        .cgu-divider p { color: rgba(255,255,255,0.55); font-size: 0.88rem; margin: 0; }
+        .cgu-divider-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(219,96,126,0.2);
+            border: 1px solid rgba(219,96,126,0.3);
+            color: #f0a0b5;
+            padding: 5px 14px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        /* Contact email link */
+        a.email-link {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(219,96,126,0.4);
+            transition: border-color 0.2s ease;
+        }
+        a.email-link:hover { border-bottom-color: var(--primary); }
+
+        /* ── Footer ── */
+        footer {
+            position: relative;
+            z-index: 1;
+            background: var(--dark);
+            color: white;
+            padding: 60px 48px 32px;
         }
 
         .footer-content {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 40px;
-            max-width: 1200px;
-            margin: 0 auto;
+            max-width: 1100px;
+            margin: 0 auto 40px;
         }
 
-        .footer-column h3 {
+        .footer-logo {
             font-family: 'Playfair Display', serif;
-            font-size: 1.5rem;
-            margin-bottom: 25px;
-            color: var(--primary-color);
-            border-bottom: none;
-        }
-
-        .footer-column ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .footer-column ul li {
-            margin-bottom: 15px;
-        }
-
-        .footer-column a {
-            color: #ccc;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .footer-column a:hover {
-            color: var(--primary-color);
-        }
-
-        .social-icons {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 12px;
             display: flex;
-            gap: 15px;
-            margin-top: 25px;
+            align-items: center;
+            gap: 10px;
+        }
+        .footer-logo img { height: 36px; }
+
+        .footer-col h4 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.05rem;
+            color: var(--primary);
+            margin-bottom: 18px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+        .footer-col h4::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 30px; height: 2px;
+            background: var(--primary);
+            border-radius: 2px;
         }
 
-        .social-icons a {
-            color: white;
-            width: 40px;
-            height: 40px;
+        .footer-col p { font-size: 0.85rem; color: rgba(255,255,255,0.5); line-height: 1.7; }
+
+        .footer-col ul { list-style: none; }
+        .footer-col ul li { margin-bottom: 10px; }
+        .footer-col ul li a {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.55);
+            text-decoration: none;
+            transition: color 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .footer-col ul li a:hover { color: var(--primary); }
+        .footer-col ul li span { font-size: 0.85rem; color: rgba(255,255,255,0.55); display: flex; align-items: center; gap: 8px; }
+        .footer-col ul li span i { color: var(--primary); }
+
+        .social-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+        .social-row a {
+            width: 38px; height: 38px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 0.95rem;
+            color: white;
+            transition: all 0.25s ease;
+        }
+        .social-row a:hover { transform: translateY(-3px); filter: brightness(1.15); }
+        .social-row a.fb  { background: #1877F2; }
+        .social-row a.tw  { background: #000; }
+        .social-row a.ig  { background: linear-gradient(45deg,#f09433,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888); }
+        .social-row a.wa  { background: #25D366; }
+
+        .footer-bottom {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.35);
+        }
+        .footer-bottom a { color: var(--primary); text-decoration: none; }
+
+        /* ── Back-to-top ── */
+        #backToTop {
+            position: fixed;
+            bottom: 32px;
+            right: 28px;
+            z-index: 99;
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), #e85a7f);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 20px rgba(219,96,126,0.4);
             transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(20px);
         }
+        #backToTop.show { opacity: 1; transform: translateY(0); }
+        #backToTop:hover { transform: translateY(-4px); box-shadow: 0 10px 28px rgba(219,96,126,0.5); }
 
-        .social-icons a.facebook {
-            background-color: #1877F2;
+        /* ── Responsive ── */
+        @media (max-width: 860px) {
+            .layout { grid-template-columns: 1fr; }
+            .toc { position: static; display: none; }
         }
-
-        .social-icons a.twitter {
-            background-color: #000000;
-        }
-
-        .social-icons a.instagram {
-            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-        }
-
-        .social-icons a.whatsapp {
-            background-color: #25D366;
-        }
-
-        .social-icons a:hover {
-            transform: translateY(-3px);
-            filter: brightness(1.1);
-        }
-
-        .copyright {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-            color: #888;
-        }
-
-        @media (max-width: 768px) {
-            nav {
-                padding: 15px 20px;
-            }
-
-            .nav-links {
-                display: none;
-            }
-
-            .legal-content {
-                padding: 100px 20px 30px;
-            }
+        @media (max-width: 600px) {
+            nav { padding: 12px 18px; }
+            .hero { padding: 120px 20px 70px; }
+            .hero h1 { font-size: 2.1rem; }
+            .policy-section { padding: 26px 22px; }
+            footer { padding: 50px 20px 28px; }
         }
     </style>
 </head>
 
 <body>
-    <nav>
-        <a href="/" class="logo"><img src="/images/logo.png" alt="Gourmet d'amour Logo" style="height: 40px;"></a>
+    <!-- Accent bar -->
+    <div class="accent-bar"></div>
+
+    <!-- Nav -->
+    <nav id="navbar">
+        <a href="/" class="nav-logo">
+            <img src="/images/logo.png" alt="Gourmet d'amour">
+            Gourmet d'amour
+        </a>
         <ul class="nav-links">
-            <li><a href="/">Accueil</a></li>
-            <li><a href="/#features">À propos</a></li>
-            <li><a href="/#app">Application</a></li>
-            <li><a href="/#footer">Contact</a></li>
+            <li><a href="/"><i class="fas fa-home"></i> Accueil</a></li>
+            <li><a href="/#app"><i class="fab fa-google-play"></i> Application</a></li>
+            <li><a href="/privacy" class="active"><i class="fas fa-shield-alt"></i> Confidentialité</a></li>
+            <li><a href="/health"><i class="fas fa-heartbeat"></i> État du service</a></li>
         </ul>
     </nav>
 
-    <div class="legal-content">
-        <h1>Politique de Confidentialité</h1>
-        <div class="last-updated">Dernière mise à jour : Mars 2026</div>
-
-        <h2>1. Introduction</h2>
-        <p>L'application Gourmet d'Amour est une plateforme mobile permettant de géolocaliser les restaurants,
-            boulangeries et traiteurs situés à Dakar, de passer des commandes et d'organiser des livraisons.</p>
-        <p>La protection de vos données personnelles est une priorité. La présente Politique explique quelles
-            informations nous collectons, comment nous les utilisons et quels sont vos droits.</p>
-
-        <h2>2. Données collectées</h2>
-        <h3>2.1 Données fournies par l'utilisateur</h3>
-        <ul>
-            <li>Nom et prénom</li>
-            <li>Numéro de téléphone</li>
-            <li>Adresse e-mail</li>
-            <li>Adresse de livraison</li>
-            <li>Informations de paiement</li>
-            <li>Historique des commandes</li>
-        </ul>
-
-        <h3>2.2 Données collectées automatiquement</h3>
-        <ul>
-            <li>Données de géolocalisation (avec votre consentement)</li>
-            <li>Adresse IP</li>
-            <li>Type d'appareil et Système d'exploitation</li>
-            <li>Données d'utilisation de l'application</li>
-        </ul>
-
-        <h2>3. Finalités de la collecte</h2>
-        <p>Les données sont utilisées pour :</p>
-        <ul>
-            <li>Permettre la géolocalisation des restaurants à Dakar</li>
-            <li>Traiter et livrer vos commandes</li>
-            <li>Gérer les paiements</li>
-            <li>Améliorer l'expérience utilisateur</li>
-            <li>Envoyer des notifications (confirmation de commande, promotions)</li>
-            <li>Assurer la sécurité de l'application</li>
-        </ul>
-
-        <h2>4. Géolocalisation</h2>
-        <p>L'application utilise votre position pour afficher les établissements proches et calculer les frais et délais
-            de livraison. Vous pouvez désactiver la géolocalisation à tout moment dans les paramètres de votre appareil.
-        </p>
-
-        <h2>5. Partage des données</h2>
-        <p>Vos données peuvent être partagées uniquement avec :</p>
-        <ul>
-            <li>Les restaurants, boulangeries et traiteurs partenaires</li>
-            <li>Les livreurs</li>
-            <li>Les prestataires de paiement sécurisés</li>
-            <li>Les autorités compétentes si la loi l'exige</li>
-        </ul>
-        <p><strong>Nous ne vendons jamais vos données personnelles.</strong></p>
-
-        <h2>6. Sécurité et Durée de conservation</h2>
-        <p>Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles pour protéger vos
-            informations. Les données sont conservées aussi longtemps que nécessaire pour fournir nos services,
-            respecter nos obligations légales et résoudre d'éventuels litiges.</p>
-
-        <h2>7. Vos droits</h2>
-        <p>Conformément à la réglementation applicable, vous disposez d'un droit d'accès, de rectification, de
-            suppression, et d'opposition. Demandes à : <strong>contact@gourmetdamour.com</strong> ou
-            <strong>support@gourmetdamour.com</strong>
-        </p>
-
-        <h2>8. Suppression du Compte et des Données</h2>
-        <p>Conformément aux exigences des plateformes de distribution d'applications (Google Play, App Store) et à la
-            réglementation en vigueur, vous avez le droit de demander la suppression de votre compte et de toutes vos
-            données personnelles et associées (historique de commandes, adresses, etc.).</p>
-        <p>Pour exercer ce droit ou pour toute autre demande relative à vos données (accès, rectification, opposition),
-            veuillez nous contacter :</p>
-        <ul>
-            <li>En envoyant un e-mail avec pour objet <strong>"Demande de suppression de compte"</strong> à : <a
-                    href="mailto:support@gourmetdamour.com?subject=Demande%20de%20suppression%20de%20compte&body=Bonjour%2C%0A%0AJe%20souhaite%20supprimer%20d%C3%A9finitivement%20mon%20compte%20Gourmet%20d%27Amour%20ainsi%20que%20toutes%20les%20donn%C3%A9es%20associ%C3%A9es.%0A%0AMes%20informations%20%3A%0A-%20Nom%20%3A%20%5BVotre%20Nom%5D%0A-%20T%C3%A9l%C3%A9phone%20%3A%20%5BVotre%20T%C3%A9l%C3%A9phone%5D%0A%0AMerci."
-                    style="color: var(--primary-color); font-weight: bold; text-decoration: underline;">support@gourmetdamour.com</a>
-            </li>
-            <li>En écrivant à l'adresse de contact général : <a href="mailto:contact@gourmetdamour.com"
-                    style="color: #666; text-decoration: underline;">contact@gourmetdamour.com</a></li>
-        </ul>
-        <p>Votre demande sera traitée dans un délai maximum de 15 jours. Veuillez noter que certaines données peuvent
-            être conservées de manière sécurisée si la loi l’exige (par exemple, données de facturation).</p>
-
-        <div class="cgu-section">
-            <h1>Conditions Générales d'Utilisation (CGU)</h1>
-
-            <h2>1. Objet</h2>
-            <p>Les présentes Conditions régissent l'utilisation de l'application Gourmet d'Amour permettant la recherche
-                géolocalisée de restaurants à Dakar, la commande de produits alimentaires et la livraison à domicile.
-            </p>
-
-            <h2>2. Inscription</h2>
-            <p>Pour passer commande, l'utilisateur doit créer un compte, fournir des informations exactes et être âgé
-                d'au moins 18 ans. L'utilisateur est responsable de la confidentialité de son compte.</p>
-
-            <h2>3. Commandes & Paiement</h2>
-            <p>Toute commande est ferme après confirmation du paiement. Les délais de livraison sont estimatifs. Les
-                paiements s'effectuent via Mobile Money, Carte bancaire ou paiement à la livraison. Les transactions
-                sont sécurisées.</p>
-
-            <h2>4. Annulation et Responsabilités</h2>
-            <p>Une commande peut être annulée avant sa préparation. Les remboursements sont traités selon la politique
-                du partenaire.</p>
-            <p>Gourmet d'Amour agit comme intermédiaire et n'est pas responsable de la qualité des produits, des retards
-                accrus ou de cas de force majeure.</p>
-
-            <h2>5. Propriété intellectuelle & Droit applicable</h2>
-            <p>Tous les contenus sont la propriété de Gourmet d'Amour. Les présentes Conditions sont régies par le droit
-                sénégalais, tout litige relève des juridictions de Dakar.</p>
+    <!-- Hero -->
+    <div class="hero">
+        <div class="hero-inner">
+            <div class="hero-badge"><i class="fas fa-shield-alt"></i> Document légal</div>
+            <h1>Politique de Confidentialité & CGU</h1>
+            <div class="hero-meta">
+                <span><i class="fas fa-calendar-alt"></i> Dernière mise à jour : Mars 2026</span>
+                <span><i class="fas fa-map-marker-alt"></i> Liberté 6, Dakar, Sénégal</span>
+                <span><i class="fas fa-language"></i> Français</span>
+            </div>
         </div>
     </div>
 
-    <footer>
-        <div class="footer-content">
-            <div class="footer-column">
-                <h3 style="color:var(--primary-color);">Gourmet d'amour</h3>
-                <p>L'excellence de la cuisine sénégalaise, livrée chez vous.</p>
-                <div class="social-icons">
-                    <a href="https://facebook.com/gourmetdamour" class="facebook" target="_blank"><i
-                            class="fab fa-facebook-f"></i></a>
-                    <a href="https://x.com/gourmetdamour" class="twitter" target="_blank"><i
-                            class="fab fa-twitter"></i></a>
-                    <a href="https://instagram.com/gourmetdamour" class="instagram" target="_blank"><i
-                            class="fab fa-instagram"></i></a>
-                    <a href="https://wa.me/221707813382" class="whatsapp" target="_blank"><i
-                            class="fab fa-whatsapp"></i></a>
+    <!-- Layout -->
+    <div class="layout">
+
+        <!-- Sidebar TOC -->
+        <aside class="toc">
+            <div class="toc-title"><i class="fas fa-list"></i> Sommaire</div>
+            <div class="toc-label">Politique de confidentialité</div>
+            <ul>
+                <li><a href="#intro"><i class="fas fa-info-circle"></i> Introduction</a></li>
+                <li><a href="#data"><i class="fas fa-database"></i> Données collectées</a></li>
+                <li><a href="#purposes"><i class="fas fa-bullseye"></i> Finalités</a></li>
+                <li><a href="#geo"><i class="fas fa-map-marker-alt"></i> Géolocalisation</a></li>
+                <li><a href="#sharing"><i class="fas fa-share-alt"></i> Partage des données</a></li>
+                <li><a href="#security"><i class="fas fa-lock"></i> Sécurité & Conservation</a></li>
+                <li><a href="#rights"><i class="fas fa-user-check"></i> Vos droits</a></li>
+                <li><a href="#deletion"><i class="fas fa-trash-alt"></i> Suppression du compte</a></li>
+            </ul>
+            <div class="toc-divider"></div>
+            <div class="toc-label">CGU</div>
+            <ul>
+                <li><a href="#cgu-objet"><i class="fas fa-file-contract"></i> Objet</a></li>
+                <li><a href="#cgu-inscription"><i class="fas fa-user-plus"></i> Inscription</a></li>
+                <li><a href="#cgu-orders"><i class="fas fa-shopping-cart"></i> Commandes & Paiement</a></li>
+                <li><a href="#cgu-cancel"><i class="fas fa-times-circle"></i> Annulation</a></li>
+                <li><a href="#cgu-ip"><i class="fas fa-copyright"></i> Propriété intellectuelle</a></li>
+            </ul>
+            <div class="toc-cta">
+                <a href="mailto:support@gourmetdamour.com?subject=Demande%20de%20suppression%20de%20compte&body=Bonjour%2C%0A%0AJe%20souhaite%20supprimer%20d%C3%A9finitivement%20mon%20compte%20Gourmet%20d%27Amour%20ainsi%20que%20toutes%20les%20donn%C3%A9es%20associ%C3%A9es.%0A%0AMes%20informations%20%3A%0A-%20Nom%20%3A%20%5BVotre%20Nom%5D%0A-%20T%C3%A9l%C3%A9phone%20%3A%20%5BVotre%20T%C3%A9l%C3%A9phone%5D%0A%0AMerci.">
+                    <i class="fas fa-trash-alt"></i> Supprimer mon compte
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="content">
+
+            <!-- 1. Introduction -->
+            <section class="policy-section" id="intro">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-info-circle"></i></div>
+                    <div class="section-header-text">
+                        <div class="section-num">Section 1 · Politique de Confidentialité</div>
+                        <h2 class="section-title">Introduction</h2>
+                    </div>
+                </div>
+                <p>L'application <strong>Gourmet d'Amour</strong> est une plateforme mobile permettant de géolocaliser
+                    les restaurants, boulangeries et traiteurs situés à Dakar, de passer des commandes et d'organiser
+                    des livraisons.</p>
+                <p>La protection de vos données personnelles est une priorité absolue. La présente Politique explique
+                    quelles informations nous collectons, comment nous les utilisons et quels sont vos droits.</p>
+                <div class="highlight-box">
+                    <i class="fas fa-shield-alt"></i>
+                    <p>Nous nous engageons à ne jamais vendre, louer ou céder vos données personnelles à des tiers à
+                        des fins commerciales.</p>
+                </div>
+            </section>
+
+            <!-- 2. Données collectées -->
+            <section class="policy-section" id="data">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-database"></i></div>
+                    <div class="section-header-text">
+                        <div class="section-num">Section 2</div>
+                        <h2 class="section-title">Données collectées</h2>
+                    </div>
+                </div>
+                <h3>Données fournies par l'utilisateur</h3>
+                <ul class="fancy-list">
+                    <li>Nom et prénom</li>
+                    <li>Numéro de téléphone</li>
+                    <li>Adresse e-mail</li>
+                    <li>Adresse de livraison</li>
+                    <li>Informations de paiement</li>
+                    <li>Historique des commandes</li>
+                </ul>
+                <h3>Données collectées automatiquement</h3>
+                <ul class="fancy-list">
+                    <li>Données de géolocalisation (avec votre consentement)</li>
+                    <li>Adresse IP</li>
+                    <li>Type d'appareil et système d'exploitation</li>
+                    <li>Données d'utilisation de l'application</li>
+                </ul>
+            </section>
+
+            <!-- 3. Finalités -->
+            <section class="policy-section" id="purposes">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-bullseye"></i></div>
+                    <div class="section-header-text">
+                        <div class="section-num">Section 3</div>
+                        <h2 class="section-title">Finalités de la collecte</h2>
+                    </div>
+                </div>
+                <p>Les données sont utilisées pour :</p>
+                <ul class="fancy-list">
+                    <li>Permettre la géolocalisation des restaurants à Dakar</li>
+                    <li>Traiter et livrer vos commandes</li>
+                    <li>Gérer les paiements de manière sécurisée</li>
+                    <li>Améliorer l'expérience utilisateur</li>
+                    <li>Envoyer des notifications (confirmation de commande, promotions)</li>
+                    <li>Assurer la sécurité de l'application</li>
+                </ul>
+            </section>
+
+            <!-- 4. Géolocalisation -->
+            <section class="policy-section" id="geo">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="section-header-text">
+                        <div class="section-num">Section 4</div>
+                        <h2 class="section-title">Géolocalisation</h2>
+                    </div>
+                </div>
+                <p>L'application utilise votre position pour afficher les établissements proches et calculer les frais
+                    et délais de livraison.</p>
+                <div class="highlight-box">
+                    <i class="fas fa-map-pin"></i>
+                    <p>Vous pouvez désactiver la géolocalisation à tout moment dans les paramètres de votre appareil,
+                        sans affecter les autres fonctionnalités de l'application.</p>
+                </div>
+            </section>
+
+            <!-- 5. Partage -->
+            <section class="policy-section" id="sharing">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-share-alt"></i></div>
+                    <div class="section-header-text">
+                        <div class="section-num">Section 5</div>
+                        <h2 class="section-title">Partage des données</h2>
+                    </div>
+                </div>
+                <p>Vos données peuvent être partagées uniquement avec :</p>
+                <ul class="fancy-list">
+                    <li>Les restaurants, boulangeries et traiteurs partenaires</li>
+                    <li>Les livreurs assignés à votre commande</li>
+                    <li>Les prestataires de paiement sécurisés (Wave, Orange Money)</li>
+                    <li>Les autorités compétentes si la loi l'exige</li>
+                </ul>
+                <div class="highlight-box">
+                    <i class="fas fa-ban"></i>
+                    <p><strong>Nous ne vendons jamais vos données personnelles.</strong> Aucune revente à des
+                        annonceurs ou courtiers en données n'est pratiquée.</p>
+                </div>
+            </section>
+
+            <!-- 6. Sécurité -->
+            <section class="policy-section" id="security">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-lock"></i></div>
+                    <div class="section-header-text">
+                        <div class="section-num">Section 6</div>
+                        <h2 class="section-title">Sécurité & Durée de conservation</h2>
+                    </div>
+                </div>
+                <p>Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles pour protéger vos
+                    informations contre tout accès non autorisé, perte ou destruction.</p>
+                <p>Les données sont conservées aussi longtemps que nécessaire pour fournir nos services, respecter nos
+                    obligations légales et résoudre d'éventuels litiges.</p>
+            </section>
+
+            <!-- 7. Droits -->
+            <section class="policy-section" id="rights">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="section-header-text">
+                        <div class="section-num">Section 7</div>
+                        <h2 class="section-title">Vos droits</h2>
+                    </div>
+                </div>
+                <p>Conformément à la réglementation applicable, vous disposez des droits suivants :</p>
+                <ul class="fancy-list">
+                    <li><strong>Droit d'accès</strong> — consulter les données vous concernant</li>
+                    <li><strong>Droit de rectification</strong> — corriger des informations inexactes</li>
+                    <li><strong>Droit à l'effacement</strong> — demander la suppression de vos données</li>
+                    <li><strong>Droit d'opposition</strong> — s'opposer à certains traitements</li>
+                </ul>
+                <p>Pour exercer ces droits, contactez-nous à
+                    <a href="mailto:contact@gourmetdamour.com" class="email-link">contact@gourmetdamour.com</a> ou
+                    <a href="mailto:support@gourmetdamour.com" class="email-link">support@gourmetdamour.com</a>.
+                </p>
+            </section>
+
+            <!-- 8. Suppression -->
+            <section class="policy-section" id="deletion">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-trash-alt"></i></div>
+                    <div class="section-header-text">
+                        <div class="section-num">Section 8</div>
+                        <h2 class="section-title">Suppression du compte et des données</h2>
+                    </div>
+                </div>
+                <p>Conformément aux exigences des plateformes de distribution d'applications (Google Play, App Store)
+                    et à la réglementation en vigueur, vous avez le droit de demander la suppression de votre compte
+                    et de toutes vos données personnelles associées (historique de commandes, adresses, etc.).</p>
+                <p>Votre demande sera traitée dans un délai maximum de <strong>15 jours</strong>. Certaines données
+                    peuvent être conservées si la loi l'exige (ex. données de facturation).</p>
+
+                <div class="delete-cta">
+                    <div class="delete-cta-icon"><i class="fas fa-user-times"></i></div>
+                    <div class="delete-cta-text">
+                        <strong>Supprimer définitivement mon compte</strong>
+                        <span>Envoyez un e-mail à support@gourmetdamour.com avec l'objet « Demande de suppression »</span>
+                    </div>
+                    <a href="mailto:support@gourmetdamour.com?subject=Demande%20de%20suppression%20de%20compte&body=Bonjour%2C%0A%0AJe%20souhaite%20supprimer%20d%C3%A9finitivement%20mon%20compte%20Gourmet%20d%27Amour%20ainsi%20que%20toutes%20les%20donn%C3%A9es%20associ%C3%A9es.%0A%0AMes%20informations%20%3A%0A-%20Nom%20%3A%20%5BVotre%20Nom%5D%0A-%20T%C3%A9l%C3%A9phone%20%3A%20%5BVotre%20T%C3%A9l%C3%A9phone%5D%0A%0AMerci."
+                        class="delete-cta-btn">
+                        <i class="fas fa-envelope"></i> Envoyer la demande
+                    </a>
+                </div>
+            </section>
+
+            <!-- CGU divider banner -->
+            <div class="cgu-divider">
+                <div class="cgu-divider-inner">
+                    <div class="cgu-divider-badge"><i class="fas fa-file-contract"></i> CGU</div>
+                    <h2>Conditions Générales d'Utilisation</h2>
+                    <p>Ces conditions régissent l'utilisation de l'application Gourmet d'amour.</p>
                 </div>
             </div>
-            <div class="footer-column">
-                <h3 style="color:var(--primary-color);">Liens Rapides</h3>
+
+            <!-- CGU 1 -->
+            <section class="policy-section" id="cgu-objet">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-file-alt"></i></div>
+                    <div class="section-header-text">
+                        <div class="section-num">CGU · Article 1</div>
+                        <h2 class="section-title">Objet</h2>
+                    </div>
+                </div>
+                <p>Les présentes Conditions régissent l'utilisation de l'application Gourmet d'Amour permettant la
+                    recherche géolocalisée de restaurants à Dakar, la commande de produits alimentaires et la livraison
+                    à domicile.</p>
+            </section>
+
+            <!-- CGU 2 -->
+            <section class="policy-section" id="cgu-inscription">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-user-plus"></i></div>
+                    <div class="section-header-text">
+                        <div class="section-num">CGU · Article 2</div>
+                        <h2 class="section-title">Inscription</h2>
+                    </div>
+                </div>
+                <p>Pour passer commande, l'utilisateur doit créer un compte, fournir des informations exactes et être
+                    âgé d'au moins <strong>18 ans</strong>. L'utilisateur est responsable de la confidentialité de ses
+                    identifiants de connexion.</p>
+            </section>
+
+            <!-- CGU 3 -->
+            <section class="policy-section" id="cgu-orders">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-shopping-cart"></i></div>
+                    <div class="section-header-text">
+                        <div class="section-num">CGU · Article 3</div>
+                        <h2 class="section-title">Commandes & Paiement</h2>
+                    </div>
+                </div>
+                <p>Toute commande est ferme après confirmation du paiement. Les délais de livraison sont estimatifs.
+                    Les paiements s'effectuent via <strong>Mobile Money (Wave, Orange Money)</strong>, carte bancaire
+                    ou paiement à la livraison. Toutes les transactions sont sécurisées.</p>
+            </section>
+
+            <!-- CGU 4 -->
+            <section class="policy-section" id="cgu-cancel">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-times-circle"></i></div>
+                    <div class="section-header-text">
+                        <div class="section-num">CGU · Article 4</div>
+                        <h2 class="section-title">Annulation & Responsabilités</h2>
+                    </div>
+                </div>
+                <p>Une commande peut être annulée avant sa préparation. Les remboursements sont traités selon la
+                    politique du partenaire restaurateur.</p>
+                <p>Gourmet d'Amour agit comme intermédiaire et n'est pas responsable de la qualité des produits, des
+                    retards imprévus ou de cas de force majeure.</p>
+            </section>
+
+            <!-- CGU 5 -->
+            <section class="policy-section" id="cgu-ip">
+                <div class="section-header">
+                    <div class="section-icon"><i class="fas fa-copyright"></i></div>
+                    <div class="section-header-text">
+                        <div class="section-num">CGU · Article 5</div>
+                        <h2 class="section-title">Propriété intellectuelle & Droit applicable</h2>
+                    </div>
+                </div>
+                <p>Tous les contenus (logo, textes, interface, marques) sont la propriété exclusive de Gourmet
+                    d'Amour. Toute reproduction sans autorisation est interdite.</p>
+                <p>Les présentes Conditions sont régies par le <strong>droit sénégalais</strong>. Tout litige relève
+                    de la compétence exclusive des juridictions de Dakar.</p>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-col">
+                <div class="footer-logo">
+                    <img src="/images/logo.png" alt="Gourmet d'amour">
+                    Gourmet d'amour
+                </div>
+                <p>L'excellence de la cuisine sénégalaise, livrée directement chez vous à Dakar.</p>
+                <div class="social-row">
+                    <a href="https://facebook.com/gourmetdamour" class="fb" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://x.com/gourmetdamour" class="tw" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a>
+                    <a href="https://instagram.com/gourmetdamour" class="ig" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+                    <a href="https://wa.me/221707813382" class="wa" target="_blank" rel="noopener noreferrer"><i class="fab fa-whatsapp"></i></a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Liens rapides</h4>
                 <ul>
-                    <li><a href="/">Accueil</a></li>
-                    <li><a href="/privacy">Politique de confidentialité</a></li>
+                    <li><a href="/"><i class="fas fa-home"></i> Accueil</a></li>
+                    <li><a href="/#features"><i class="fas fa-star"></i> À propos</a></li>
+                    <li><a href="/#app"><i class="fas fa-mobile-alt"></i> Application</a></li>
+                    <li><a href="/privacy"><i class="fas fa-shield-alt"></i> Confidentialité</a></li>
+                    <li><a href="/health"><i class="fas fa-heartbeat"></i> État du service</a></li>
                 </ul>
             </div>
-            <div class="footer-column">
-                <h3 style="color:var(--primary-color);">Contact</h3>
+            <div class="footer-col">
+                <h4>Contact</h4>
                 <ul>
-                    <li><i class="fas fa-map-marker-alt"></i> Liberté 6, Dakar, Sénégal</li>
-                    <li><i class="fas fa-phone"></i> +221 70 781 33 82</li>
-                    <li><i class="fas fa-envelope"></i> support@gourmetdamour.com</li>
+                    <li><span><i class="fas fa-map-marker-alt"></i> Liberté 6, Dakar, Sénégal</span></li>
+                    <li><span><i class="fas fa-phone"></i> +221 70 781 33 82</span></li>
+                    <li><a href="mailto:support@gourmetdamour.com"><i class="fas fa-envelope"></i> support@gourmetdamour.com</a></li>
                 </ul>
             </div>
         </div>
-        <div class="copyright">
-            <p>&copy; 2026 Gourmet d'amour. Tous droits réservés.</p>
+        <div class="footer-bottom">
+            <span>© 2026 Gourmet d'amour. Tous droits réservés.</span>
+            <a href="/privacy">Politique de confidentialité & CGU</a>
         </div>
     </footer>
+
+    <!-- Back to top -->
+    <button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+        <i class="fas fa-chevron-up"></i>
+    </button>
+
+    <script>
+        // Back-to-top visibility
+        const btn = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => {
+            btn.classList.toggle('show', window.scrollY > 300);
+        });
+
+        // Active TOC link on scroll
+        const sections = document.querySelectorAll('.policy-section, .cgu-divider');
+        const tocLinks = document.querySelectorAll('.toc a');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    tocLinks.forEach(l => l.classList.remove('active'));
+                    const id = entry.target.id;
+                    const active = document.querySelector(`.toc a[href="#${id}"]`);
+                    if (active) active.classList.add('active');
+                }
+            });
+        }, { rootMargin: '-20% 0px -70% 0px' });
+
+        sections.forEach(s => { if (s.id) observer.observe(s); });
+    </script>
 </body>
 
 </html>

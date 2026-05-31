@@ -1,0 +1,49 @@
+[2026-05-31T21:38:32.666Z] =================== PASSENGER INITIATING APPLICATION ===================
+[2026-05-31T21:38:32.668Z] Process ID (PID): 17208
+[2026-05-31T21:38:32.669Z] Node.js Version: v24.15.0
+[2026-05-31T21:38:32.669Z] Directory (__dirname): C:\Users\DELL\OneDrive\Desktop\Gourmet\BackendDeliveryApp
+[2026-05-31T21:38:32.670Z] Passenger PORT env: undefined
+[2026-05-31T21:38:32.670Z] Requiring server.js...
+[2026-05-31T21:38:36.274Z] server.js required successfully.
+[2026-05-31T21:42:38.104Z] =================== PASSENGER INITIATING APPLICATION ===================
+[2026-05-31T21:42:38.106Z] Process ID (PID): 4920
+[2026-05-31T21:42:38.106Z] Node.js Version: v24.15.0
+[2026-05-31T21:42:38.107Z] Directory (__dirname): C:\Users\DELL\OneDrive\Desktop\Gourmet\BackendDeliveryApp
+[2026-05-31T21:42:38.107Z] Passenger PORT env: undefined
+[2026-05-31T21:42:38.108Z] Requiring server.js...
+[2026-05-31T21:42:41.436Z] server.js required successfully.
+[2026-05-31T21:50:15.505Z] =================== PASSENGER INITIATING APPLICATION ===================
+[2026-05-31T21:50:15.507Z] Process ID (PID): 5304
+[2026-05-31T21:50:15.508Z] Node.js Version: v24.15.0
+[2026-05-31T21:50:15.508Z] Directory (__dirname): C:\Users\DELL\OneDrive\Desktop\Gourmet\BackendDeliveryApp
+[2026-05-31T21:50:15.509Z] Passenger PORT env: undefined
+[2026-05-31T21:50:15.509Z] Requiring server.js...
+[2026-05-31T21:50:18.583Z] server.js required successfully.
+[2026-05-31T21:54:10.970Z] =================== PASSENGER INITIATING APPLICATION ===================
+[2026-05-31T21:54:10.972Z] Process ID (PID): 13548
+[2026-05-31T21:54:10.973Z] Node.js Version: v24.15.0
+[2026-05-31T21:54:10.973Z] Directory (__dirname): C:\Users\DELL\OneDrive\Desktop\Gourmet\BackendDeliveryApp
+[2026-05-31T21:54:10.974Z] Passenger PORT env: undefined
+[2026-05-31T21:54:10.975Z] Requiring server.js...
+[2026-05-31T21:54:14.350Z] server.js required successfully.
+[2026-05-31T21:56:35.998Z] =================== PASSENGER INITIATING APPLICATION ===================
+[2026-05-31T21:56:36.000Z] Process ID (PID): 16196
+[2026-05-31T21:56:36.001Z] Node.js Version: v24.15.0
+[2026-05-31T21:56:36.001Z] Directory (__dirname): C:\Users\DELL\OneDrive\Desktop\Gourmet\BackendDeliveryApp
+[2026-05-31T21:56:36.002Z] Passenger PORT env: undefined
+[2026-05-31T21:56:36.002Z] Requiring server.js...
+[2026-05-31T21:56:40.723Z] server.js required successfully.
+[2026-05-31T21:58:41.022Z] =================== PASSENGER INITIATING APPLICATION ===================
+[2026-05-31T21:58:41.024Z] Process ID (PID): 10144
+[2026-05-31T21:58:41.025Z] Node.js Version: v24.15.0
+[2026-05-31T21:58:41.025Z] Directory (__dirname): C:\Users\DELL\OneDrive\Desktop\Gourmet\BackendDeliveryApp
+[2026-05-31T21:58:41.026Z] Passenger PORT env: undefined
+[2026-05-31T21:58:41.026Z] Requiring server.js...
+[2026-05-31T21:58:44.387Z] server.js required successfully.
+[2026-05-31T22:05:48.874Z] =================== PASSENGER INITIATING APPLICATION ===================
+[2026-05-31T22:05:48.875Z] Process ID (PID): 11284
+[2026-05-31T22:05:48.876Z] Node.js Version: v24.15.0
+[2026-05-31T22:05:48.877Z] Directory (__dirname): C:\Users\DELL\OneDrive\Desktop\Gourmet\BackendDeliveryApp
+[2026-05-31T22:05:48.877Z] Passenger PORT env: undefined
+[2026-05-31T22:05:48.878Z] Requiring server.js...
+[2026-05-31T22:05:52.826Z] server.js required successfully.

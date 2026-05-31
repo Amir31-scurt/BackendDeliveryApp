@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 – Page introuvable | Gourmet d'amour</title>
+    <link rel="icon" href="/images/logo.png" type="image/png">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #DB607E;
+            --secondary-color: #ABD27E;
+            --accent-color: #b22222;
+            --background-color: #f9f5f0;
+            --dark-color: #2c2c2c;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--background-color);
+            color: var(--dark-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Subtle grid pattern */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(219,96,126,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(219,96,126,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        /* Decorative circles */
+        .deco-circle {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .deco-circle-1 {
+            width: 600px; height: 600px;
+            border: 1px solid rgba(219,96,126,0.08);
+            top: -200px; right: -200px;
+        }
+
+        .deco-circle-2 {
+            width: 400px; height: 400px;
+            border: 1px solid rgba(171,210,126,0.1);
+            bottom: -150px; left: -150px;
+        }
+
+        /* Logo strip replaced by unified navbar */
+
+        /* Main card */
+        .error-card {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 64px 56px;
+            max-width: 620px;
+            width: 92%;
+            background: white;
+            border-radius: 32px;
+            box-shadow:
+                0 4px 24px rgba(219,96,126,0.08),
+                0 24px 80px rgba(44,44,44,0.1);
+            border: 1px solid rgba(219,96,126,0.12);
+            animation: cardIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            opacity: 0;
+            transform: scale(0.9) translateY(30px);
+        }
+
+        @keyframes cardIn {
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* Plate illustration */
+        .plate-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 28px;
+        }
+
+        .plate {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(135deg, #f9f5f0, #eeddd5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            box-shadow:
+                0 8px 30px rgba(219,96,126,0.15),
+                inset 0 -4px 10px rgba(0,0,0,0.05);
+            border: 3px solid rgba(219,96,126,0.15);
+            animation: plateWiggle 4s ease-in-out infinite;
+        }
+
+        @keyframes plateWiggle {
+            0%, 100% { transform: rotate(-2deg); }
+            50%       { transform: rotate(2deg); }
+        }
+
+        /* Question mark orbit */
+        .orbit {
+            position: absolute;
+            inset: -14px;
+            border-radius: 50%;
+            border: 2px dashed rgba(219,96,126,0.2);
+            animation: orbitSpin 10s linear infinite;
+        }
+
+        .orbit-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 0 8px rgba(219,96,126,0.5);
+        }
+
+        @keyframes orbitSpin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+
+        /* 404 number */
+        .error-code {
+            font-family: 'Playfair Display', serif;
+            font-size: 6.5rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 8px;
+            color: var(--dark-color);
+            position: relative;
+        }
+
+        .error-code .zero {
+            display: inline-block;
+            color: var(--primary-color);
+            animation: zeroSpin 6s ease-in-out infinite;
+        }
+
+        @keyframes zeroSpin {
+            0%, 100% { transform: scaleX(1); }
+            45%       { transform: scaleX(0.1); }
+            50%       { transform: scaleX(-1); }
+            95%       { transform: scaleX(-0.1); }
+        }
+
+        .error-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 14px;
+        }
+
+        .error-message {
+            font-size: 0.97rem;
+            color: #777;
+            line-height: 1.8;
+            margin-bottom: 36px;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Requested path chip */
+        .path-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: rgba(219,96,126,0.07);
+            border: 1px solid rgba(219,96,126,0.18);
+            color: var(--primary-color);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            margin-bottom: 32px;
+            word-break: break-all;
+        }
+
+        .path-chip i { flex-shrink: 0; }
+
+        /* Suggested links */
+        .suggestions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 32px;
+        }
+
+        .suggestion-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--background-color);
+            color: var(--dark-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            border: 1px solid rgba(0,0,0,0.07);
+            transition: all 0.25s ease;
+        }
+
+        .suggestion-tag:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(219,96,126,0.3);
+            border-color: transparent;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 30px;
+            border-radius: 50px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #e85a7f);
+            color: white;
+            box-shadow: 0 8px 24px rgba(219,96,126,0.35);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 34px rgba(219,96,126,0.5);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--dark-color);
+            border: 1.5px solid rgba(44,44,44,0.15);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-3px);
+        }
+
+        /* Divider */
+        .divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(219,96,126,0.2), transparent);
+            margin: 28px 0;
+        }
+
+        @media (max-width: 480px) {
+            .error-card { padding: 40px 22px; }
+            .error-code { font-size: 5rem; }
+            .error-title { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+
+<body class="gda-has-nav">
+    <!-- Unified navbar -->
+    <%- include('partials/navbar', { currentPage: '' }) %>
+
+    <div class="deco-circle deco-circle-1"></div>
+    <div class="deco-circle deco-circle-2"></div>
+
+    <!-- Error Card -->
+    <div class="error-card">
+
+        <!-- Animated plate -->
+        <div class="plate-wrapper">
+            <div class="orbit"><div class="orbit-dot"></div></div>
+            <div class="plate">🍽️</div>
+        </div>
+
+        <!-- 404 -->
+        <div class="error-code">
+            4<span class="zero">0</span>4
+        </div>
+        <h1 class="error-title">Ce plat n'est pas au menu</h1>
+        <p class="error-message">
+            La page que vous cherchez est introuvable. Il est possible qu'elle ait été déplacée,
+            supprimée, ou que l'adresse soit incorrecte.
+        </p>
+
+        <!-- Requested path -->
+        <div class="path-chip">
+            <i class="fas fa-map-marker-alt"></i>
+            <span id="requestedPath"><%= typeof requestedPath !== 'undefined' ? requestedPath : req.path %></span>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Quick links -->
+        <div class="suggestions">
+            <a href="/" class="suggestion-tag"><i class="fas fa-home"></i> Accueil</a>
+            <a href="/privacy" class="suggestion-tag"><i class="fas fa-shield-alt"></i> Confidentialité</a>
+            <a href="/admin/login" class="suggestion-tag"><i class="fas fa-user-shield"></i> Administration</a>
+            <a href="/health" class="suggestion-tag"><i class="fas fa-heartbeat"></i> État du service</a>
+        </div>
+
+        <div class="btn-group">
+            <a href="/" class="btn btn-primary">
+                <i class="fas fa-home"></i> Retour à l'accueil
+            </a>
+            <button class="btn btn-outline" onclick="history.back()">
+                <i class="fas fa-arrow-left"></i> Page précédente
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Show actual URL path in chip
+        const pathEl = document.getElementById('requestedPath');
+        // If EJS didn't inject it, fall back to JS
+        if (!pathEl.textContent || pathEl.textContent.trim() === 'undefined') {
+            pathEl.textContent = window.location.pathname || '/';
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>503 – Service indisponible | Gourmet d'amour</title>
+    <link rel="icon" href="/images/logo.png" type="image/png">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #DB607E;
+            --secondary-color: #ABD27E;
+            --accent-color: #b22222;
+            --background-color: #f9f5f0;
+            --dark-color: #2c2c2c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--dark-color);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated background blobs */
+        .bg-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            animation: blobFloat 8s ease-in-out infinite;
+        }
+
+        .bg-blob-1 {
+            width: 500px;
+            height: 500px;
+            background: var(--primary-color);
+            top: -150px;
+            left: -150px;
+            animation-delay: 0s;
+        }
+
+        .bg-blob-2 {
+            width: 400px;
+            height: 400px;
+            background: var(--secondary-color);
+            bottom: -100px;
+            right: -100px;
+            animation-delay: 3s;
+        }
+
+        .bg-blob-3 {
+            width: 300px;
+            height: 300px;
+            background: var(--primary-color);
+            bottom: 100px;
+            left: 200px;
+            animation-delay: 5s;
+        }
+
+        @keyframes blobFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33%       { transform: translate(30px, -30px) scale(1.05); }
+            66%       { transform: translate(-20px, 20px) scale(0.95); }
+        }
+
+        /* Floating food particles */
+        .particles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            font-size: 1.5rem;
+            opacity: 0.08;
+            animation: floatParticle linear infinite;
+        }
+
+        @keyframes floatParticle {
+            0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+            10%  { opacity: 0.08; }
+            90%  { opacity: 0.08; }
+            100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* Card */
+        .error-card {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            padding: 60px 50px;
+            max-width: 600px;
+            width: 90%;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(219, 96, 126, 0.25);
+            border-radius: 32px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+            animation: cardEntrance 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            opacity: 0;
+            transform: translateY(40px) scale(0.97);
+        }
+
+        @keyframes cardEntrance {
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* Pot icon with steam */
+        .icon-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 110px;
+            height: 110px;
+            background: linear-gradient(135deg, var(--primary-color), #e85a7f);
+            border-radius: 28px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 40px rgba(219, 96, 126, 0.45);
+            animation: iconBounce 2.5s ease-in-out infinite;
+        }
+
+        @keyframes iconBounce {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-8px); }
+        }
+
+        .icon-wrapper i {
+            font-size: 3rem;
+            color: white;
+        }
+
+        /* Steam dots */
+        .steam {
+            position: absolute;
+            top: -18px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .steam span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            animation: steamRise 1.5s ease-in-out infinite;
+        }
+
+        .steam span:nth-child(2) { animation-delay: 0.3s; }
+        .steam span:nth-child(3) { animation-delay: 0.6s; }
+
+        @keyframes steamRise {
+            0%   { transform: translateY(0); opacity: 0.5; }
+            100% { transform: translateY(-20px); opacity: 0; }
+        }
+
+        /* Error code */
+        .error-code {
+            font-family: 'Playfair Display', serif;
+            font-size: 7rem;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary-color), #f0a0b5, var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 3s ease-in-out infinite;
+            background-size: 200% auto;
+        }
+
+        @keyframes shimmer {
+            0%   { background-position: 0% center; }
+            50%  { background-position: 100% center; }
+            100% { background-position: 0% center; }
+        }
+
+        .error-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .error-message {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.65);
+            line-height: 1.8;
+            margin-bottom: 40px;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Progress bar for retry countdown */
+        .countdown-bar-wrapper {
+            margin-bottom: 36px;
+        }
+
+        .countdown-label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.45);
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .countdown-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .countdown-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            border-radius: 10px;
+            animation: countdown 30s linear forwards;
+            transform-origin: left;
+        }
+
+        @keyframes countdown {
+            from { width: 100%; }
+            to   { width: 0%; }
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 28px;
+            border-radius: 50px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), #e85a7f);
+            color: white;
+            box-shadow: 0 8px 25px rgba(219, 96, 126, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 35px rgba(219, 96, 126, 0.55);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-3px);
+            color: white;
+        }
+
+        /* Logo strip replaced by dark unified navbar */
+
+        /* Status badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(219, 96, 126, 0.15);
+            border: 1px solid rgba(219, 96, 126, 0.3);
+            color: var(--primary-color);
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            animation: blink 1.2s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.2; }
+        }
+
+        @media (max-width: 480px) {
+            .error-card { padding: 40px 24px; }
+            .error-code { font-size: 5rem; }
+            .error-title { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+
+<body class="gda-has-nav">
+    <!-- Unified navbar -->
+    <%- include('partials/navbar', { currentPage: '', dark: true }) %>
+
+    <!-- Animated background -->
+    <div class="bg-blob bg-blob-1"></div>
+    <div class="bg-blob bg-blob-2"></div>
+    <div class="bg-blob bg-blob-3"></div>
+
+    <!-- Floating food particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Error card -->
+    <div class="error-card">
+        <div class="icon-wrapper">
+            <div class="steam">
+                <span></span><span></span><span></span>
+            </div>
+            <i class="fas fa-utensils"></i>
+        </div>
+
+        <div class="status-badge">
+            <span class="status-dot"></span>
+            Maintenance en cours
+        </div>
+
+        <div class="error-code">503</div>
+        <h1 class="error-title">Cuisine temporairement fermée</h1>
+        <p class="error-message">
+            Nos cuisines sont en train de se préparer pour vous offrir une expérience encore meilleure.
+            Nous serons de retour dans quelques instants. Merci de votre patience !
+        </p>
+
+        <div class="countdown-bar-wrapper">
+            <div class="countdown-label">Nouvelle tentative automatique dans 30 secondes…</div>
+            <div class="countdown-bar">
+                <div class="countdown-fill" id="countdownFill"></div>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="location.reload()">
+                <i class="fas fa-redo-alt"></i> Réessayer
+            </button>
+            <a href="/" class="btn btn-secondary">
+                <i class="fas fa-home"></i> Accueil
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Auto-reload after 30 seconds
+        setTimeout(() => location.reload(), 30000);
+
+        // Floating food emoji particles
+        const emojis = ['🍽️', '🥘', '🍲', '🥗', '🍜', '🧆', '🥙', '🍛', '🥣', '🍱'];
+        const container = document.getElementById('particles');
+        for (let i = 0; i < 18; i++) {
+            const el = document.createElement('div');
+            el.className = 'particle';
+            el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            el.style.left = Math.random() * 100 + 'vw';
+            el.style.animationDuration = (12 + Math.random() * 16) + 's';
+            el.style.animationDelay = (Math.random() * 20) + 's';
+            el.style.fontSize = (1 + Math.random() * 1.5) + 'rem';
+            container.appendChild(el);
+        }
+    </script>
+</body>
+
+</html>
