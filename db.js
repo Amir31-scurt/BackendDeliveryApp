@@ -30,7 +30,9 @@ const pool = new Pool({
 });
 
 // Test connection on startup
-pool.on("connect", () => {});
+pool.on("connect", () => {
+  console.log("Connected to database");
+});
 
 pool.on("error", (err) => {
   console.error("DB pool error:", err.message);
