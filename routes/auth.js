@@ -98,7 +98,7 @@ router.post("/signup", async (req, res) => {
     console.log("[signup] Inserting unverified user into PostgreSQL:", { phoneNumber, name });
     const { data: userRows, error: userError } = await query(
       `INSERT INTO users (phone_number, name, password, role, is_verified, profile_picture)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+       VALUES ($1, $2, $3, $4::user_type, $5, $6) RETURNING *`,
       [
         phoneNumber,
         name,
@@ -239,7 +239,7 @@ router.post("/resend-otp", async (req, res) => {
         console.log("[resend-otp] Updating existing unverified user details:", phoneNumber);
         const { error: updateError } = await query(
           `UPDATE users 
-           SET name = $1, password = $2, role = $3, profile_picture = $4 
+           SET name = $1, password = $2, role = $3::user_type, profile_picture = $4 
            WHERE phone_number = $5 AND is_verified = false`,
           [name, hashedPassword, role || "customer", profilePicture ?? null, phoneNumber]
         );
@@ -252,7 +252,7 @@ router.post("/resend-otp", async (req, res) => {
         console.log("[resend-otp] Re-inserting unverified user:", { phoneNumber, name });
         const { error: userError } = await query(
           `INSERT INTO users (phone_number, name, password, role, is_verified, profile_picture)
-           VALUES ($1, $2, $3, $4, $5, $6)`,
+           VALUES ($1, $2, $3, $4::user_type, $5, $6)`,
           [phoneNumber, name, hashedPassword, role || "customer", false, profilePicture ?? null]
         );
         
