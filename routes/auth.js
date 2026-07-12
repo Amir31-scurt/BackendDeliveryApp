@@ -172,6 +172,57 @@ router.post("/login", async (req, res) => {
     res.status(400).json({error: "Échec de la connexion."});
   }
 });
+
+router.post("/resend-otp", async (req, res) => {
+  try {
+    const {phoneNumber, name, password, role, profilePicture} = req.body;
+
+    if (!phoneNumber || !name || !password || !role) {
+      return res
+        .status(400)
+        .json({error: "Tous les champs sont obligatoires."});
+    }
+
+    const {data: existingUser, error: existingUserError} = await supabase
+      .from("users")
+      .select("phone_number")
+      .eq("phone_number", phoneNumber)
+      .single();
+
+    if (existingUser) {
+      return res.status(400).json({error: "Ce numéro est déjà utilisé."});
+    }
+
+    if (existingUserError && existingUserError.code !== "PGRST116") {
+      return res.status(500).json({error: "Erreur interne du serveur."});
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    const expiresAt = addMinutes(new Date(), 10);
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await supabase.from("otps").delete().eq("phone_number", phoneNumber);
+
+    await supabase.from("otps").insert({
+      phone_number: phoneNumber,
+      otp,
+      expires_at: expiresAt,
+      user_name: name,
+      user_password: hashedPassword,
+      user_role: role || "customer",
+      profile_picture: profilePicture ?? null,
+    });
+
+    res.status(200).json({
+      message: "OTP renvoyé avec succès.",
+      otp,
+    });
+  } catch (error) {
+    console.error("Erreur lors du renvoi de l'OTP:", error);
+    res.status(500).json({error: "Erreur interne du serveur."});
+  }
+});
+
 /**
  * Verify OTP
  */
