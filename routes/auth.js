@@ -236,12 +236,17 @@ router.post("/verify-otp", async (req, res) => {
         .json({error: "Le numéro de téléphone et l'OTP sont requis."});
     }
 
+    const otpNumber = Number(otp);
+    if (isNaN(otpNumber) || otpNumber === 0) {
+      return res.status(400).json({error: "Code OTP invalide."});
+    }
+
     // Retrieve OTP record from DB (no more in-memory store)
     const {data: otpRecord, error: otpError} = await supabase
       .from("otps")
       .select("*")
       .eq("phone_number", phoneNumber)
-      .eq("otp", otp)
+      .eq("otp", otpNumber)
       .order("created_at", {ascending: false})
       .limit(1)
       .single();
