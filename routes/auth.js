@@ -207,10 +207,10 @@ router.post("/resend-otp", async (req, res) => {
   try {
     const { phoneNumber, name, password, role, profilePicture } = req.body;
 
-    if (!phoneNumber || !name || !password || !role) {
+    if (!phoneNumber) {
       return res
         .status(400)
-        .json({ error: "Tous les champs sont obligatoires." });
+        .json({ error: "Le numéro de téléphone est obligatoire." });
     }
 
     const { data: users, error: existingUserError } = await query(
@@ -223,47 +223,47 @@ router.post("/resend-otp", async (req, res) => {
       return res.status(500).json({ error: "Erreur interne du serveur." });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const userExists = users && users.length > 0;
 
-    if (users && users.length > 0) {
-      const existingUser = users[0];
-      if (existingUser.is_verified) {
-        return res.status(400).json({ error: "Ce numéro est déjà utilisé." });
+    if (userExists) {
+      if (users[0].is_verified) {
+        return res.status(400).json({ error: "Ce numéro est déjà vérifié." });
       }
-      
-      // Update unverified user details
-      console.log("[resend-otp] Updating existing unverified user details:", phoneNumber);
-      const { error: updateError } = await query(
-        `UPDATE users 
-         SET name = $1, password = $2, role = $3, profile_picture = $4 
-         WHERE phone_number = $5 AND is_verified = false`,
-        [name, hashedPassword, role || "customer", profilePicture ?? null, phoneNumber]
-      );
-      
-      if (updateError) {
-        console.error("[resend-otp] DB Update user error:", updateError);
-        return res.status(500).json({ error: "Erreur lors du renvoi de l'OTP." });
+    }
+
+    // Si on a fourni les autres infos (cas du Signup), on met à jour ou on recrée l'utilisateur
+    if (name && password && role) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      if (userExists) {
+        console.log("[resend-otp] Updating existing unverified user details:", phoneNumber);
+        const { error: updateError } = await query(
+          `UPDATE users 
+           SET name = $1, password = $2, role = $3, profile_picture = $4 
+           WHERE phone_number = $5 AND is_verified = false`,
+          [name, hashedPassword, role || "customer", profilePicture ?? null, phoneNumber]
+        );
+        
+        if (updateError) {
+          console.error("[resend-otp] DB Update user error:", updateError);
+          return res.status(500).json({ error: "Erreur lors du renvoi de l'OTP." });
+        }
+      } else {
+        console.log("[resend-otp] Re-inserting unverified user:", { phoneNumber, name });
+        const { error: userError } = await query(
+          `INSERT INTO users (phone_number, name, password, role, is_verified, profile_picture)
+           VALUES ($1, $2, $3, $4, $5, $6)`,
+          [phoneNumber, name, hashedPassword, role || "customer", false, profilePicture ?? null]
+        );
+        
+        if (userError) {
+          console.error("[resend-otp] DB Insert user error:", userError);
+          return res.status(500).json({ error: "Erreur lors du renvoi de l'OTP." });
+        }
       }
-    } else {
-      // Re-create user if missing
-      console.log("[resend-otp] Re-inserting unverified user:", { phoneNumber, name });
-      const { error: userError } = await query(
-        `INSERT INTO users (phone_number, name, password, role, is_verified, profile_picture)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [
-          phoneNumber,
-          name,
-          hashedPassword,
-          role || "customer",
-          false,
-          profilePicture ?? null
-        ]
-      );
-      
-      if (userError) {
-        console.error("[resend-otp] DB Insert user error:", userError);
-        return res.status(500).json({ error: "Erreur lors du renvoi de l'OTP." });
-      }
+    } else if (!userExists) {
+      // Si on n'a que le numéro, l'utilisateur doit exister
+      return res.status(404).json({ error: "Utilisateur introuvable." });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000);
