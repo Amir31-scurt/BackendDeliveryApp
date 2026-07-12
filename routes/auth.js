@@ -1,11 +1,11 @@
 const bcrypt = require("bcrypt");
-const {addMinutes} = require("date-fns");
+const { addMinutes } = require("date-fns");
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const {supabase} = require("../supabaseClient.js");
-const {query} = require("../db.js");
-const {signIn} = require("../utils/auth.js");
-const {sendPushNotification} = require("../utils/sendNotifications.js");
+const { supabase } = require("../supabaseClient.js");
+const { query } = require("../db.js");
+const { signIn } = require("../utils/auth.js");
+const { sendPushNotification } = require("../utils/sendNotifications.js");
 
 const userStore = {};
 
@@ -16,27 +16,34 @@ const otpStore = {};
 
 router.post("/signup", async (req, res) => {
   try {
-    const {phoneNumber, name, password, role, profilePicture} = req.body;
+    const { phoneNumber, name, password, role, profilePicture } = req.body;
 
     if (!phoneNumber || !name || !password || !role) {
       return res
         .status(400)
-        .json({error: "Tous les champs sont obligatoires."});
+        .json({ error: "Tous les champs sont obligatoires." });
     }
 
     // Check if the phone number already exists in the users table
-    const {data: existingUser, error: existingUserError} = await supabase
-      .from("users")
-      .select("phone_number")
-      .eq("phone_number", phoneNumber)
-      .single();
+    const { data: users, error: existingUserError } = await query(
+      "SELECT phone_number, is_verified FROM users WHERE phone_number = $1 LIMIT 1",
+      [phoneNumber]
+    );
 
-    if (existingUser) {
-      return res.status(400).json({error: "Ce numéro est déjà utilisé."});
+    if (existingUserError) {
+      console.error("[signup] DB check user error:", existingUserError);
+      return res.status(500).json({ error: "Erreur interne du serveur." });
     }
 
-    if (existingUserError && existingUserError.code !== "PGRST116") {
-      return res.status(500).json({error: "Erreur interne du serveur."});
+    if (users && users.length > 0) {
+      const existingUser = users[0];
+      if (existingUser.is_verified) {
+        return res.status(400).json({ error: "Ce numéro est déjà utilisé." });
+      } else {
+        // Delete the unverified user to start fresh
+        console.log("[signup] Deleting existing unverified user:", phoneNumber);
+        await query("DELETE FROM users WHERE phone_number = $1 AND is_verified = false", [phoneNumber]);
+      }
     }
 
     // If the role is "deliverer", skip OTP and save directly to the database
@@ -45,39 +52,33 @@ router.post("/signup", async (req, res) => {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Save user to the database
-      const {data: userData, error} = await supabase
-        .from("users")
-        .insert({
-          phone_number: phoneNumber,
-          name,
-          password: hashedPassword,
-          role: "deliverer",
-          is_verified: true, // Deliverers are verified by admin
-        })
-        .select() // Ensures the inserted data is returned
-        .single(); // Return a single row
+      const { data: userRows, error: userError } = await query(
+        `INSERT INTO users (phone_number, name, password, role, is_verified)
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [phoneNumber, name, hashedPassword, "deliverer", true]
+      );
+      const userData = userRows && userRows.length > 0 ? userRows[0] : null;
 
-      if (error) {
-        return res.status(500).json({error: "Erreur interne du serveur."});
+      if (userError || !userData) {
+        console.error("[signup] DB Insert deliverer user error:", userError);
+        return res.status(500).json({ error: "Erreur interne du serveur." });
       }
 
       // Insert deliverer-specific information into the `deliverers` table
-      const {error: delivererError} = await supabase.from("deliverers").insert({
-        user_id: userData.id,
-        vehicle_id: null, // Default fields for deliverers
-        is_available: true,
-        current_location: null,
-        zone: null,
-      });
+      const { error: delivererError } = await query(
+        `INSERT INTO deliverers (user_id, vehicle_id, is_available, current_location, zone)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [userData.id, null, true, null, null]
+      );
 
       if (delivererError) {
         console.error(
           "Erreur lors de l'enregistrement des informations du livreur:",
-          delivererError,
+          delivererError
         );
         return res
           .status(500)
-          .json({error: "Erreur interne du serveur." + error, user: data});
+          .json({ error: "Erreur interne du serveur.", user: userData });
       }
 
       return res.status(201).json({
@@ -93,19 +94,47 @@ router.post("/signup", async (req, res) => {
     // Hash password before storing
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Delete any previous OTPs for this number to avoid conflicts
-    await supabase.from("otps").delete().eq("phone_number", phoneNumber);
+    // Save unverified user to users table
+    console.log("[signup] Inserting unverified user into PostgreSQL:", { phoneNumber, name });
+    const { data: userRows, error: userError } = await query(
+      `INSERT INTO users (phone_number, name, password, role, is_verified, profile_picture)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [
+        phoneNumber,
+        name,
+        hashedPassword,
+        "customer",
+        false, // Not verified yet
+        profilePicture ?? null
+      ]
+    );
 
-    // Store OTP + user details in DB (no in-memory store — survives server restarts)
-    await supabase.from("otps").insert({
-      phone_number: phoneNumber,
-      otp,
-      expires_at: expiresAt,
-      user_name: name,
-      user_password: hashedPassword,
-      user_role: "customer",
-      profile_picture: profilePicture ?? null,
-    });
+    if (userError || !userRows || userRows.length === 0) {
+      console.error("[signup] DB Insert user error:", userError);
+      return res.status(500).json({ error: "Erreur lors de la création de l'utilisateur." });
+    }
+
+    // Delete any previous OTPs for this number to avoid conflicts
+    await query("DELETE FROM otps WHERE phone_number = $1", [phoneNumber]);
+
+    // Store OTP in DB (no more user details in otps table)
+    console.log("[signup] Inserting OTP into PostgreSQL:", { phoneNumber, otp });
+    const { error: insertError } = await query(
+      `INSERT INTO otps (id, phone_number, otp, expires_at)
+       VALUES (gen_random_uuid(), $1, $2, $3)`,
+      [
+        phoneNumber,
+        otp,
+        expiresAt
+      ]
+    );
+
+    if (insertError) {
+      console.error("[signup] DB Insert OTP error:", insertError);
+      // Clean up the created user if OTP creation fails
+      await query("DELETE FROM users WHERE phone_number = $1 AND is_verified = false", [phoneNumber]);
+      return res.status(500).json({ error: "Erreur lors de la création de l'OTP." });
+    }
 
     // Return OTP for testing (remove in production)
     res.status(200).json({
@@ -113,13 +142,14 @@ router.post("/signup", async (req, res) => {
       otp, // For testing purposes only; remove in production
     });
   } catch (error) {
-    res.status(500).json({error: "Erreur interne du serveur."});
+    console.error("[signup] Unexpected error:", error);
+    res.status(500).json({ error: "Erreur interne du serveur." });
   }
 });
 
 router.post("/login", async (req, res) => {
   try {
-    const {phoneNumber, password} = req.body;
+    const { phoneNumber, password } = req.body;
 
     if (!phoneNumber || !password) {
       return res.status(400).json({
@@ -127,15 +157,15 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const {user} = await signIn(phoneNumber, password);
-    const token = jwt.sign({id: user.id}, process.env.JWT_SECRET, {
+    const { user } = await signIn(phoneNumber, password);
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
       expiresIn: "60d",
     });
 
     let delivererInfo = null;
 
     if (user.role === "deliverer") {
-      const {data: delivererData, error: delivererError} = await supabase
+      const { data: delivererData, error: delivererError } = await supabase
         .from("deliverers")
         .select("*")
         .eq("user_id", user.id)
@@ -169,49 +199,93 @@ router.post("/login", async (req, res) => {
       token: token,
     });
   } catch (error) {
-    res.status(400).json({error: "Échec de la connexion."});
+    res.status(400).json({ error: error.message || "Échec de la connexion." });
   }
 });
 
 router.post("/resend-otp", async (req, res) => {
   try {
-    const {phoneNumber, name, password, role, profilePicture} = req.body;
+    const { phoneNumber, name, password, role, profilePicture } = req.body;
 
     if (!phoneNumber || !name || !password || !role) {
       return res
         .status(400)
-        .json({error: "Tous les champs sont obligatoires."});
+        .json({ error: "Tous les champs sont obligatoires." });
     }
 
-    const {data: existingUser, error: existingUserError} = await supabase
-      .from("users")
-      .select("phone_number")
-      .eq("phone_number", phoneNumber)
-      .single();
+    const { data: users, error: existingUserError } = await query(
+      "SELECT phone_number, is_verified FROM users WHERE phone_number = $1 LIMIT 1",
+      [phoneNumber]
+    );
 
-    if (existingUser) {
-      return res.status(400).json({error: "Ce numéro est déjà utilisé."});
+    if (existingUserError) {
+      console.error("[resend-otp] DB check user error:", existingUserError);
+      return res.status(500).json({ error: "Erreur interne du serveur." });
     }
 
-    if (existingUserError && existingUserError.code !== "PGRST116") {
-      return res.status(500).json({error: "Erreur interne du serveur."});
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    if (users && users.length > 0) {
+      const existingUser = users[0];
+      if (existingUser.is_verified) {
+        return res.status(400).json({ error: "Ce numéro est déjà utilisé." });
+      }
+      
+      // Update unverified user details
+      console.log("[resend-otp] Updating existing unverified user details:", phoneNumber);
+      const { error: updateError } = await query(
+        `UPDATE users 
+         SET name = $1, password = $2, role = $3, profile_picture = $4 
+         WHERE phone_number = $5 AND is_verified = false`,
+        [name, hashedPassword, role || "customer", profilePicture ?? null, phoneNumber]
+      );
+      
+      if (updateError) {
+        console.error("[resend-otp] DB Update user error:", updateError);
+        return res.status(500).json({ error: "Erreur lors du renvoi de l'OTP." });
+      }
+    } else {
+      // Re-create user if missing
+      console.log("[resend-otp] Re-inserting unverified user:", { phoneNumber, name });
+      const { error: userError } = await query(
+        `INSERT INTO users (phone_number, name, password, role, is_verified, profile_picture)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          phoneNumber,
+          name,
+          hashedPassword,
+          role || "customer",
+          false,
+          profilePicture ?? null
+        ]
+      );
+      
+      if (userError) {
+        console.error("[resend-otp] DB Insert user error:", userError);
+        return res.status(500).json({ error: "Erreur lors du renvoi de l'OTP." });
+      }
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000);
     const expiresAt = addMinutes(new Date(), 10);
-    const hashedPassword = await bcrypt.hash(password, 10);
 
-    await supabase.from("otps").delete().eq("phone_number", phoneNumber);
+    await query("DELETE FROM otps WHERE phone_number = $1", [phoneNumber]);
 
-    await supabase.from("otps").insert({
-      phone_number: phoneNumber,
-      otp,
-      expires_at: expiresAt,
-      user_name: name,
-      user_password: hashedPassword,
-      user_role: role || "customer",
-      profile_picture: profilePicture ?? null,
-    });
+    console.log("[resend-otp] Inserting OTP into PostgreSQL:", { phoneNumber, otp });
+    const { error: insertError } = await query(
+      `INSERT INTO otps (id, phone_number, otp, expires_at)
+       VALUES (gen_random_uuid(), $1, $2, $3)`,
+      [
+        phoneNumber,
+        otp,
+        expiresAt
+      ]
+    );
+
+    if (insertError) {
+      console.error("[resend-otp] DB Insert OTP error:", insertError);
+      return res.status(500).json({ error: "Erreur lors de la création de l'OTP." });
+    }
 
     res.status(200).json({
       message: "OTP renvoyé avec succès.",
@@ -219,7 +293,7 @@ router.post("/resend-otp", async (req, res) => {
     });
   } catch (error) {
     console.error("Erreur lors du renvoi de l'OTP:", error);
-    res.status(500).json({error: "Erreur interne du serveur."});
+    res.status(500).json({ error: "Erreur interne du serveur." });
   }
 });
 
@@ -228,84 +302,94 @@ router.post("/resend-otp", async (req, res) => {
  */
 router.post("/verify-otp", async (req, res) => {
   try {
-    const {phoneNumber, otp} = req.body;
+    const { phoneNumber, otp } = req.body;
 
     if (!phoneNumber || !otp) {
       return res
         .status(400)
-        .json({error: "Le numéro de téléphone et l'OTP sont requis."});
+        .json({ error: "Le numéro de téléphone et l'OTP sont requis." });
     }
 
     const otpNumber = Number(otp);
     if (isNaN(otpNumber) || otpNumber === 0) {
-      return res.status(400).json({error: "Code OTP invalide."});
+      return res.status(400).json({ error: "Code OTP invalide." });
     }
 
     // Retrieve OTP record from DB (no more in-memory store)
-    const {data: otpRecord, error: otpError} = await supabase
-      .from("otps")
-      .select("*")
-      .eq("phone_number", phoneNumber)
-      .eq("otp", otpNumber)
-      .order("created_at", {ascending: false})
-      .limit(1)
-      .single();
+    console.log("[verify-otp] Querying OTP from PostgreSQL:", { phoneNumber, otpNumber });
+    const { data: otpRows, error: otpError } = await query(
+      "SELECT * FROM otps WHERE phone_number = $1 AND otp = $2 ORDER BY created_at DESC LIMIT 1",
+      [phoneNumber, otpNumber]
+    );
 
-    if (otpError || !otpRecord) {
-      return res.status(400).json({error: "Code OTP invalide ou introuvable."});
+    if (otpError) {
+      console.error("[verify-otp] DB Select Error:", otpError);
+      return res.status(500).json({ error: "Erreur lors de la vérification de l'OTP." });
+    }
+
+    const otpRecord = otpRows && otpRows.length > 0 ? otpRows[0] : null;
+
+    if (!otpRecord) {
+      console.log("[verify-otp] OTP not found for:", { phoneNumber, otpNumber });
+      return res.status(400).json({ error: "Code OTP invalide ou introuvable." });
     }
 
     // Check expiration
-    if (new Date() > new Date(otpRecord.expires_at)) {
+    const now = new Date();
+    const expiresAt = new Date(otpRecord.expires_at);
+    if (now > expiresAt) {
+      console.log("[verify-otp] OTP expired:", { now, expiresAt });
       return res
         .status(400)
-        .json({error: "L'OTP a expiré. Veuillez en demander un nouveau."});
+        .json({ error: "L'OTP a expiré. Veuillez en demander un nouveau." });
     }
 
-    // Save user to database (password already hashed during signup)
-    const {data, error} = await supabase.from("users").insert({
-      phone_number: phoneNumber,
-      name: otpRecord.user_name,
-      password: otpRecord.user_password,
-      role: otpRecord.user_role ?? "customer",
-      is_verified: true,
-      profile_picture: otpRecord.profile_picture ?? null,
-    });
+    // Verify user (set is_verified = true)
+    console.log("[verify-otp] Activating user in PostgreSQL:", { phoneNumber });
+    const { data: userRows, error: userError } = await query(
+      `UPDATE users 
+       SET is_verified = true 
+       WHERE phone_number = $1 
+       RETURNING *`,
+      [phoneNumber]
+    );
 
-    if (error) {
-      return res.status(500).json({error: "Erreur interne du serveur."});
+    if (userError || !userRows || userRows.length === 0) {
+      console.error("[verify-otp] DB Update User Error:", userError);
+      return res.status(500).json({ error: "Erreur interne du serveur." });
     }
 
     // Clean up used OTP from DB
-    await supabase.from("otps").delete().eq("id", otpRecord.id);
+    await query("DELETE FROM otps WHERE id = $1", [otpRecord.id]);
 
     res.status(200).json({
       message: "OTP vérifié et inscription réussie.",
-      user: data,
+      user: userRows[0],
     });
   } catch (error) {
-    res.status(500).json({error: "Erreur interne du serveur."});
+    console.error("[verify-otp] Unexpected error:", error);
+    res.status(500).json({ error: "Erreur interne du serveur." });
   }
 });
 
 router.post("/forgot-password", async (req, res) => {
   try {
-    const {phoneNumber} = req.body;
+    const { phoneNumber } = req.body;
 
     if (!phoneNumber) {
       return res
         .status(400)
-        .json({error: "Le numéro de téléphone est requis."});
+        .json({ error: "Le numéro de téléphone est requis." });
     }
 
     // 1. Check if user exists
-    const {data: users, error: userError} = await query(
+    const { data: users, error: userError } = await query(
       "SELECT id, name FROM users WHERE phone_number = $1 LIMIT 1",
       [phoneNumber],
     );
 
     if (userError || !users || users.length === 0) {
-      return res.status(404).json({error: "Utilisateur introuvable."});
+      return res.status(404).json({ error: "Utilisateur introuvable." });
     }
     const user = users[0];
 
@@ -316,8 +400,8 @@ router.post("/forgot-password", async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000);
 
     // 4. Store OTP — use DB's NOW() so expires_at and the comparison clock are identical
-    console.log("[forgot-password] Inserting OTP:", {phoneNumber, otp});
-    const {error: insertError} = await query(
+    console.log("[forgot-password] Inserting OTP:", { phoneNumber, otp });
+    const { error: insertError } = await query(
       "INSERT INTO otps (id, phone_number, otp, expires_at) VALUES (gen_random_uuid(), $1, $2, NOW() + INTERVAL '10 minutes')",
       [phoneNumber, otp],
     );
@@ -326,7 +410,7 @@ router.post("/forgot-password", async (req, res) => {
       console.error("[forgot-password] Insert OTP error:", insertError);
       return res
         .status(500)
-        .json({error: "Erreur lors de la création de l'OTP."});
+        .json({ error: "Erreur lors de la création de l'OTP." });
     }
 
     const bodyMessage = `Votre code OTP est : ${otp}`;
@@ -353,37 +437,37 @@ router.post("/forgot-password", async (req, res) => {
     });
   } catch (error) {
     console.error("[forgot-password] Unexpected error:", error);
-    return res.status(500).json({error: "Erreur interne du serveur."});
+    return res.status(500).json({ error: "Erreur interne du serveur." });
   }
 });
 
 router.post("/reset-password", async (req, res) => {
   try {
-    const {phoneNumber, otp, newPassword} = req.body;
+    const { phoneNumber, otp, newPassword } = req.body;
 
     if (!phoneNumber || !otp || !newPassword) {
-      return res.status(400).json({error: "Tous les champs sont requis."});
+      return res.status(400).json({ error: "Tous les champs sont requis." });
     }
 
     const otpNumber = Number(otp);
     if (isNaN(otpNumber) || otpNumber === 0) {
-      return res.status(400).json({error: "Code OTP invalide."});
+      return res.status(400).json({ error: "Code OTP invalide." });
     }
 
     // Find valid non-expired OTP — uses DB's NOW() so timezone is always consistent
-    console.log("[reset-password] Searching OTP:", {phoneNumber, otpNumber});
-    const {data: otpRows, error: otpError} = await query(
+    console.log("[reset-password] Searching OTP:", { phoneNumber, otpNumber });
+    const { data: otpRows, error: otpError } = await query(
       "SELECT * FROM otps WHERE phone_number = $1 AND otp = $2 AND expires_at > NOW() LIMIT 1",
       [phoneNumber, otpNumber],
     );
 
-    console.log("[reset-password] OTP query result:", {otpRows, otpError});
+    console.log("[reset-password] OTP query result:", { otpRows, otpError });
 
     if (otpError) {
       console.error("[reset-password] DB error:", otpError);
       return res
         .status(500)
-        .json({error: "Erreur lors de la vérification de l'OTP."});
+        .json({ error: "Erreur lors de la vérification de l'OTP." });
     }
 
     if (!otpRows || otpRows.length === 0) {
@@ -398,7 +482,7 @@ router.post("/reset-password", async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     // Update user password
-    const {error: updateError} = await query(
+    const { error: updateError } = await query(
       "UPDATE users SET password = $1 WHERE phone_number = $2",
       [hashedPassword, phoneNumber],
     );
@@ -407,7 +491,7 @@ router.post("/reset-password", async (req, res) => {
       console.error("[reset-password] Update error:", updateError);
       return res
         .status(500)
-        .json({error: "Erreur lors de la mise à jour du mot de passe."});
+        .json({ error: "Erreur lors de la mise à jour du mot de passe." });
     }
 
     // Delete used OTP
@@ -415,10 +499,10 @@ router.post("/reset-password", async (req, res) => {
 
     return res
       .status(200)
-      .json({message: "Mot de passe réinitialisé avec succès."});
+      .json({ message: "Mot de passe réinitialisé avec succès." });
   } catch (error) {
     console.error("[reset-password] Unexpected error:", error);
-    return res.status(500).json({error: "Erreur interne du serveur."});
+    return res.status(500).json({ error: "Erreur interne du serveur." });
   }
 });
 

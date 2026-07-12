@@ -65,6 +65,11 @@ const signIn = async (phoneNumber, password) => {
     throw new Error("Numéro de téléphone ou mot de passe invalide.");
   }
 
+  // Check if user is verified
+  if (!user.is_verified) {
+    throw new Error("Ce compte n'est pas vérifié. Veuillez valider votre numéro de téléphone.");
+  }
+
   // If valid, return the user data (you can also generate a token here)
   return {user};
 };
