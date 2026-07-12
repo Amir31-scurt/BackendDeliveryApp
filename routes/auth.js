@@ -97,8 +97,8 @@ router.post("/signup", async (req, res) => {
     // Save unverified user to users table
     console.log("[signup] Inserting unverified user into PostgreSQL:", { phoneNumber, name });
     const { data: userRows, error: userError } = await query(
-      `INSERT INTO users (phone_number, name, password, role, is_verified, profile_picture)
-       VALUES ($1, $2, $3, $4::role, $5, $6) RETURNING *`,
+      `INSERT INTO users (id, phone_number, name, password, role, is_verified, profile_picture)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4::role, $5, $6) RETURNING *`,
       [
         phoneNumber,
         name,
@@ -243,7 +243,7 @@ router.post("/resend-otp", async (req, res) => {
            WHERE phone_number = $5 AND is_verified = false`,
           [name, hashedPassword, role || "customer", profilePicture ?? null, phoneNumber]
         );
-        
+
         if (updateError) {
           console.error("[resend-otp] DB Update user error:", updateError);
           return res.status(500).json({ error: "Erreur lors du renvoi de l'OTP." });
@@ -251,11 +251,11 @@ router.post("/resend-otp", async (req, res) => {
       } else {
         console.log("[resend-otp] Re-inserting unverified user:", { phoneNumber, name });
         const { error: userError } = await query(
-          `INSERT INTO users (phone_number, name, password, role, is_verified, profile_picture)
-           VALUES ($1, $2, $3, $4::role, $5, $6)`,
+          `INSERT INTO users (id, phone_number, name, password, role, is_verified, profile_picture)
+           VALUES (gen_random_uuid(), $1, $2, $3, $4::role, $5, $6)`,
           [phoneNumber, name, hashedPassword, role || "customer", false, profilePicture ?? null]
         );
-        
+
         if (userError) {
           console.error("[resend-otp] DB Insert user error:", userError);
           return res.status(500).json({ error: "Erreur lors du renvoi de l'OTP." });
