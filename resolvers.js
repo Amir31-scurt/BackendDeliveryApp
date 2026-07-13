@@ -1331,6 +1331,26 @@ const resolvers = {
     },
     createOrder: async (_, {input}, {supabase}) => {
       try {
+        // Validate delivery address is within Dakar
+        const { latitude, longitude } = input.deliveryAddress;
+        const DAKAR_BOUNDS = {
+          minLat: 14.55,
+          maxLat: 14.85,
+          minLon: -17.60,
+          maxLon: -17.15,
+        };
+
+        if (
+          latitude == null ||
+          longitude == null ||
+          latitude < DAKAR_BOUNDS.minLat ||
+          latitude > DAKAR_BOUNDS.maxLat ||
+          longitude < DAKAR_BOUNDS.minLon ||
+          longitude > DAKAR_BOUNDS.maxLon
+        ) {
+          throw new Error("L'adresse de livraison doit obligatoirement se trouver à Dakar.");
+        }
+
         const {data: menuItems, error: fetchError} = await supabase
           .from("menu_items")
           .select("id, price")
