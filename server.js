@@ -184,13 +184,10 @@ app.use((req, res, next) => {
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// Apply CSRF protection — only on state-mutating methods (POST/PUT/DELETE/PATCH)
-// GET/HEAD/OPTIONS are safe and must NOT require a CSRF token
+// Apply CSRF protection to web/admin routes
+// csurf verifies token on state-mutating methods and generates token on GET
 app.use((req, res, next) => {
   const path = req.path;
-
-  // Safe HTTP methods never need CSRF
-  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
 
   const isGraphQL    = path.includes("/graphql");
   const isMobileApi  = path.includes("/auth") && !path.includes("/admin");
@@ -203,14 +200,16 @@ app.use((req, res, next) => {
     return next();
   }
 
-  // Admin panel POST/PUT/DELETE → enforce CSRF
+  // Web & Admin routes: enforce CSRF for mutations, initialize token for views
   csrfProtection(req, res, next);
 });
 
 // Make CSRF token available to all views
 app.use((req, res, next) => {
-  if (req.csrfToken) {
+  if (typeof req.csrfToken === "function") {
     res.locals.csrfToken = req.csrfToken();
+  } else {
+    res.locals.csrfToken = "";
   }
   next();
 });

@@ -13,7 +13,15 @@ const {body, validationResult} = require("express-validator");
 const {exportToExcel, exportToPdf} = require("../utils/exportUtils.js");
 const csrf = require("csurf");
 
-const csrfProtection = csrf({ cookie: { key: "_csrf", httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict" } });
+const csrfProtection = csrf({
+  cookie: {
+    key: "_csrf",
+    path: "/",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  },
+});
 
 const router = express.Router();
 const upload = multer({storage: multer.memoryStorage()});
@@ -130,22 +138,25 @@ router.post("/login/restaurant", async (req, res) => {
     // --- CSRF token check ---
     const csrfToken = req.body._csrf || req.headers["x-csrf-token"];
 
-    if (!email) {
-      return res.status(400).json({error: "Email is required"});
+    const cleanEmail = (email || "").trim();
+
+    if (!cleanEmail) {
+      return res.status(400).json({error: "L'adresse email est requise"});
     }
 
     const {data: restaurant, error} = await supabase
       .from("restaurants")
       .select("*")
-      .eq("email", email)
+      .ilike("email", cleanEmail)
       .single();
 
     if (error) {
-      return res.status(500).json({error: "Error finding restaurant"});
+      console.error("Error finding restaurant:", error);
+      return res.status(500).json({error: "Erreur lors de la recherche du restaurant"});
     }
 
     if (!restaurant) {
-      return res.status(404).json({error: "Restaurant not found"});
+      return res.status(404).json({error: "Restaurant introuvable avec cet email"});
     }
 
     // --- JWT token creation ---
@@ -187,7 +198,7 @@ router.post("/login/restaurant", async (req, res) => {
 });
 
 // Restaurant dashboard route - moved before the catch-all route
-router.get("/restaurant/:id/dashboard", async (req, res) => {
+router.get("/restaurant/:id/dashboard", csrfProtection, async (req, res) => {
   try {
     // Prevent caching
     res.setHeader(
@@ -339,18 +350,20 @@ router.get("/restaurant/:id/dashboard", async (req, res) => {
         totalRevenue,
         todayRevenue,
         monthlyRevenue: monthlyRevenue || [],
-        csrfToken: req.csrfToken(),
+        csrfToken: typeof req.csrfToken === "function" ? req.csrfToken() : (res.locals.csrfToken || ""),
       });
     } catch (err) {
+      console.error("Restaurant dashboard authentication/processing error:", err);
       return res.redirect("/admin/login/restaurant");
     }
   } catch (error) {
+    console.error("Restaurant dashboard general error:", error);
     res.status(500).send("Internal server error");
   }
 });
 
 // Restaurant menu route
-router.get("/restaurant/:id/menu", async (req, res) => {
+router.get("/restaurant/:id/menu", csrfProtection, async (req, res) => {
   try {
     // Prevent caching
     res.setHeader(
@@ -403,12 +416,14 @@ router.get("/restaurant/:id/menu", async (req, res) => {
       res.render("restaurant/menu", {
         restaurant,
         menuItems: menuItems || [],
-        csrfToken: req.csrfToken(),
+        csrfToken: typeof req.csrfToken === "function" ? req.csrfToken() : (res.locals.csrfToken || ""),
       });
     } catch (err) {
+      console.error("Restaurant menu auth/processing error:", err);
       return res.redirect("/admin/login/restaurant");
     }
   } catch (error) {
+    console.error("Restaurant menu general error:", error);
     res.status(500).send("Internal server error");
   }
 });
