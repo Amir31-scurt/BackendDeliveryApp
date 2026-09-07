@@ -11,14 +11,18 @@ const {graphqlRequest} = require("../utils/graphqlClient.js");
 const {authMiddleware, requireRole} = require("../middleware/auth.js");
 const {body, validationResult} = require("express-validator");
 const {exportToExcel, exportToPdf} = require("../utils/exportUtils.js");
+const csrf = require("csurf");
+
+const csrfProtection = csrf({ cookie: { key: "_csrf", httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict" } });
 
 const router = express.Router();
 const upload = multer({storage: multer.memoryStorage()});
 const ROOT_DIR = path.resolve();
 
 // Public routes (no auth required)
-router.get("/login", (req, res) => {
-  res.render("admin/adminLogin", {layout: false});
+// csrfProtection applied on GET so that req.csrfToken() exists for the template
+router.get("/login", csrfProtection, (req, res) => {
+  res.render("admin/adminLogin", { layout: false, csrfToken: req.csrfToken() });
 });
 
 // Admin login POST route
@@ -112,7 +116,7 @@ router.post(
 );
 
 // Restaurant login routes (should be public)
-router.get("/login/restaurant", (req, res) => {
+router.get("/login/restaurant", csrfProtection, (req, res) => {
   res.render("admin/restaurantLogin", {
     csrfToken: req.csrfToken(),
     layout: false,

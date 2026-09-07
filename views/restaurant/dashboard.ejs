@@ -301,6 +301,32 @@
             color: #991b1b;
         }
 
+        .payment-badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            white-space: nowrap;
+        }
+
+        .payment-paid {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .payment-cash {
+            background-color: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .payment-unpaid {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
         .action-dropdown {
             position: relative;
             display: inline-block;
@@ -749,6 +775,7 @@
                             <th>Adresse</th>
                             <th>Revenu</th>
                             <th>Livraison</th>
+                            <th>Paiement</th>
                             <th>Note</th>
                             <th>Statut</th>
                             <th>Actions</th>
@@ -779,6 +806,21 @@
                                     </td>
                                     <td>
                                         <%= order.delivery_fee_final.toLocaleString() %> F
+                                    </td>
+                                    <td>
+                                        <% if (order.is_paid) { %>
+                                            <span class="payment-badge payment-paid">
+                                                <i class="fas fa-check-circle"></i> Payé <%= order.payment_method ? '(' + order.payment_method + ')' : '' %>
+                                            </span>
+                                        <% } else if (order.payment_method === 'CASH') { %>
+                                            <span class="payment-badge payment-cash">
+                                                <i class="fas fa-money-bill-wave"></i> Espèces
+                                            </span>
+                                        <% } else { %>
+                                            <span class="payment-badge payment-unpaid">
+                                                <i class="fas fa-clock"></i> Non payé <%= order.payment_method ? '(' + order.payment_method + ')' : '' %>
+                                            </span>
+                                        <% } %>
                                     </td>
                                     <td>
                                         <div class="note-container">
@@ -819,7 +861,7 @@
                                 <% }); %>
                                     <% } else { %>
                                         <tr>
-                                            <td colspan="9" style="text-align: center; padding: 2rem;">
+                                            <td colspan="11" style="text-align: center; padding: 2rem;">
                                                 Aucune commande trouvée
                                             </td>
                                         </tr>
@@ -909,9 +951,16 @@
                 itemsHTML = "<p>Aucun article trouvé.</p>";
             }
 
+            const paymentHtml = order.is_paid
+                ? `<span class="payment-badge payment-paid"><i class="fas fa-check-circle"></i> Payé ${order.payment_method ? '(' + order.payment_method + ')' : ''}</span>`
+                : order.payment_method === 'CASH'
+                    ? `<span class="payment-badge payment-cash"><i class="fas fa-money-bill-wave"></i> Espèces</span>`
+                    : `<span class="payment-badge payment-unpaid"><i class="fas fa-clock"></i> Non payé ${order.payment_method ? '(' + order.payment_method + ')' : ''}</span>`;
+
             content.innerHTML = `
                 <p><strong>Client:</strong> ${order.user?.name || 'N/A'}</p>
                 <p><strong>Adresse:</strong> ${order.delivery_address?.address || 'N/A'}</p>
+                <p><strong>Paiement:</strong> ${paymentHtml}</p>
                 <p><strong>Total Produits:</strong> ${order.items_total.toLocaleString()} Fcfa</p>
                 <p><strong>Frais de Livraison:</strong> ${order.delivery_fee_final.toLocaleString()} Fcfa</p>
                 <hr style="margin:1em 0;">
@@ -1064,7 +1113,7 @@
                 if (filteredOrders.length === 0) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="9" style="text-align: center; padding: 2rem;">
+                            <td colspan="11" style="text-align: center; padding: 2rem;">
                                 Aucune commande trouvée
                             </td>
                         </tr>
@@ -1077,6 +1126,13 @@
                     row.classList.add("order-row");
                     row.setAttribute('data-order-id', order.id);
                     row.setAttribute('data-order', JSON.stringify(order));
+
+                    const paymentBadgeHtml = order.is_paid
+                        ? `<span class="payment-badge payment-paid"><i class="fas fa-check-circle"></i> Payé ${order.payment_method ? '(' + order.payment_method + ')' : ''}</span>`
+                        : order.payment_method === 'CASH'
+                            ? `<span class="payment-badge payment-cash"><i class="fas fa-money-bill-wave"></i> Espèces</span>`
+                            : `<span class="payment-badge payment-unpaid"><i class="fas fa-clock"></i> Non payé ${order.payment_method ? '(' + order.payment_method + ')' : ''}</span>`;
+
                     row.innerHTML = `
                         <td>${startIndex + index + 1}</td>
                         <td>${new Date(order.created_at).toLocaleString()}</td>
@@ -1085,6 +1141,7 @@
                         <td>${order.delivery_address?.address || 'N/A'}</td>
                         <td>${order.items_total.toLocaleString()} F</td>
                         <td>${order.delivery_fee_final.toLocaleString()} F</td>
+                        <td>${paymentBadgeHtml}</td>
                         <td>
                             <div class="note-container">
                                 <span class="note-text">${order.rating || 0}/5</span>

@@ -54,3 +54,24 @@
 [2026-09-07T17:40:27.916Z] Passenger PORT env: undefined
 [2026-09-07T17:40:27.916Z] Requiring server.js...
 [2026-09-07T17:40:29.015Z] server.js required successfully.
+[2026-09-07T18:51:35.951Z] =================== PASSENGER INITIATING APPLICATION ===================
+[2026-09-07T18:51:35.952Z] Process ID (PID): 21180
+[2026-09-07T18:51:35.952Z] Node.js Version: v26.3.0
+[2026-09-07T18:51:35.952Z] Directory (__dirname): C:\Users\pc\Desktop\Gourmet\BackendDeliveryApp
+[2026-09-07T18:51:35.952Z] Passenger PORT env: undefined
+[2026-09-07T18:51:35.953Z] Requiring server.js...
+[2026-09-07T18:51:37.849Z] server.js required successfully.
+[2026-09-07T19:30:39.575Z] =================== PASSENGER INITIATING APPLICATION ===================
+[2026-09-07T19:30:39.576Z] Process ID (PID): 24484
+[2026-09-07T19:30:39.576Z] Node.js Version: v26.3.0
+[2026-09-07T19:30:39.577Z] Directory (__dirname): C:\Users\pc\Desktop\Gourmet\BackendDeliveryApp
+[2026-09-07T19:30:39.578Z] Passenger PORT env: undefined
+[2026-09-07T19:30:39.578Z] Requiring server.js...
+[2026-09-07T19:30:40.694Z] server.js required successfully.
+[2026-09-07T19:31:22.336Z] =================== PASSENGER INITIATING APPLICATION ===================
+[2026-09-07T19:31:22.337Z] Process ID (PID): 9020
+[2026-09-07T19:31:22.338Z] Node.js Version: v26.3.0
+[2026-09-07T19:31:22.338Z] Directory (__dirname): C:\Users\pc\Desktop\Gourmet\BackendDeliveryApp
+[2026-09-07T19:31:22.338Z] Passenger PORT env: undefined
+[2026-09-07T19:31:22.339Z] Requiring server.js...
+[2026-09-07T19:31:23.680Z] server.js required successfully.
