@@ -47,3 +47,10 @@
 [2026-05-31T22:05:48.877Z] Passenger PORT env: undefined
 [2026-05-31T22:05:48.878Z] Requiring server.js...
 [2026-05-31T22:05:52.826Z] server.js required successfully.
+[2026-09-07T17:40:27.913Z] =================== PASSENGER INITIATING APPLICATION ===================
+[2026-09-07T17:40:27.915Z] Process ID (PID): 7672
+[2026-09-07T17:40:27.915Z] Node.js Version: v26.3.0
+[2026-09-07T17:40:27.915Z] Directory (__dirname): C:\Users\pc\Desktop\Gourmet\BackendDeliveryApp
+[2026-09-07T17:40:27.916Z] Passenger PORT env: undefined
+[2026-09-07T17:40:27.916Z] Requiring server.js...
+[2026-09-07T17:40:29.015Z] server.js required successfully.

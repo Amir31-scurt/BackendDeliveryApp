@@ -61,12 +61,10 @@ router.get("/payment/wave/success", async (req, res) => {
       // Don't fail - payout can be retried later
     }
 
-    // 3. Redirect user back to app
-    res.redirect(`gourmetdamour://customer/UserOrdersScreen`);
-
-    return res.send("Payement effectué. Vous pouvez fermer cette page.");
+    // 3. Render beautiful success page (page handles deep-link redirect)
+    return res.render('payment-success', { orderId: updatedOrder.id });
   } catch (err) {
-    return res.status(500).send("Internal server error");
+    return res.status(500).render('payment-error', { orderId: orderId || null });
   }
 });
 
@@ -75,19 +73,16 @@ router.get("/payment/wave/success", async (req, res) => {
 router.get("/payment/wave/error", async (req, res) => {
   const {orderId} = req.query;
 
-  // Tu peux logger, annuler la commande, etc.
+  // Mark order as unpaid / cancelled
   if (orderId && typeof orderId === "string") {
     await supabase
       .from("orders")
-      .update({
-        is_paid: false,
-      })
+      .update({ is_paid: false })
       .eq("id", orderId);
   }
 
-  // Redirection vers l’app ou message simple
-  // res.redirect(`gourmetdamour://payment-error?orderId=${orderId}`);
-  return res.send("Payment failed or cancelled. You can close this page.");
+  // Render beautiful error page (page handles deep-link redirect)
+  return res.render('payment-error', { orderId: orderId || null });
 });
 
 module.exports = router;

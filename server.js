@@ -141,16 +141,26 @@ app.use(express.urlencoded({extended: true}));
 
 const PostgresStore = pgSession(session);
 
-// Session configuration using PostgreSQL to prevent memory leaks in production
+// Build session store — fall back to MemoryStore if PostgreSQL isn't reachable locally
+let sessionStore;
+try {
+  sessionStore = new PostgresStore({
+    pool: pool,
+    tableName: "session",
+    errorLog: () => {}, // pool.on('error') already logs db errors
+  });
+} catch (e) {
+  console.warn("[session] PostgresStore unavailable, using MemoryStore:", e.message);
+  sessionStore = undefined;
+}
+
+// Session configuration
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "secret_key",
     resave: false,
     saveUninitialized: false,
-    store: new PostgresStore({
-      pool: pool, // Connection pool
-      tableName: "session", // Use another name if you wish
-    }),
+    ...(sessionStore ? { store: sessionStore } : {}),
     cookie: {
       secure: process.env.NODE_ENV === "production",
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
@@ -174,28 +184,26 @@ app.use((req, res, next) => {
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
-// Apply CSRF protection to all routes except GraphQL, and mobile API routes
+// Apply CSRF protection — only on state-mutating methods (POST/PUT/DELETE/PATCH)
+// GET/HEAD/OPTIONS are safe and must NOT require a CSRF token
 app.use((req, res, next) => {
   const path = req.path;
-  const isGraphQL = path.includes("/graphql");
-  const isMobileApi = path.includes("/auth") && !path.includes("/admin"); // Auth is for mobile, Admin has its own auth
-  const isStorage = path.startsWith("/storage/") || path.includes("/uploads/");
-  const isHealth = path.includes("/health");
-  const isWave = path.includes("/wave");
-  const isPushToken = path.includes("/push-token");
 
-  if (
-    isGraphQL ||
-    isMobileApi ||
-    isStorage ||
-    isHealth ||
-    isWave ||
-    isPushToken
-  ) {
+  // Safe HTTP methods never need CSRF
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+
+  const isGraphQL    = path.includes("/graphql");
+  const isMobileApi  = path.includes("/auth") && !path.includes("/admin");
+  const isStorage    = path.startsWith("/storage/") || path.includes("/uploads/");
+  const isHealth     = path.includes("/health");
+  const isWave       = path.includes("/wave");
+  const isPushToken  = path.includes("/push-token");
+
+  if (isGraphQL || isMobileApi || isStorage || isHealth || isWave || isPushToken) {
     return next();
   }
 
-  // Admin panel and other browser-based routes should have CSRF protection
+  // Admin panel POST/PUT/DELETE → enforce CSRF
   csrfProtection(req, res, next);
 });
 

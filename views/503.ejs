@@ -75,9 +75,19 @@
         }
 
         @keyframes blobFloat {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33%       { transform: translate(30px, -30px) scale(1.05); }
-            66%       { transform: translate(-20px, 20px) scale(0.95); }
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(30px, -30px) scale(1.05);
+            }
+
+            66% {
+                transform: translate(-20px, 20px) scale(0.95);
+            }
         }
 
         /* Floating food particles */
@@ -95,10 +105,23 @@
         }
 
         @keyframes floatParticle {
-            0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
-            10%  { opacity: 0.08; }
-            90%  { opacity: 0.08; }
-            100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+            0% {
+                transform: translateY(110vh) rotate(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 0.08;
+            }
+
+            90% {
+                opacity: 0.08;
+            }
+
+            100% {
+                transform: translateY(-10vh) rotate(360deg);
+                opacity: 0;
+            }
         }
 
         /* Card */
@@ -113,14 +136,17 @@
             backdrop-filter: blur(20px);
             border: 1px solid rgba(219, 96, 126, 0.25);
             border-radius: 32px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
             animation: cardEntrance 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
             opacity: 0;
             transform: translateY(40px) scale(0.97);
         }
 
         @keyframes cardEntrance {
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         /* Pot icon with steam */
@@ -139,8 +165,15 @@
         }
 
         @keyframes iconBounce {
-            0%, 100% { transform: translateY(0); }
-            50%       { transform: translateY(-8px); }
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
         }
 
         .icon-wrapper i {
@@ -164,12 +197,24 @@
             animation: steamRise 1.5s ease-in-out infinite;
         }
 
-        .steam span:nth-child(2) { animation-delay: 0.3s; }
-        .steam span:nth-child(3) { animation-delay: 0.6s; }
+        .steam span:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .steam span:nth-child(3) {
+            animation-delay: 0.6s;
+        }
 
         @keyframes steamRise {
-            0%   { transform: translateY(0); opacity: 0.5; }
-            100% { transform: translateY(-20px); opacity: 0; }
+            0% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+
+            100% {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
         }
 
         /* Error code */
@@ -188,9 +233,17 @@
         }
 
         @keyframes shimmer {
-            0%   { background-position: 0% center; }
-            50%  { background-position: 100% center; }
-            100% { background-position: 0% center; }
+            0% {
+                background-position: 0% center;
+            }
+
+            50% {
+                background-position: 100% center;
+            }
+
+            100% {
+                background-position: 0% center;
+            }
         }
 
         .error-title {
@@ -240,8 +293,13 @@
         }
 
         @keyframes countdown {
-            from { width: 100%; }
-            to   { width: 0%; }
+            from {
+                width: 100%;
+            }
+
+            to {
+                width: 0%;
+            }
         }
 
         /* Buttons */
@@ -318,86 +376,101 @@
         }
 
         @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50%       { opacity: 0.2; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.2;
+            }
         }
 
         @media (max-width: 480px) {
-            .error-card { padding: 40px 24px; }
-            .error-code { font-size: 5rem; }
-            .error-title { font-size: 1.4rem; }
+            .error-card {
+                padding: 40px 24px;
+            }
+
+            .error-code {
+                font-size: 5rem;
+            }
+
+            .error-title {
+                font-size: 1.4rem;
+            }
         }
     </style>
 </head>
 
 <body class="gda-has-nav">
     <!-- Unified navbar -->
-    <%- include('partials/navbar', { currentPage: '', dark: true }) %>
+    <%- include('partials/navbar', { currentPage: '' , dark: true }) %>
 
-    <!-- Animated background -->
-    <div class="bg-blob bg-blob-1"></div>
-    <div class="bg-blob bg-blob-2"></div>
-    <div class="bg-blob bg-blob-3"></div>
+        <!-- Animated background -->
+        <div class="bg-blob bg-blob-1"></div>
+        <div class="bg-blob bg-blob-2"></div>
+        <div class="bg-blob bg-blob-3"></div>
 
-    <!-- Floating food particles -->
-    <div class="particles" id="particles"></div>
+        <!-- Floating food particles -->
+        <div class="particles" id="particles"></div>
 
-    <!-- Error card -->
-    <div class="error-card">
-        <div class="icon-wrapper">
-            <div class="steam">
-                <span></span><span></span><span></span>
+        <!-- Error card -->
+        <div class="error-card">
+            <div class="icon-wrapper">
+                <div class="steam">
+                    <span></span><span></span><span></span>
+                </div>
+                <i class="fas fa-utensils"></i>
             </div>
-            <i class="fas fa-utensils"></i>
-        </div>
 
-        <div class="status-badge">
-            <span class="status-dot"></span>
-            Maintenance en cours
-        </div>
+            <div class="status-badge">
+                <span class="status-dot"></span>
+                Maintenance en cours
+            </div>
 
-        <div class="error-code">503</div>
-        <h1 class="error-title">Cuisine temporairement fermée</h1>
-        <p class="error-message">
-            Nos cuisines sont en train de se préparer pour vous offrir une expérience encore meilleure.
-            Nous serons de retour dans quelques instants. Merci de votre patience !
-        </p>
+            <div class="error-code">503</div>
+            <h1 class="error-title">Cuisine temporairement fermée</h1>
+            <p class="error-message">
+                Nos cuisines sont en train de se préparer pour vous offrir une expérience encore meilleure.
+                Nous serons de retour dans quelques instants. Merci de votre patience !
+            </p>
 
-        <div class="countdown-bar-wrapper">
-            <div class="countdown-label">Nouvelle tentative automatique dans 30 secondes…</div>
-            <div class="countdown-bar">
-                <div class="countdown-fill" id="countdownFill"></div>
+            <div class="countdown-bar-wrapper">
+                <div class="countdown-label">Nouvelle tentative automatique dans 30 secondes…</div>
+                <div class="countdown-bar">
+                    <div class="countdown-fill" id="countdownFill"></div>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="location.reload()">
+                    <i class="fas fa-redo-alt"></i> Réessayer
+                </button>
+                <a href="/" class="btn btn-secondary">
+                    <i class="fas fa-home"></i> Accueil
+                </a>
             </div>
         </div>
 
-        <div class="btn-group">
-            <button class="btn btn-primary" onclick="location.reload()">
-                <i class="fas fa-redo-alt"></i> Réessayer
-            </button>
-            <a href="/" class="btn btn-secondary">
-                <i class="fas fa-home"></i> Accueil
-            </a>
-        </div>
-    </div>
+        <script>
+            // Auto-reload after 30 seconds
+            setTimeout(() => location.reload(), 30000);
 
-    <script>
-        // Auto-reload after 30 seconds
-        setTimeout(() => location.reload(), 30000);
-
-        // Floating food emoji particles
-        const emojis = ['🍽️', '🥘', '🍲', '🥗', '🍜', '🧆', '🥙', '🍛', '🥣', '🍱'];
-        const container = document.getElementById('particles');
-        for (let i = 0; i < 18; i++) {
-            const el = document.createElement('div');
-            el.className = 'particle';
-            el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-            el.style.left = Math.random() * 100 + 'vw';
-            el.style.animationDuration = (12 + Math.random() * 16) + 's';
-            el.style.animationDelay = (Math.random() * 20) + 's';
-            el.style.fontSize = (1 + Math.random() * 1.5) + 'rem';
-            container.appendChild(el);
-        }
-    </script>
+            // Floating food emoji particles
+            const emojis = ['🍽️', '🥘', '🍲', '🥗', '🍜', '🧆', '🥙', '🍛', '🥣', '🍱'];
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 18; i++) {
+                const el = document.createElement('div');
+                el.className = 'particle';
+                el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.animationDuration = (12 + Math.random() * 16) + 's';
+                el.style.animationDelay = (Math.random() * 20) + 's';
+                el.style.fontSize = (1 + Math.random() * 1.5) + 'rem';
+                container.appendChild(el);
+            }
+        </script>
 </body>
 
 </html>

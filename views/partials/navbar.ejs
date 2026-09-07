@@ -1,322 +1,406 @@
-<%
-/*
- * Shared navbar partial — included in all public-facing EJS pages.
- *
- * Usage:
- *   <%- include('../partials/navbar', { currentPage: 'home' }) %>   (from views root)
- *   <%- include('../../partials/navbar', { currentPage: 'privacy' }) %> (from sub-dir)
- *
- * currentPage values: 'home' | 'privacy' | 'health' | 'admin' | 'app'
- */
-const _navCurrent = typeof currentPage !== 'undefined' ? currentPage : '';
-const _isActive   = (page) => _navCurrent === page ? 'active' : '';
-const _isDark     = typeof dark !== 'undefined' && dark ? 'gda-nav--dark' : '';
-%>
-<!-- ══ Gourmet d'amour – Unified Navbar ══ -->
-<div class="accent-bar"></div>
+<% // Shared navbar partial — included in all public-facing EJS pages. // Usage: include('partials/navbar', {
+    currentPage: 'home' , dark: false }) // currentPage: 'home' | 'privacy' | 'health' | 'admin' | 'app' const
+    _navCurrent=typeof currentPage !=='undefined' ? currentPage : '' ; const _isActive=function(page) { return
+    _navCurrent===page ? 'active' : '' ; }; const _isDark=typeof dark !=='undefined' && dark ? 'gda-nav--dark' : '' ; %>
+    <!-- ══ Gourmet d'amour – Unified Navbar ══ -->
+    <div class="accent-bar"></div>
 
-<nav class="gda-nav <%= _isDark %>" id="gdaNavbar">
-    <a href="/" class="gda-nav__logo">
-        <img src="/images/logo.png" alt="Gourmet d'amour">
-        <span>Gourmet d'amour</span>
-    </a>
+    <nav class="gda-nav <%= _isDark %>" id="gdaNavbar">
+        <a href="/" class="gda-nav__logo">
+            <img src="/images/logo.png" alt="Gourmet d'amour">
+            <span>Gourmet d'amour</span>
+        </a>
 
-    <!-- Desktop links -->
-    <ul class="gda-nav__links" id="gdaNavLinks">
-        <li>
-            <a href="/" class="<%= _isActive('home') %>">
-                <i class="fas fa-home"></i> Accueil
-            </a>
-        </li>
-        <li>
-            <a href="/#features" class="<%= _isActive('features') %>">
-                <i class="fas fa-star"></i> À propos
-            </a>
-        </li>
-        <li>
-            <a href="/#app" class="<%= _isActive('app') %>">
-                <i class="fab fa-google-play"></i> Application
-            </a>
-        </li>
-        <li>
-            <a href="/privacy" class="<%= _isActive('privacy') %>">
-                <i class="fas fa-shield-alt"></i> Confidentialité
-            </a>
-        </li>
-        <li>
-            <a href="/health" class="<%= _isActive('health') %>">
-                <i class="fas fa-heartbeat"></i> État du service
-            </a>
-        </li>
-    </ul>
+        <!-- Desktop links -->
+        <ul class="gda-nav__links" id="gdaNavLinks">
+            <li>
+                <a href="/" class="<%= _isActive('home') %>">
+                    <i class="fas fa-home"></i> Accueil
+                </a>
+            </li>
+            <li>
+                <a href="/#features" class="<%= _isActive('features') %>">
+                    <i class="fas fa-star"></i> À propos
+                </a>
+            </li>
+            <li>
+                <a href="/#app" class="<%= _isActive('app') %>">
+                    <i class="fab fa-google-play"></i> Application
+                </a>
+            </li>
+            <li>
+                <a href="/privacy" class="<%= _isActive('privacy') %>">
+                    <i class="fas fa-shield-alt"></i> Confidentialité
+                </a>
+            </li>
+            <li>
+                <a href="/health" class="<%= _isActive('health') %>">
+                    <i class="fas fa-heartbeat"></i> État du service
+                </a>
+            </li>
+        </ul>
 
-    <!-- Mobile hamburger -->
-    <button class="gda-nav__burger" id="gdaBurger" aria-label="Menu" aria-expanded="false">
-        <span></span><span></span><span></span>
-    </button>
-</nav>
+        <!-- Mobile hamburger -->
+        <button class="gda-nav__burger" id="gdaBurger" aria-label="Menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
 
-<!-- Mobile drawer -->
-<div class="gda-drawer" id="gdaDrawer" aria-hidden="true">
-    <ul>
-        <li><a href="/"><i class="fas fa-home"></i> Accueil</a></li>
-        <li><a href="/#features"><i class="fas fa-star"></i> À propos</a></li>
-        <li><a href="/#app"><i class="fab fa-google-play"></i> Application</a></li>
-        <li><a href="/privacy"><i class="fas fa-shield-alt"></i> Confidentialité</a></li>
-        <li><a href="/health"><i class="fas fa-heartbeat"></i> État du service</a></li>
-        <li><a href="/admin/login" class="gda-drawer__admin"><i class="fas fa-user-shield"></i> Administration</a></li>
-    </ul>
-</div>
-<div class="gda-overlay" id="gdaOverlay"></div>
+    <!-- Mobile drawer -->
+    <div class="gda-drawer" id="gdaDrawer" aria-hidden="true">
+        <ul>
+            <li><a href="/"><i class="fas fa-home"></i> Accueil</a></li>
+            <li><a href="/#features"><i class="fas fa-star"></i> À propos</a></li>
+            <li><a href="/#app"><i class="fab fa-google-play"></i> Application</a></li>
+            <li><a href="/privacy"><i class="fas fa-shield-alt"></i> Confidentialité</a></li>
+            <li><a href="/health"><i class="fas fa-heartbeat"></i> État du service</a></li>
+            <li><a href="/admin/login" class="gda-drawer__admin"><i class="fas fa-user-shield"></i> Administration</a>
+            </li>
+        </ul>
+    </div>
+    <div class="gda-overlay" id="gdaOverlay"></div>
 
-<style>
-    /* ── Reset helpers ── */
-    .accent-bar {
-        position: fixed;
-        top: 0; left: 0; right: 0;
-        height: 4px;
-        z-index: 1001;
-        background: linear-gradient(to right, #DB607E, #ABD27E, #DB607E);
-        background-size: 200% auto;
-        animation: _accentShimmer 4s linear infinite;
-    }
-    @keyframes _accentShimmer {
-        from { background-position: 0% center; }
-        to   { background-position: 200% center; }
-    }
-
-    /* ── Navbar ── */
-    .gda-nav {
-        position: fixed;
-        top: 4px; left: 0; right: 0;
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 14px 48px;
-        background: rgba(255, 255, 255, 0.88);
-        backdrop-filter: blur(18px);
-        -webkit-backdrop-filter: blur(18px);
-        border-bottom: 1px solid rgba(219, 96, 126, 0.13);
-        box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
-        transition: padding 0.3s ease, background 0.3s ease;
-    }
-    .gda-nav.scrolled {
-        padding: 10px 48px;
-        background: rgba(255, 255, 255, 0.96);
-        box-shadow: 0 4px 28px rgba(219, 96, 126, 0.1);
-    }
-
-    /* Dark-bg pages (503) override */
-    .gda-nav--dark {
-        background: rgba(30, 30, 30, 0.75);
-        border-bottom-color: rgba(219, 96, 126, 0.2);
-    }
-    .gda-nav--dark.scrolled { background: rgba(20, 20, 20, 0.92); }
-    .gda-nav--dark .gda-nav__links a { color: rgba(255,255,255,0.82); }
-    .gda-nav--dark .gda-nav__links a:hover { background: rgba(219,96,126,0.15); color: #DB607E; }
-    .gda-nav--dark .gda-nav__burger span { background: rgba(255,255,255,0.8); }
-    .gda-nav--dark ~ .gda-drawer {
-        background: #1e1e1e;
-        box-shadow: -8px 0 40px rgba(0,0,0,0.4);
-    }
-    .gda-nav--dark ~ .gda-drawer ul li a {
-        color: rgba(255,255,255,0.85);
-    }
-    .gda-nav--dark ~ .gda-drawer ul li a:hover {
-        background: rgba(219,96,126,0.15);
-        color: #DB607E;
-    }
-    .gda-nav--dark ~ .gda-drawer .gda-drawer__admin {
-        background: rgba(219,96,126,0.12) !important;
-        border-color: rgba(219,96,126,0.3) !important;
-    }
-
-    /* Logo */
-    .gda-nav__logo {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        text-decoration: none;
-        font-family: 'Playfair Display', serif;
-        font-size: 19px;
-        font-weight: 700;
-        color: #DB607E;
-        transition: transform 0.25s ease;
-        flex-shrink: 0;
-    }
-    .gda-nav__logo:hover { transform: scale(1.04); }
-    .gda-nav__logo img { height: 38px; }
-    .gda-nav__logo span { white-space: nowrap; }
-
-    /* Links */
-    .gda-nav__links {
-        display: flex;
-        list-style: none;
-        gap: 4px;
-        align-items: center;
-        margin: 0;
-        padding: 0;
-    }
-    .gda-nav__links a {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 14px;
-        border-radius: 50px;
-        font-family: 'Poppins', sans-serif;
-        font-size: 0.85rem;
-        font-weight: 500;
-        color: #2c2c2c;
-        text-decoration: none;
-        border: 1.5px solid transparent;
-        transition: all 0.22s ease;
-        white-space: nowrap;
-    }
-    .gda-nav__links a:hover {
-        border-color: #DB607E;
-        color: #DB607E;
-        background: rgba(219, 96, 126, 0.06);
-    }
-    .gda-nav__links a.active {
-        background: linear-gradient(135deg, #DB607E, #e85a7f);
-        color: white !important;
-        border-color: transparent;
-        box-shadow: 0 4px 14px rgba(219, 96, 126, 0.32);
-    }
-
-    /* Hamburger */
-    .gda-nav__burger {
-        display: none;
-        flex-direction: column;
-        justify-content: center;
-        gap: 5px;
-        width: 40px;
-        height: 40px;
-        padding: 8px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        border-radius: 10px;
-        transition: background 0.2s ease;
-    }
-    .gda-nav__burger:hover { background: rgba(219, 96, 126, 0.1); }
-    .gda-nav__burger span {
-        display: block;
-        height: 2px;
-        width: 100%;
-        background: #2c2c2c;
-        border-radius: 2px;
-        transition: all 0.3s ease;
-    }
-    .gda-nav__burger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-    .gda-nav__burger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
-    .gda-nav__burger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-    /* Mobile drawer */
-    .gda-drawer {
-        position: fixed;
-        top: 0; right: 0;
-        width: min(300px, 85vw);
-        height: 100vh;
-        background: white;
-        z-index: 999;
-        padding: 80px 24px 32px;
-        box-shadow: -8px 0 40px rgba(0,0,0,0.12);
-        transform: translateX(100%);
-        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .gda-drawer.open { transform: translateX(0); }
-    .gda-drawer ul { list-style: none; padding: 0; margin: 0; }
-    .gda-drawer ul li { margin-bottom: 4px; }
-    .gda-drawer ul li a {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 13px 16px;
-        border-radius: 14px;
-        font-family: 'Poppins', sans-serif;
-        font-size: 0.93rem;
-        font-weight: 500;
-        color: #2c2c2c;
-        text-decoration: none;
-        transition: all 0.2s ease;
-    }
-    .gda-drawer ul li a:hover { background: rgba(219,96,126,0.08); color: #DB607E; }
-    .gda-drawer ul li a i { width: 18px; color: #DB607E; }
-    .gda-drawer__admin {
-        margin-top: 12px;
-        background: rgba(219,96,126,0.06) !important;
-        border: 1px solid rgba(219,96,126,0.18) !important;
-    }
-
-    /* Overlay */
-    .gda-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.35);
-        z-index: 998;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.3s ease;
-    }
-    .gda-overlay.open { opacity: 1; pointer-events: all; }
-
-    /* Responsive */
-    @media (max-width: 860px) {
-        .gda-nav { padding: 12px 20px; }
-        .gda-nav.scrolled { padding: 10px 20px; }
-        .gda-nav__links { display: none; }
-        .gda-nav__burger { display: flex; }
-    }
-
-    /* Page body offset for fixed nav (add this class to <body>) */
-    body.gda-has-nav { padding-top: 72px; }
-</style>
-
-<script>
-    (function () {
-        const nav      = document.getElementById('gdaNavbar');
-        const burger   = document.getElementById('gdaBurger');
-        const drawer   = document.getElementById('gdaDrawer');
-        const overlay  = document.getElementById('gdaOverlay');
-
-        // Scroll shrink
-        window.addEventListener('scroll', function () {
-            nav.classList.toggle('scrolled', window.scrollY > 30);
-        }, { passive: true });
-
-        // Hamburger toggle
-        function openDrawer() {
-            drawer.classList.add('open');
-            overlay.classList.add('open');
-            burger.classList.add('open');
-            burger.setAttribute('aria-expanded', 'true');
-            drawer.setAttribute('aria-hidden', 'false');
-            document.body.style.overflow = 'hidden';
-        }
-        function closeDrawer() {
-            drawer.classList.remove('open');
-            overlay.classList.remove('open');
-            burger.classList.remove('open');
-            burger.setAttribute('aria-expanded', 'false');
-            drawer.setAttribute('aria-hidden', 'true');
-            document.body.style.overflow = '';
+    <style>
+        /* ── Reset helpers ── */
+        .accent-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            z-index: 1001;
+            background: linear-gradient(to right, #DB607E, #ABD27E, #DB607E);
+            background-size: 200% auto;
+            animation: _accentShimmer 4s linear infinite;
         }
 
-        burger.addEventListener('click', function () {
-            drawer.classList.contains('open') ? closeDrawer() : openDrawer();
-        });
-        overlay.addEventListener('click', closeDrawer);
+        @keyframes _accentShimmer {
+            from {
+                background-position: 0% center;
+            }
 
-        // Close drawer on link click
-        drawer.querySelectorAll('a').forEach(function (a) {
-            a.addEventListener('click', closeDrawer);
-        });
+            to {
+                background-position: 200% center;
+            }
+        }
 
-        // Escape key
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') closeDrawer();
-        });
-    })();
-</script>
+        /* ── Navbar ── */
+        .gda-nav {
+            position: fixed;
+            top: 4px;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 48px;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(219, 96, 126, 0.13);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+            transition: padding 0.3s ease, background 0.3s ease;
+        }
+
+        .gda-nav.scrolled {
+            padding: 10px 48px;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: 0 4px 28px rgba(219, 96, 126, 0.1);
+        }
+
+        /* Dark-bg pages (503) override */
+        .gda-nav--dark {
+            background: rgba(30, 30, 30, 0.75);
+            border-bottom-color: rgba(219, 96, 126, 0.2);
+        }
+
+        .gda-nav--dark.scrolled {
+            background: rgba(20, 20, 20, 0.92);
+        }
+
+        .gda-nav--dark .gda-nav__links a {
+            color: rgba(255, 255, 255, 0.82);
+        }
+
+        .gda-nav--dark .gda-nav__links a:hover {
+            background: rgba(219, 96, 126, 0.15);
+            color: #DB607E;
+        }
+
+        .gda-nav--dark .gda-nav__burger span {
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .gda-nav--dark~.gda-drawer {
+            background: #1e1e1e;
+            box-shadow: -8px 0 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .gda-nav--dark~.gda-drawer ul li a {
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .gda-nav--dark~.gda-drawer ul li a:hover {
+            background: rgba(219, 96, 126, 0.15);
+            color: #DB607E;
+        }
+
+        .gda-nav--dark~.gda-drawer .gda-drawer__admin {
+            background: rgba(219, 96, 126, 0.12) !important;
+            border-color: rgba(219, 96, 126, 0.3) !important;
+        }
+
+        /* Logo */
+        .gda-nav__logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            font-family: 'Playfair Display', serif;
+            font-size: 19px;
+            font-weight: 700;
+            color: #DB607E;
+            transition: transform 0.25s ease;
+            flex-shrink: 0;
+        }
+
+        .gda-nav__logo:hover {
+            transform: scale(1.04);
+        }
+
+        .gda-nav__logo img {
+            height: 38px;
+        }
+
+        .gda-nav__logo span {
+            white-space: nowrap;
+        }
+
+        /* Links */
+        .gda-nav__links {
+            display: flex;
+            list-style: none;
+            gap: 4px;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .gda-nav__links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 50px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #2c2c2c;
+            text-decoration: none;
+            border: 1.5px solid transparent;
+            transition: all 0.22s ease;
+            white-space: nowrap;
+        }
+
+        .gda-nav__links a:hover {
+            border-color: #DB607E;
+            color: #DB607E;
+            background: rgba(219, 96, 126, 0.06);
+        }
+
+        .gda-nav__links a.active {
+            background: linear-gradient(135deg, #DB607E, #e85a7f);
+            color: white !important;
+            border-color: transparent;
+            box-shadow: 0 4px 14px rgba(219, 96, 126, 0.32);
+        }
+
+        /* Hamburger */
+        .gda-nav__burger {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+            width: 40px;
+            height: 40px;
+            padding: 8px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: background 0.2s ease;
+        }
+
+        .gda-nav__burger:hover {
+            background: rgba(219, 96, 126, 0.1);
+        }
+
+        .gda-nav__burger span {
+            display: block;
+            height: 2px;
+            width: 100%;
+            background: #2c2c2c;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .gda-nav__burger.open span:nth-child(1) {
+            transform: translateY(7px) rotate(45deg);
+        }
+
+        .gda-nav__burger.open span:nth-child(2) {
+            opacity: 0;
+            transform: scaleX(0);
+        }
+
+        .gda-nav__burger.open span:nth-child(3) {
+            transform: translateY(-7px) rotate(-45deg);
+        }
+
+        /* Mobile drawer */
+        .gda-drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: min(300px, 85vw);
+            height: 100vh;
+            background: white;
+            z-index: 999;
+            padding: 80px 24px 32px;
+            box-shadow: -8px 0 40px rgba(0, 0, 0, 0.12);
+            transform: translateX(100%);
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .gda-drawer.open {
+            transform: translateX(0);
+        }
+
+        .gda-drawer ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .gda-drawer ul li {
+            margin-bottom: 4px;
+        }
+
+        .gda-drawer ul li a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 16px;
+            border-radius: 14px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.93rem;
+            font-weight: 500;
+            color: #2c2c2c;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .gda-drawer ul li a:hover {
+            background: rgba(219, 96, 126, 0.08);
+            color: #DB607E;
+        }
+
+        .gda-drawer ul li a i {
+            width: 18px;
+            color: #DB607E;
+        }
+
+        .gda-drawer__admin {
+            margin-top: 12px;
+            background: rgba(219, 96, 126, 0.06) !important;
+            border: 1px solid rgba(219, 96, 126, 0.18) !important;
+        }
+
+        /* Overlay */
+        .gda-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .gda-overlay.open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Responsive */
+        @media (max-width: 860px) {
+            .gda-nav {
+                padding: 12px 20px;
+            }
+
+            .gda-nav.scrolled {
+                padding: 10px 20px;
+            }
+
+            .gda-nav__links {
+                display: none;
+            }
+
+            .gda-nav__burger {
+                display: flex;
+            }
+        }
+
+        /* Page body offset for fixed nav (add this class to <body>) */
+        body.gda-has-nav {
+            padding-top: 72px;
+        }
+    </style>
+
+    <script>
+        (function () {
+            const nav = document.getElementById('gdaNavbar');
+            const burger = document.getElementById('gdaBurger');
+            const drawer = document.getElementById('gdaDrawer');
+            const overlay = document.getElementById('gdaOverlay');
+
+            // Scroll shrink
+            window.addEventListener('scroll', function () {
+                nav.classList.toggle('scrolled', window.scrollY > 30);
+            }, { passive: true });
+
+            // Hamburger toggle
+            function openDrawer() {
+                drawer.classList.add('open');
+                overlay.classList.add('open');
+                burger.classList.add('open');
+                burger.setAttribute('aria-expanded', 'true');
+                drawer.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeDrawer() {
+                drawer.classList.remove('open');
+                overlay.classList.remove('open');
+                burger.classList.remove('open');
+                burger.setAttribute('aria-expanded', 'false');
+                drawer.setAttribute('aria-hidden', 'true');
+                document.body.style.overflow = '';
+            }
+
+            burger.addEventListener('click', function () {
+                drawer.classList.contains('open') ? closeDrawer() : openDrawer();
+            });
+            overlay.addEventListener('click', closeDrawer);
+
+            // Close drawer on link click
+            drawer.querySelectorAll('a').forEach(function (a) {
+                a.addEventListener('click', closeDrawer);
+            });
+
+            // Escape key
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeDrawer();
+            });
+        })();
+    </script>

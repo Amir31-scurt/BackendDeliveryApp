@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paiement réussi | Gourmet d'amour</title>
+  <link rel="icon" href="/images/logo.png" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #DB607E;
+      --green: #4CAF50;
+      --green-light: #81C784;
+      --green-glow: rgba(76, 175, 80, 0.25);
+      --bg: #0d0d0d;
+      --card-bg: #161616;
+      --border: rgba(255,255,255,0.07);
+      --text: #f0ece6;
+      --muted: #888;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -20%; left: -20%;
+      width: 60%; height: 60%;
+      background: radial-gradient(circle, rgba(76,175,80,0.12) 0%, transparent 70%);
+      animation: blobFloat 8s ease-in-out infinite;
+      pointer-events: none;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%; right: -20%;
+      width: 55%; height: 55%;
+      background: radial-gradient(circle, rgba(219,96,126,0.10) 0%, transparent 70%);
+      animation: blobFloat 10s ease-in-out infinite reverse;
+      pointer-events: none;
+    }
+    @keyframes blobFloat {
+      0%, 100% { transform: translate(0,0) scale(1); }
+      50%       { transform: translate(3%,3%) scale(1.05); }
+    }
+
+    .particles { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0;
+      animation: particleRise linear infinite;
+    }
+    @keyframes particleRise {
+      0%   { opacity: 0; transform: translateY(0) scale(0); }
+      10%  { opacity: 0.6; }
+      90%  { opacity: 0.4; }
+      100% { opacity: 0; transform: translateY(-100vh) scale(1); }
+    }
+
+    .card {
+      position: relative;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 56px 48px;
+      max-width: 460px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 0 0 1px rgba(76,175,80,0.15), 0 40px 80px rgba(0,0,0,0.5), 0 0 80px rgba(76,175,80,0.08);
+      animation: cardIn 0.8s cubic-bezier(0.16,1,0.3,1) both;
+      z-index: 10;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(40px) scale(0.95); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .icon-wrapper {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 32px;
+      position: relative;
+    }
+    .ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 3px solid var(--green-light);
+      animation: ringPulse 2.5s ease-out infinite;
+    }
+    .ring:nth-child(2) { animation-delay: 0.8s; }
+    .ring:nth-child(3) { animation-delay: 1.6s; }
+    @keyframes ringPulse {
+      0%   { transform: scale(0.8); opacity: 0.8; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+    .icon-circle {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, var(--green), #66BB6A);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 40px var(--green-glow), 0 0 0 6px rgba(76,175,80,0.15);
+      animation: iconPop 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.4s both;
+      z-index: 1;
+    }
+    @keyframes iconPop {
+      from { transform: scale(0); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .checkmark { width: 42px; height: 42px; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+    .checkmark-path { stroke-dasharray: 60; stroke-dashoffset: 60; animation: drawCheck 0.5s ease 0.9s forwards; }
+    @keyframes drawCheck { to { stroke-dashoffset: 0; } }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(76,175,80,0.12);
+      border: 1px solid rgba(76,175,80,0.3);
+      color: var(--green-light);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 100px;
+      margin-bottom: 20px;
+      animation: fadeUp 0.5s ease 0.5s both;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green-light); animation: blinkDot 1.4s ease infinite; }
+    @keyframes blinkDot { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+    h1 { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 700; color: #fff; margin-bottom: 12px; animation: fadeUp 0.5s ease 0.6s both; }
+    .subtitle { color: var(--muted); font-size: 14px; line-height: 1.7; margin-bottom: 36px; animation: fadeUp 0.5s ease 0.7s both; }
+    .divider { height: 1px; background: var(--border); margin-bottom: 28px; animation: fadeUp 0.5s ease 0.75s both; }
+
+    .redirect-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      animation: fadeUp 0.5s ease 0.8s both;
+    }
+    .countdown-circle { flex-shrink: 0; position: relative; width: 44px; height: 44px; }
+    .countdown-circle svg { transform: rotate(-90deg); }
+    .countdown-bg { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 3; }
+    .countdown-fg {
+      fill: none; stroke: var(--green-light); stroke-width: 3; stroke-linecap: round;
+      stroke-dasharray: 113; stroke-dashoffset: 0;
+      animation: countdownStroke 5s linear 1.2s forwards;
+    }
+    @keyframes countdownStroke { to { stroke-dashoffset: 113; } }
+    .countdown-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; color: var(--green-light); }
+    .redirect-text { text-align: left; }
+    .redirect-text strong { display: block; font-size: 13px; color: #e0e0e0; margin-bottom: 2px; }
+    .redirect-text span { font-size: 12px; color: var(--muted); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 16px 28px;
+      background: linear-gradient(135deg, var(--green) 0%, #388E3C 100%);
+      color: #fff;
+      font-family: 'Poppins', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      box-shadow: 0 8px 30px rgba(76,175,80,0.3);
+      animation: fadeUp 0.5s ease 0.9s both;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(76,175,80,0.45); filter: brightness(1.08); }
+    .btn:active { transform: translateY(0); }
+    .btn svg { width: 18px; height: 18px; }
+
+    .logo-footer { margin-top: 28px; font-family: 'Playfair Display', serif; font-size: 13px; color: rgba(255,255,255,0.2); animation: fadeUp 0.5s ease 1s both; }
+    .logo-footer span { color: var(--primary); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .confetti-piece { position: fixed; opacity: 0; animation: confettiFall linear forwards; }
+    @keyframes confettiFall {
+      0%   { opacity: 1; transform: translateY(-10px) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="particles" id="particles"></div>
+
+  <div class="card">
+    <div class="icon-wrapper">
+      <div class="ring"></div>
+      <div class="ring"></div>
+      <div class="ring"></div>
+      <div class="icon-circle">
+        <svg class="checkmark" viewBox="0 0 52 52">
+          <path class="checkmark-path" d="M14 26 l10 10 l16 -18"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="badge">
+      <div class="badge-dot"></div>
+      Paiement confirmé
+    </div>
+
+    <h1>Commande réussie !</h1>
+    <p class="subtitle">
+      Votre paiement Wave a été traité avec succès.<br>
+      Votre commande est en cours de préparation. 🍽️
+    </p>
+
+    <div class="divider"></div>
+
+    <div class="redirect-info">
+      <div class="countdown-circle">
+        <svg width="44" height="44" viewBox="0 0 44 44">
+          <circle class="countdown-bg" cx="22" cy="22" r="18"/>
+          <circle class="countdown-fg" cx="22" cy="22" r="18"/>
+        </svg>
+        <div class="countdown-num" id="countNum">5</div>
+      </div>
+      <div class="redirect-text">
+        <strong>Redirection automatique</strong>
+        <span>Retour à l'app dans <span id="secText">5</span> sec…</span>
+      </div>
+    </div>
+
+    <a href="gourmetdamour://customer/UserOrdersScreen" class="btn" id="openApp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14M12 5l7 7-7 7"/>
+      </svg>
+      Ouvrir l'application maintenant
+    </a>
+
+    <div class="logo-footer">Gourmet <span>d'amour</span> &nbsp;·&nbsp; Livraison premium</div>
+  </div>
+
+  <script>
+    let sec = 5;
+    const numEl = document.getElementById('countNum');
+    const secEl = document.getElementById('secText');
+    const tick = setInterval(() => {
+      sec--;
+      if (numEl) numEl.textContent = sec;
+      if (secEl) secEl.textContent = sec;
+      if (sec <= 0) {
+        clearInterval(tick);
+        window.location.href = 'gourmetdamour://customer/UserOrdersScreen';
+      }
+    }, 1000);
+
+    // Particles
+    const particlesEl = document.getElementById('particles');
+    const colors = ['#4CAF50','#81C784','#DB607E','#f0a3b5','#FFD700'];
+    for (let i = 0; i < 18; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = Math.random() * 5 + 3;
+      p.style.cssText = `left:${Math.random()*100}%;top:${100+Math.random()*20}%;width:${size}px;height:${size}px;background:${colors[Math.floor(Math.random()*colors.length)]};animation-duration:${Math.random()*8+6}s;animation-delay:${Math.random()*4}s;`;
+      particlesEl.appendChild(p);
+    }
+
+    // Confetti burst
+    const confColors = ['#4CAF50','#81C784','#DB607E','#FFD700','#64B5F6','#FF8A65'];
+    function spawnConfetti() {
+      for (let i = 0; i < 45; i++) {
+        const c = document.createElement('div');
+        c.className = 'confetti-piece';
+        const size = Math.random() * 8 + 4;
+        c.style.cssText = `left:${Math.random()*100}%;top:${-size}px;width:${Math.random()>0.5?size:size*0.4}px;height:${Math.random()>0.5?size*0.4:size}px;background:${confColors[Math.floor(Math.random()*confColors.length)]};border-radius:${Math.random()>0.5?'50%':'2px'};animation-duration:${Math.random()*2+2}s;animation-delay:${Math.random()*1.5}s;`;
+        document.body.appendChild(c);
+        c.addEventListener('animationend', () => c.remove());
+      }
+    }
+    setTimeout(spawnConfetti, 800);
+  </script>
+
+</body>
+</html>
