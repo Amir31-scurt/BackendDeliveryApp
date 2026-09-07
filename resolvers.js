@@ -1385,7 +1385,7 @@ const resolvers = {
               instructions: input.instructions || null,
               total_amount: input.totalAmount,
               status: input.status || "Pending",
-              is_paid: input.isPaid || false,
+              is_paid: input.paymentMethod === "CASH" ? false : (input.isPaid || false),
               payment_method: input.paymentMethod || "CASH",
               deliverer_id: input.delivererId || null,
               delivery_token: deliveryToken,
@@ -1599,6 +1599,7 @@ const resolvers = {
           delivered_by: delivererId,
           delivered_at: new Date().toISOString(),
           delivery_confirmation_method: "qr",
+          is_paid: true,
         })
         .eq("id", orderId)
         .select()
@@ -1650,6 +1651,7 @@ const resolvers = {
           delivered_by: delivererId,
           delivered_at: new Date().toISOString(),
           delivery_confirmation_method: "manual",
+          is_paid: true,
         })
         .eq("id", orderId)
         .select()
@@ -2228,6 +2230,14 @@ const resolvers = {
       };
     },
     rating: (parent) => parent.rating || null,
+    isPaid: (parent) =>
+      parent.isPaid !== undefined ? parent.isPaid : (parent.is_paid ?? false),
+    paymentMethod: (parent) =>
+      parent.paymentMethod || parent.payment_method || "CASH",
+    delivererId: (parent) =>
+      parent.delivererId || parent.deliverer_id || null,
+    totalAmount: (parent) =>
+      parent.totalAmount !== undefined ? parent.totalAmount : (parent.total_amount || 0),
   },
   Restaurant: {
     rating: async (parent, _, {supabase}) => {
