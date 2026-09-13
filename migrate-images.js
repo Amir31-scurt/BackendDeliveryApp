@@ -27,6 +27,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const { pipeline } = require('stream/promises');
+const { Readable } = require('stream');
 const { createClient } = require('@supabase/supabase-js');
 
 // ---- CONFIG (env vars override these) ----------------------------------
@@ -41,16 +43,29 @@ const DEST_DIR = process.env.DEST_DIR || '/repositories/BackendDeliveryApp/publi
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Recursively list every file in a bucket (list() only returns one level at a time)
+// Recursively list every file in a bucket. Supabase's list() caps each call
+// at 1000 results, so we page through with offset until a page comes back
+// short of the limit (meaning there's nothing left).
 async function listAllFiles(bucketName, prefix = '') {
-  const { data, error } = await supabase.storage.from(bucketName).list(prefix, {
-    limit: 1000,
-    sortBy: { column: 'name', order: 'asc' },
-  });
-  if (error) throw error;
+  const PAGE_SIZE = 1000;
+  let allEntries = [];
+  let offset = 0;
+
+  while (true) {
+    const { data, error } = await supabase.storage.from(bucketName).list(prefix, {
+      limit: PAGE_SIZE,
+      offset,
+      sortBy: { column: 'name', order: 'asc' },
+    });
+    if (error) throw error;
+
+    allEntries = allEntries.concat(data);
+    if (data.length < PAGE_SIZE) break; // last page
+    offset += PAGE_SIZE;
+  }
 
   let files = [];
-  for (const item of data) {
+  for (const item of allEntries) {
     const itemPath = prefix ? `${prefix}/${item.name}` : item.name;
     // Folders come back with no metadata / null id
     if (item.id === null && !item.metadata) {
@@ -63,26 +78,51 @@ async function listAllFiles(bucketName, prefix = '') {
   return files;
 }
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function publicUrlFor(bucketName, relPath) {
+  // Bucket is public, so we can hit the public storage URL directly and
+  // stream the response — this avoids ever holding the whole file in memory.
+  const encodedPath = relPath.split('/').map(encodeURIComponent).join('/');
+  return `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${encodedPath}`;
+}
+
 async function downloadAndSave(bucketName, relPath) {
   const destPath = path.join(DEST_DIR, bucketName, relPath);
+  const url = publicUrlFor(bucketName, relPath);
 
-  const { data: blob, error } = await supabase.storage.from(bucketName).download(relPath);
-  if (error) {
-    console.error(`FAILED to download ${bucketName}/${relPath}:`, error.message);
-    return;
-  }
-
-  const buffer = Buffer.from(await blob.arrayBuffer());
-
-  // Skip if already there with the same size — makes re-runs safe/fast
-  if (fs.existsSync(destPath) && fs.statSync(destPath).size === buffer.length) {
-    console.log(`SKIP (already present, same size): ${bucketName}/${relPath}`);
-    return;
+  // Cheap size check first (HEAD, no body) — skip already-migrated files
+  // without downloading anything at all.
+  if (fs.existsSync(destPath)) {
+    try {
+      const head = await fetch(url, { method: 'HEAD' });
+      const remoteSize = Number(head.headers.get('content-length'));
+      if (remoteSize && fs.statSync(destPath).size === remoteSize) {
+        console.log(`SKIP (already present, same size): ${bucketName}/${relPath}`);
+        return;
+      }
+    } catch {
+      // HEAD failed — fall through and just re-download
+    }
   }
 
   fs.mkdirSync(path.dirname(destPath), { recursive: true });
-  fs.writeFileSync(destPath, buffer);
-  console.log(`SAVED: ${bucketName}/${relPath} -> ${destPath}`);
+
+  const tmpPath = `${destPath}.part`;
+  const response = await fetch(url);
+  if (!response.ok || !response.body) {
+    console.error(`FAILED to download ${bucketName}/${relPath}: HTTP ${response.status}`);
+    return;
+  }
+
+  try {
+    await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(tmpPath));
+    fs.renameSync(tmpPath, destPath); // atomic-ish: only replace once fully written
+    console.log(`SAVED: ${bucketName}/${relPath} -> ${destPath}`);
+  } catch (err) {
+    console.error(`FAILED to write ${bucketName}/${relPath}:`, err.message);
+    if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+  }
 }
 
 (async () => {
@@ -98,6 +138,7 @@ async function downloadAndSave(bucketName, relPath) {
 
     for (const f of files) {
       await downloadAndSave(bucketName, f);
+      await sleep(150); // small pause between files — easier on this host's memory limits
     }
   }
 

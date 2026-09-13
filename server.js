@@ -36,6 +36,7 @@ app.use((req, res, next) => {
 // Security middleware
 app.use(
   helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],

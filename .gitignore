@@ -4,3 +4,4 @@
 .vercel
 .env*.local
 .qodo
+cpanel_debug.log
