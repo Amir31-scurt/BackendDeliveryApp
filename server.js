@@ -1,10 +1,10 @@
-const {ApolloServer} = require("apollo-server-express");
+const { ApolloServer } = require("apollo-server-express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const express = require("express");
 const expressEjsLayouts = require("express-ejs-layouts");
-const {writeFile, mkdir} = require("fs/promises");
-const {existsSync, readFileSync} = require("fs");
+const { writeFile, mkdir } = require("fs/promises");
+const { existsSync, readFileSync } = require("fs");
 const multer = require("multer");
 const path = require("path");
 const cookieParser = require("cookie-parser");
@@ -13,7 +13,7 @@ const csrf = require("csurf");
 const flash = require("connect-flash");
 const session = require("express-session");
 const pgSession = require("connect-pg-simple"); // Use PostgreSQL for sessions
-const {pool} = require("./db.js"); // Import existing pool
+const { pool } = require("./db.js"); // Import existing pool
 const resolvers = require("./resolvers.js");
 const delivererResolvers = require("./resolvers/delivererResolvers.js");
 const adminRoutes = require("./routes/admin.js");
@@ -21,8 +21,8 @@ const authRoutes = require("./routes/auth.js");
 const wavePaymentsRouter = require("./routes/wavePayments.js");
 const payoutStatusRouter = require("./routes/payoutStatus.js");
 const adminPayoutsRouter = require("./routes/adminPayouts.js");
-const {supabase} = require("./supabaseClient.js");
-const {authMiddleware} = require("./middleware/auth.js");
+const { supabase } = require("./supabaseClient.js");
+const { authMiddleware } = require("./middleware/auth.js");
 
 dotenv.config();
 
@@ -36,6 +36,7 @@ app.use((req, res, next) => {
 // Security middleware
 app.use(
   helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
@@ -137,7 +138,7 @@ const csrfProtection = csrf({
 
 // Middleware to parse JSON
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 
 const PostgresStore = pgSession(session);
 
@@ -147,7 +148,7 @@ try {
   sessionStore = new PostgresStore({
     pool: pool,
     tableName: "session",
-    errorLog: () => {}, // pool.on('error') already logs db errors
+    errorLog: () => { }, // pool.on('error') already logs db errors
   });
 } catch (e) {
   console.warn("[session] PostgresStore unavailable, using MemoryStore:", e.message);
@@ -189,12 +190,12 @@ app.set("views", path.join(__dirname, "views"));
 app.use((req, res, next) => {
   const path = req.path;
 
-  const isGraphQL    = path.includes("/graphql");
-  const isMobileApi  = path.includes("/auth") && !path.includes("/admin");
-  const isStorage    = path.startsWith("/storage/") || path.includes("/uploads/");
-  const isHealth     = path.includes("/health");
-  const isWave       = path.includes("/wave");
-  const isPushToken  = path.includes("/push-token");
+  const isGraphQL = path.includes("/graphql");
+  const isMobileApi = path.includes("/auth") && !path.includes("/admin");
+  const isStorage = path.startsWith("/storage/") || path.includes("/uploads/");
+  const isHealth = path.includes("/health");
+  const isWave = path.includes("/wave");
+  const isPushToken = path.includes("/push-token");
 
   if (isGraphQL || isMobileApi || isStorage || isHealth || isWave || isPushToken) {
     return next();
@@ -225,7 +226,7 @@ app.post("/storage/upload", upload.single("image"), async (req, res) => {
   try {
     const file = req.file;
     if (!file) {
-      return res.status(400).json({error: "No file uploaded"});
+      return res.status(400).json({ error: "No file uploaded" });
     }
 
     const fileName = `restaurant-${Date.now()}-${file.originalname}`;
@@ -233,7 +234,7 @@ app.post("/storage/upload", upload.single("image"), async (req, res) => {
 
     // Create directory if it doesn't exist
     if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, {recursive: true});
+      await mkdir(uploadDir, { recursive: true });
     }
 
     const filePath = path.join(uploadDir, fileName);
@@ -242,9 +243,9 @@ app.post("/storage/upload", upload.single("image"), async (req, res) => {
     // Generate the public URL (relative to public directory)
     const publicUrl = `/uploads/restaurants/${fileName}`;
 
-    res.status(200).json({publicUrl});
+    res.status(200).json({ publicUrl });
   } catch (error) {
-    res.status(500).json({error: error.message});
+    res.status(500).json({ error: error.message });
   }
 });
 app.post(
@@ -254,7 +255,7 @@ app.post(
     try {
       const file = req.file;
       if (!file) {
-        return res.status(400).json({error: "No file uploaded"});
+        return res.status(400).json({ error: "No file uploaded" });
       }
 
       const fileName = `profile-${Date.now()}-${file.originalname}`;
@@ -262,7 +263,7 @@ app.post(
 
       // Create directory if it doesn't exist
       if (!existsSync(uploadDir)) {
-        await mkdir(uploadDir, {recursive: true});
+        await mkdir(uploadDir, { recursive: true });
       }
 
       const filePath = path.join(uploadDir, fileName);
@@ -271,9 +272,9 @@ app.post(
       // Generate the public URL (relative to public directory)
       const publicUrl = `/uploads/profiles/${fileName}`;
 
-      res.status(200).json({publicUrl});
+      res.status(200).json({ publicUrl });
     } catch (error) {
-      res.status(500).json({error: error.message});
+      res.status(500).json({ error: error.message });
     }
   },
 );
@@ -295,15 +296,15 @@ app.get("/.well-known/apple-app-site-association", (req, res) => {
 
 // Add this route
 app.post("/api/push-token", async (req, res) => {
-  const {userId, token} = req.body;
+  const { userId, token } = req.body;
 
   if (!userId || !token) {
-    return res.status(400).json({message: "Missing userId or token"});
+    return res.status(400).json({ message: "Missing userId or token" });
   }
 
   try {
     // Upsert push token (insert or update)
-    const {data: existing, error: checkError} = await supabase
+    const { data: existing, error: checkError } = await supabase
       .from("push_tokens")
       .select("user_id")
       .eq("user_id", userId)
@@ -312,37 +313,37 @@ app.post("/api/push-token", async (req, res) => {
     if (checkError) {
       return res
         .status(500)
-        .json({message: "Failed to verify token existence", error: checkError});
+        .json({ message: "Failed to verify token existence", error: checkError });
     }
 
     if (!existing) {
       // Insert new token
-      const {error: insertError} = await supabase
+      const { error: insertError } = await supabase
         .from("push_tokens")
-        .insert({user_id: userId, token});
+        .insert({ user_id: userId, token });
       if (insertError) {
         return res
           .status(500)
-          .json({message: "Failed to save token", error: insertError});
+          .json({ message: "Failed to save token", error: insertError });
       }
     } else {
       // Update existing token
-      const {error: updateError} = await supabase
+      const { error: updateError } = await supabase
         .from("push_tokens")
-        .update({token})
+        .update({ token })
         .eq("user_id", userId);
       if (updateError) {
         return res
           .status(500)
-          .json({message: "Failed to update token", error: updateError});
+          .json({ message: "Failed to update token", error: updateError });
       }
     }
 
-    return res.status(200).json({message: "Token saved successfully"});
+    return res.status(200).json({ message: "Token saved successfully" });
   } catch (error) {
     return res
       .status(500)
-      .json({message: "Failed to save token", error: error.message});
+      .json({ message: "Failed to save token", error: error.message });
   }
 });
 
@@ -362,14 +363,14 @@ const server = new ApolloServer({
   delivererResolvers,
   persistedQueries: false, // Explicitly disable to save memory
   cache: "bounded", // Use bounded cache as recommended
-  context: {supabase, db: supabase},
+  context: { supabase, db: supabase },
 });
 
 // Wrap async startup in IIFE (top-level await not available in CommonJS)
 (async () => {
   // Apply middleware to the app
   await server.start();
-  server.applyMiddleware({app, path: "/api/graphql"});
+  server.applyMiddleware({ app, path: "/api/graphql" });
 
   // Health check route - available at both paths
   // Returns JSON for API/programmatic callers; renders branded page for browsers
@@ -395,12 +396,12 @@ const server = new ApolloServer({
 
   // Root routes - Handle various ways cPanel/browsers might land here
   app.get(["/", "/api", "/index.html", "/api/index.html"], (req, res) => {
-    res.render("landing", {layout: false});
+    res.render("landing", { layout: false });
   });
 
   // Privacy Policy and Terms
   app.get(["/privacy", "/api/privacy"], (req, res) => {
-    res.render("privacy", {layout: false});
+    res.render("privacy", { layout: false });
   });
   // Admin routes - mount at both to support hardcoded /admin links and /api/admin entry points
   app.use(["/admin", "/api/admin"], adminRoutes);
