@@ -38,7 +38,7 @@ const BUCKETS = (process.env.SUPABASE_BUCKETS || 'profile-pictures,restaurant-im
   .split(',')
   .map((b) => b.trim())
   .filter(Boolean);
-const DEST_DIR = process.env.DEST_DIR || '/repositories/BackendDeliveryApp/public/uploads';
+const DEST_DIR = process.env.DEST_DIR || '/home/c2554004c/repositories/BackendDeliveryApp/public/uploads';
 // -------------------------------------------------------------------------
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
