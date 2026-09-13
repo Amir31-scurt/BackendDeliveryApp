@@ -59,7 +59,7 @@ app.use(
           "fonts.googleapis.com",
           "cdnjs.cloudflare.com",
         ],
-        imgSrc: ["'self'", "data:", "https:", "blob:"],
+        imgSrc: ["'self'", "data:", "https:", "http:", "blob:"],
         mediaSrc: ["'self'", "data:"],
         connectSrc: ["'self'", "ws:", "wss:", "https:"],
         frameSrc: ["'self'"],
@@ -123,6 +123,10 @@ app.use(
   }),
 );
 
+// Static files and favicon — served early before sessions and cookies
+app.get("/favicon.ico", (req, res) => res.status(204).end());
+app.use(express.static(path.join(__dirname, "public")));
+
 // Cookie parser middleware
 app.use(cookieParser());
 // CSRF protection setup
@@ -142,16 +146,21 @@ app.use(express.urlencoded({ extended: true }));
 
 const PostgresStore = pgSession(session);
 
-// Build session store — fall back to MemoryStore if PostgreSQL isn't reachable locally
+// In production, use PostgreSQL for persistent sessions; in development, fall back to MemoryStore
 let sessionStore;
-try {
-  sessionStore = new PostgresStore({
-    pool: pool,
-    tableName: "session",
-    errorLog: () => { }, // pool.on('error') already logs db errors
-  });
-} catch (e) {
-  console.warn("[session] PostgresStore unavailable, using MemoryStore:", e.message);
+if (process.env.NODE_ENV === "production") {
+  try {
+    sessionStore = new PostgresStore({
+      pool: pool,
+      tableName: "session",
+      errorLog: () => { },
+    });
+  } catch (e) {
+    console.warn("[session] PostgresStore unavailable, using MemoryStore:", e.message);
+    sessionStore = undefined;
+  }
+} else {
+  console.log("[session] Development mode: using MemoryStore for sessions");
   sessionStore = undefined;
 }
 
@@ -207,9 +216,13 @@ app.use((req, res, next) => {
 
 // Make CSRF token available to all views
 app.use((req, res, next) => {
-  if (typeof req.csrfToken === "function") {
-    res.locals.csrfToken = req.csrfToken();
-  } else {
+  try {
+    if (typeof req.csrfToken === "function") {
+      res.locals.csrfToken = req.csrfToken();
+    } else {
+      res.locals.csrfToken = "";
+    }
+  } catch (e) {
     res.locals.csrfToken = "";
   }
   next();
@@ -347,11 +360,6 @@ app.post("/api/push-token", async (req, res) => {
   }
 });
 
-// Serve static files
-app.use(express.static(path.join(__dirname, "public")));
-
-// Serve static files
-app.use(express.static(path.join(__dirname, "public")));
 
 // Removed duplicate upload route - using the multer-based route above
 
@@ -436,6 +444,7 @@ const server = new ApolloServer({
 
   // ─── Global error handler ─────────────────────────────────────────────────
   app.use((err, req, res, next) => {
+    console.error(`[EXPRESS ERROR] ${req.method} ${req.originalUrl}:`, err);
     if (res.headersSent) return next(err);
 
     const status = err.status || err.statusCode || 500;

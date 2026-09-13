@@ -1,13 +1,11 @@
-<% // Shared navbar partial — included in all public-facing EJS pages. // Usage: include('partials/navbar', {
-    currentPage: 'home' , dark: false }) // currentPage: 'home' | 'privacy' | 'health' | 'admin' | 'app' const
-    _navCurrent=typeof currentPage !=='undefined' ? currentPage : '' ; const _isActive=function(page) { return
+<% const _navCurrent=typeof currentPage !=='undefined' ? currentPage : '' ; const _isActive=function (page) { return
     _navCurrent===page ? 'active' : '' ; }; const _isDark=typeof dark !=='undefined' && dark ? 'gda-nav--dark' : '' ; %>
     <!-- ══ Gourmet d'amour – Unified Navbar ══ -->
     <div class="accent-bar"></div>
 
     <nav class="gda-nav <%= _isDark %>" id="gdaNavbar">
         <a href="/" class="gda-nav__logo">
-            <img src="/images/logo.png" alt="Gourmet d'amour">
+            <!-- <img src="/public/images/logo.png" alt="Gourmet d'amour"> -->
             <span>Gourmet d'amour</span>
         </a>
 
