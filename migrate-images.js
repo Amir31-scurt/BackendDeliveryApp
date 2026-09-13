@@ -34,7 +34,7 @@ const { createClient } = require('@supabase/supabase-js');
 // ---- CONFIG (env vars override these) ----------------------------------
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://omhzhgowylojwknlmrqp.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9taHpoZ293eWxvandrbmxtcnFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU0Nzk1OTYsImV4cCI6MjA1MTA1NTU5Nn0.09iaLH4V7PWLjk0hGVx7PjjMZ_gjRNxYuIAfSevjTms';
-const BUCKETS = (process.env.SUPABASE_BUCKETS || 'profile-pictures,restaurant-images')
+const BUCKETS = (process.env.SUPABASE_BUCKETS || 'restaurant-images')
   .split(',')
   .map((b) => b.trim())
   .filter(Boolean);
