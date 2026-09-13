@@ -92,14 +92,15 @@ async function downloadAndSave(bucketName, relPath) {
   const url = publicUrlFor(bucketName, relPath);
 
   // Cheap size check first (HEAD, no body) — skip already-migrated files
-  // without downloading anything at all.
+  // without downloading anything at all. (Fallback safety net; normal
+  // resumes skip past these entirely via the progress file below.)
   if (fs.existsSync(destPath)) {
     try {
       const head = await fetch(url, { method: 'HEAD' });
       const remoteSize = Number(head.headers.get('content-length'));
       if (remoteSize && fs.statSync(destPath).size === remoteSize) {
         console.log(`SKIP (already present, same size): ${bucketName}/${relPath}`);
-        return;
+        return true;
       }
     } catch {
       // HEAD failed — fall through and just re-download
@@ -112,18 +113,36 @@ async function downloadAndSave(bucketName, relPath) {
   const response = await fetch(url);
   if (!response.ok || !response.body) {
     console.error(`FAILED to download ${bucketName}/${relPath}: HTTP ${response.status}`);
-    return;
+    return false;
   }
 
   try {
     await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(tmpPath));
     fs.renameSync(tmpPath, destPath); // atomic-ish: only replace once fully written
     console.log(`SAVED: ${bucketName}/${relPath} -> ${destPath}`);
+    return true;
   } catch (err) {
     console.error(`FAILED to write ${bucketName}/${relPath}:`, err.message);
     if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
+    return false;
   }
 }
+
+// ---- Progress tracking (auto-resume across restarts) --------------------
+const PROGRESS_FILE = path.join(__dirname, '.migrate-progress.json');
+
+function loadProgress() {
+  try {
+    return JSON.parse(fs.readFileSync(PROGRESS_FILE, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function saveProgress(bucketName, relPath) {
+  fs.writeFileSync(PROGRESS_FILE, JSON.stringify({ bucket: bucketName, file: relPath }));
+}
+// ---------------------------------------------------------------------------
 
 (async () => {
   if (SUPABASE_URL.startsWith('PASTE_') || SUPABASE_KEY.startsWith('PASTE_')) {
@@ -131,18 +150,45 @@ async function downloadAndSave(bucketName, relPath) {
     process.exit(1);
   }
 
-  for (const bucketName of BUCKETS) {
+  const progress = loadProgress();
+  const resumeBucketIndex = progress ? BUCKETS.indexOf(progress.bucket) : -1;
+
+  for (let b = 0; b < BUCKETS.length; b++) {
+    const bucketName = BUCKETS[b];
+
+    // A bucket that comes before the saved progress bucket (in BUCKETS order)
+    // was already fully completed in a prior run — skip it entirely, no listing needed.
+    if (progress && resumeBucketIndex !== -1 && b < resumeBucketIndex) {
+      console.log(`\nSkipping bucket "${bucketName}" — already fully completed in a previous run.`);
+      continue;
+    }
+
     console.log(`\nListing files in bucket "${bucketName}"...`);
     const files = await listAllFiles(bucketName);
-    console.log(`Found ${files.length} files. Writing into ${path.join(DEST_DIR, bucketName)}`);
+    console.log(`Found ${files.length} files.`);
 
-    for (const f of files) {
-      await downloadAndSave(bucketName, f);
+    let startIndex = 0;
+    if (progress && bucketName === progress.bucket) {
+      const idx = files.indexOf(progress.file);
+      if (idx !== -1) {
+        startIndex = idx + 1;
+        console.log(`Resuming after "${progress.file}" — skipping ${startIndex} already-completed file(s), no re-checking.`);
+      }
+    }
+
+    console.log(`Writing into ${path.join(DEST_DIR, bucketName)}`);
+
+    for (let i = startIndex; i < files.length; i++) {
+      const f = files[i];
+      const ok = await downloadAndSave(bucketName, f);
+      if (ok) saveProgress(bucketName, f); // only advance on success, so a failed file gets retried next run
       await sleep(150); // small pause between files — easier on this host's memory limits
     }
   }
 
   console.log('\nDone. Every file kept its original Supabase name and path.');
+  // Migration fully complete — clear the progress file so a future run starts clean.
+  try { fs.unlinkSync(PROGRESS_FILE); } catch { }
 })().catch((err) => {
   console.error('Migration failed:', err);
   process.exit(1);
