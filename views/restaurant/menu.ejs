@@ -774,7 +774,7 @@
                                 <div class="right-side">
                                     <div class="form-group">
                                         <label for="image">Image</label>
-                                        <input type="file" id="image" value="" name="image" accept="image/*"
+                                        <input type="file" id="image" value="" name="image" accept="image/png, image/jpeg, image/jpg"
                                             class="form-control" required />
                                     </div>
                                     <div class="image-preview-container">
@@ -1268,6 +1268,14 @@
 
             let imageUrl = "";
             if (imageFile && imageFile.size > 0) {
+                // Client-side format check
+                const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+                const allowedExts = /\.(jpe?g|png)$/i;
+                if (!allowedTypes.includes(imageFile.type) && !allowedExts.test(imageFile.name)) {
+                    alert("Format d'image non supporté. Veuillez utiliser un format classique (JPG, JPEG, PNG).");
+                    return;
+                }
+
                 try {
                     const formDataUpload = new FormData();
                     formDataUpload.append("image", imageFile);
@@ -1281,11 +1289,11 @@
                     if (uploadResponse.ok && uploadResult.publicUrl) {
                         imageUrl = uploadResult.publicUrl;
                     } else {
-                        throw new Error("Image upload failed");
+                        throw new Error(uploadResult.error || "Échec du téléchargement de l'image");
                     }
                 } catch (error) {
                     console.error("Error uploading image:", error);
-                    alert("Error uploading image. Please try again.");
+                    alert(error.message || "Erreur lors du téléchargement de l'image. Veuillez réessayer.");
                     return;
                 }
             }

@@ -810,7 +810,7 @@
           </div>
           <div class="form-group">
             <label for="image">Image</label>
-            <input type="file" id="image" name="image" accept="image/*" class="form-control" required />
+            <input type="file" id="image" name="image" accept="image/png, image/jpeg, image/jpg" class="form-control" required />
           </div>
           <div class="modal-buttons">
             <button type="button" onclick="submitMenuItem()" class="modal-btn submit-btn">
@@ -1016,6 +1016,14 @@
       // Upload the image to Supabase Storage if a new file was selected
       let imageUrl = "";
       if (imageFile && imageFile.size > 0) {
+        // Client-side format check
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        const allowedExts = /\.(jpe?g|png)$/i;
+        if (!allowedTypes.includes(imageFile.type) && !allowedExts.test(imageFile.name)) {
+          alert("Format d'image non supporté. Veuillez utiliser un format classique (JPG, JPEG, PNG).");
+          return;
+        }
+
         try {
           const fileName = `menu-${Date.now()}-${imageFile.name}`;
           const storageUrl = "/storage/upload"; // Replace with your API endpoint or direct Supabase call
@@ -1028,17 +1036,14 @@
 
           const uploadResult = await uploadResponse.json();
 
-
-
           if (uploadResponse.ok && uploadResult.publicUrl) {
             imageUrl = uploadResult.publicUrl;
-
           } else {
-            throw new Error("Échec du téléchargement de l'image");
+            throw new Error(uploadResult.error || "Échec du téléchargement de l'image");
           }
         } catch (error) {
           console.error("Échec du téléchargement de l'image:", error);
-          alert("Échec du téléchargement de l'image. Veuillez réessayer.");
+          alert(error.message || "Échec du téléchargement de l'image. Veuillez réessayer.");
           return;
         }
       }

@@ -23,7 +23,7 @@ const payoutStatusRouter = require("./routes/payoutStatus.js");
 const adminPayoutsRouter = require("./routes/adminPayouts.js");
 const { supabase } = require("./supabaseClient.js");
 const { authMiddleware } = require("./middleware/auth.js");
-const { buildUploadUrl } = require("./utils/uploadUrl.js");
+const { buildUploadUrl, imageFileFilter } = require("./utils/uploadUrl.js");
 
 dotenv.config();
 
@@ -234,10 +234,15 @@ app.use("/admin", authMiddleware);
 
 const upload = multer({
   storage: multer.memoryStorage(), // Store files in memory for further processing
+  fileFilter: imageFileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 },
 });
 
 app.post("/storage/upload", upload.single("image"), async (req, res) => {
   try {
+    if (req.fileValidationError) {
+      return res.status(400).json({ error: req.fileValidationError });
+    }
     const file = req.file;
     if (!file) {
       return res.status(400).json({ error: "No file uploaded" });
@@ -267,6 +272,9 @@ app.post(
   upload.single("image"),
   async (req, res) => {
     try {
+      if (req.fileValidationError) {
+        return res.status(400).json({ error: req.fileValidationError });
+      }
       const file = req.file;
       if (!file) {
         return res.status(400).json({ error: "No file uploaded" });

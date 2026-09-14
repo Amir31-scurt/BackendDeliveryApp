@@ -11,7 +11,7 @@ const {graphqlRequest} = require("../utils/graphqlClient.js");
 const {authMiddleware, requireRole} = require("../middleware/auth.js");
 const {body, validationResult} = require("express-validator");
 const {exportToExcel, exportToPdf} = require("../utils/exportUtils.js");
-const {buildUploadUrl} = require("../utils/uploadUrl.js");
+const {buildUploadUrl, imageFileFilter} = require("../utils/uploadUrl.js");
 const csrf = require("csurf");
 
 const csrfProtection = csrf({
@@ -25,7 +25,11 @@ const csrfProtection = csrf({
 });
 
 const router = express.Router();
-const upload = multer({storage: multer.memoryStorage()});
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: imageFileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
 const ROOT_DIR = path.resolve();
 
 // Public routes (no auth required)
@@ -1416,6 +1420,10 @@ router.post("/upload", upload.single("image"), async (req, res) => {
       return res.status(400).json({error: "restaurantId is required"});
     }
 
+    if (req.fileValidationError) {
+      return res.status(400).json({error: req.fileValidationError});
+    }
+
     // Accept either multipart file (preferred) or base64 payload
     let buffer;
     let mimeType = "image/jpeg";
@@ -1424,7 +1432,16 @@ router.post("/upload", upload.single("image"), async (req, res) => {
       buffer = req.file.buffer;
       mimeType = req.file.mimetype || "image/jpeg";
     } else if (req.body.image) {
-      const base64 = req.body.image.replace(/^data:image\/\\w+;base64,/, "");
+      const match = req.body.image.match(/^data:(image\/[a-zA-Z0-9.+_-]+);base64,/);
+      if (match) {
+        mimeType = match[1].toLowerCase();
+        if (!["image/jpeg", "image/png", "image/jpg"].includes(mimeType)) {
+          return res.status(400).json({
+            error: "Format d'image non supporté. Veuillez utiliser un format classique (JPG, JPEG, PNG)."
+          });
+        }
+      }
+      const base64 = req.body.image.replace(/^data:image\/[a-zA-Z0-9.+_-]+;base64,/, "");
       buffer = Buffer.from(base64, "base64");
     } else {
       return res.status(400).json({error: "No image provided"});

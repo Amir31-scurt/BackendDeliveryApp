@@ -1,3 +1,5 @@
+const path = require("path");
+
 /**
  * Build a fully-qualified public URL for a locally-uploaded file.
  *
@@ -13,4 +15,30 @@ function buildUploadUrl(subfolder, fileName) {
   return `${base}/uploads/${subfolder}/${fileName}`;
 }
 
-module.exports = { buildUploadUrl };
+const ALLOWED_IMAGE_MIMES = ["image/jpeg", "image/png", "image/jpg", "image/pjpeg"];
+const ALLOWED_IMAGE_EXTS = /\.(jpe?g|png)$/i;
+
+/**
+ * Multer file filter to accept only standard image formats (JPEG, JPG, PNG).
+ */
+function imageFileFilter(req, file, cb) {
+  const ext = path.extname(file.originalname || "").toLowerCase();
+  const mime = (file.mimetype || "").toLowerCase();
+
+  const isExtValid = ALLOWED_IMAGE_EXTS.test(ext);
+  const isMimeValid = ALLOWED_IMAGE_MIMES.includes(mime);
+
+  if (isExtValid || isMimeValid) {
+    cb(null, true);
+  } else {
+    req.fileValidationError = "Format d'image non supporté. Veuillez utiliser un format classique (JPG, JPEG, PNG).";
+    cb(null, false);
+  }
+}
+
+module.exports = {
+  buildUploadUrl,
+  imageFileFilter,
+  ALLOWED_IMAGE_MIMES,
+  ALLOWED_IMAGE_EXTS,
+};
