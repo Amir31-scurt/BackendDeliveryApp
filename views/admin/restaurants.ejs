@@ -235,6 +235,12 @@
       transition: all var(--transition-speed) ease;
     }
 
+    .restaurant-image.placeholder {
+      opacity: 0.4;
+      object-fit: contain;
+      background-color: #f3f4f6;
+    }
+
     .restaurants-table tr:hover .restaurant-image {
       transform: scale(1.1);
     }
@@ -615,8 +621,11 @@
               <tr data-restaurant-id="<%= restaurant.id %>">
                 <td>
                   <img
-                    src="<%= restaurant.hero_image || restaurant.image_url || restaurant.imageUrl || 'https://placehold.co/600x400?text=No+Image' %>"
-                    alt="<%= restaurant.name %>" class="restaurant-image" />
+                    src="<%= (restaurant.hero_image || restaurant.image_url || restaurant.imageUrl) || '/images/logo.png' %>"
+                    alt="<%= restaurant.name %>"
+                    class="restaurant-image<%= !(restaurant.hero_image || restaurant.image_url || restaurant.imageUrl) ? ' placeholder' : '' %>"
+                    onerror="this.onerror=null;this.src='/images/logo.png';this.classList.add('placeholder');"
+                  />
                 </td>
                 <td>
                   <%= restaurant.name %>

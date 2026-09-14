@@ -224,6 +224,12 @@
             transition: transform 0.3s ease;
         }
 
+        .menu-item-image.placeholder {
+            opacity: 0.4;
+            object-fit: contain;
+            background-color: #f3f4f6;
+        }
+
         .menu-item-card:hover .menu-item-image {
             transform: scale(1.05);
         }
@@ -696,7 +702,12 @@
                         <% menuItems.forEach((item)=> { %>
                             <div class="menu-item-card" data-category="<%= item.category %>" data-id="<%= item.id %>">
                                 <div class="menu-item-image-container">
-                                    <img src="<%= item.image_url %>" alt="<%= item.name %>" class="menu-item-image" />
+                                    <img
+                                        src="<%= (item.image_url || item.imageUrl) || '/images/logo.png' %>"
+                                        alt="<%= item.name %>"
+                                        class="menu-item-image<%= !(item.image_url || item.imageUrl) ? ' placeholder' : '' %>"
+                                        onerror="this.onerror=null;this.src='/images/logo.png';this.classList.add('placeholder');"
+                                    />
                                     <div class="menu-item-overlay">
                                         <button class="action-btn edit-btn" data-id="<%= item.id %>">
                                             <i class="fas fa-edit"></i>

@@ -132,6 +132,12 @@
       transition: all var(--transition-speed) ease;
     }
 
+    .restaurant-image.placeholder {
+      opacity: 0.4;
+      object-fit: contain;
+      background-color: #f3f4f6;
+    }
+
     .restaurant-details:hover .restaurant-image {
       transform: scale(1.02);
     }
@@ -312,6 +318,12 @@
       object-fit: cover;
       transition: all var(--transition-speed) ease;
       box-shadow: var(--card-shadow);
+    }
+
+    .menu-item-image.placeholder {
+      opacity: 0.4;
+      object-fit: contain;
+      background-color: #f3f4f6;
     }
 
     .menu-table tr:hover .menu-item-image {
@@ -651,7 +663,12 @@
 
     <!-- Restaurant Details -->
     <div class="restaurant-details">
-      <img src="<%= restaurant.imageUrl %>" alt="<%= restaurant.name %>" class="restaurant-image" />
+      <img
+        src="<%= restaurant.imageUrl || restaurant.image_url || '/images/logo.png' %>"
+        alt="<%= restaurant.name %>"
+        class="restaurant-image<%= !(restaurant.imageUrl || restaurant.image_url) ? ' placeholder' : '' %>"
+        onerror="this.onerror=null;this.src='/images/logo.png';this.classList.add('placeholder');"
+      />
       <div class="restaurant-info">
         <h2>
           <%= restaurant.name %>
@@ -745,7 +762,12 @@
             <% menuItems.forEach((item)=> { %>
               <tr>
                 <td>
-                  <img src="<%= item.imageUrl %>" alt="<%= item.name %>" class="menu-item-image" />
+                  <img
+                    src="<%= item.imageUrl || item.image_url || '/images/logo.png' %>"
+                    alt="<%= item.name %>"
+                    class="menu-item-image<%= !(item.imageUrl || item.image_url) ? ' placeholder' : '' %>"
+                    onerror="this.onerror=null;this.src='/images/logo.png';this.classList.add('placeholder');"
+                  />
                 </td>
                 <td>
                   <%= item.name %>
