@@ -11,6 +11,7 @@ const {graphqlRequest} = require("../utils/graphqlClient.js");
 const {authMiddleware, requireRole} = require("../middleware/auth.js");
 const {body, validationResult} = require("express-validator");
 const {exportToExcel, exportToPdf} = require("../utils/exportUtils.js");
+const {buildUploadUrl} = require("../utils/uploadUrl.js");
 const csrf = require("csurf");
 
 const csrfProtection = csrf({
@@ -1439,7 +1440,7 @@ router.post("/upload", upload.single("image"), async (req, res) => {
     const filePath = path.join(uploadDir, fileName);
     await writeFile(filePath, buffer);
 
-    const publicUrl = `/uploads/restaurants/${fileName}`;
+    const publicUrl = buildUploadUrl('restaurants', fileName);
 
     // Save the public URL in restaurants table
     const {error: dbError} = await supabase

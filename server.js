@@ -23,6 +23,7 @@ const payoutStatusRouter = require("./routes/payoutStatus.js");
 const adminPayoutsRouter = require("./routes/adminPayouts.js");
 const { supabase } = require("./supabaseClient.js");
 const { authMiddleware } = require("./middleware/auth.js");
+const { buildUploadUrl } = require("./utils/uploadUrl.js");
 
 dotenv.config();
 
@@ -253,8 +254,8 @@ app.post("/storage/upload", upload.single("image"), async (req, res) => {
     const filePath = path.join(uploadDir, fileName);
     await writeFile(filePath, file.buffer);
 
-    // Generate the public URL (relative to public directory)
-    const publicUrl = `/uploads/restaurants/${fileName}`;
+    // Generate the full absolute public URL
+    const publicUrl = buildUploadUrl('restaurants', fileName);
 
     res.status(200).json({ publicUrl });
   } catch (error) {
@@ -282,8 +283,8 @@ app.post(
       const filePath = path.join(uploadDir, fileName);
       await writeFile(filePath, file.buffer);
 
-      // Generate the public URL (relative to public directory)
-      const publicUrl = `/uploads/profiles/${fileName}`;
+      // Generate the full absolute public URL
+      const publicUrl = buildUploadUrl('profiles', fileName);
 
       res.status(200).json({ publicUrl });
     } catch (error) {
